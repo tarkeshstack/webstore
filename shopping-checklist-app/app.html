@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BundleIt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F1F3F7; --card:#FFFFFF; --ink:#1B1F2A; --muted:#70758A; --border:#E7E9F0;
+    --primary:#2D6CDF; --primary-dark:#1D4FB0; --orange:#FF7A1A;
+    --amazon:#FF9900; --flipkart:#2874F0; --myntra:#FF3F6C; --meesho:#9F2089;
+    --mix:#1C8C6E; --mix2:#5A4FCF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;padding-bottom:60px;}
+  a{color:inherit;} img{max-width:100%;}
+
+  .topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);box-shadow:0 2px 10px rgba(20,20,40,0.05);padding:14px 18px;}
+  .topbar-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+  .brand{display:flex;align-items:center;gap:6px;font-weight:800;font-size:16px;color:var(--primary);white-space:nowrap;}
+  .search-pill{flex:1;display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--border);border-radius:999px;padding:10px 8px 10px 16px;}
+  #query{flex:1;border:none;background:transparent;outline:none;font-family:'Inter',sans-serif;font-size:14.5px;color:var(--ink);}
+  #query::placeholder{font-size:11.5px;color:#9B9FB0;}
+  #searchBtn{width:36px;height:36px;flex-shrink:0;border-radius:50%;border:none;background:var(--primary);color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s ease;}
+  #searchBtn:hover{background:var(--primary-dark);}
+
+  #resultsWrap{max-width:1080px;margin:0 auto;padding:24px 18px 0;}
+
+  .detected{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:10px 0 4px;}
+  .detected .tag{font-weight:800;font-size:21px;color:var(--ink);}
+  .pref-intro{max-width:600px;margin:6px auto 24px;text-align:center;font-size:13.5px;color:var(--muted);line-height:1.55;}
+
+  .spinner{display:inline-block;width:16px;height:16px;border-radius:50%;border:2.5px solid var(--border);border-top-color:var(--primary);animation:spin .7s linear infinite;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- CATEGORY CARDS ---------- */
+  .pref-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:6px;}
+  .pref-card{background:var(--card);border-radius:16px;padding:18px 20px 18px;box-shadow:0 6px 18px rgba(20,20,40,0.06);border:1px solid var(--border);transition:opacity .15s ease;}
+  .pref-card.excluded{opacity:.45;}
+  .pref-card.excluded .site-icon-btn{pointer-events:none;}
+  .pref-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:5px;}
+  .pref-card h3{font-size:16px;font-weight:700;margin:0;}
+  .pref-card .pref-items{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+  .pref-options{display:flex;flex-direction:row;flex-wrap:wrap;gap:14px;}
+  .pref-hint{font-size:10.5px;color:#B3B7C6;margin-top:14px;letter-spacing:.05em;text-transform:uppercase;}
+
+  /* toggle switch */
+  .toggle-switch{position:relative;width:38px;height:22px;flex-shrink:0;}
+  .toggle-switch input{opacity:0;width:0;height:0;}
+  .toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:999px;cursor:pointer;transition:background .15s ease;}
+  .toggle-slider::before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .15s ease;box-shadow:0 1px 3px rgba(0,0,0,0.25);}
+  .toggle-switch input:checked + .toggle-slider{background:var(--primary);}
+  .toggle-switch input:checked + .toggle-slider::before{transform:translateX(16px);}
+
+  /* ---------- SITE ICONS (real platform logos) ---------- */
+  .site-icon-btn{background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .site-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;border:3px solid var(--border);transition:all .14s ease;position:relative;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.08);}
+  .site-icon img{width:62%;height:62%;object-fit:contain;display:block;}
+  .site-icon-btn:hover .site-icon{transform:translateY(-2px);}
+  .site-icon-btn.active .site-icon{border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,108,223,0.15),0 6px 14px rgba(0,0,0,0.15);}
+  .site-icon-btn.active .site-icon::after{content:"\2713";position:absolute;bottom:-4px;right:-4px;width:18px;height:18px;background:var(--primary);color:#fff;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;z-index:2;}
+
+  /* ---------- ADD-CATEGORY PANEL ---------- */
+  .addcat-card{max-width:680px;margin:26px auto 0;background:var(--card);border-radius:16px;padding:20px 22px;box-shadow:0 6px 18px rgba(20,20,40,0.06);border:1px solid var(--border);}
+  .addcat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+  .addcat-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .chip-suggest{background:#fff;border:1.5px dashed var(--primary);color:var(--primary);font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;transition:all .12s ease;}
+  .chip-suggest:hover{background:var(--primary);color:#fff;}
+  .addcat-row{display:flex;gap:8px;}
+  .addcat-row select{flex:1;background:var(--bg);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:'Inter',sans-serif;}
+  .addcat-row button{background:var(--ink);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+
+  .build-btn-row{text-align:center;margin:30px 0 10px;}
+  #buildBtn{background:var(--primary);color:#fff;border:none;border-radius:12px;padding:15px 34px;font-weight:700;font-size:15.5px;cursor:pointer;box-shadow:0 10px 24px rgba(45,108,223,0.3);transition:transform .12s ease, background .15s ease;}
+  #buildBtn:hover{background:var(--primary-dark);transform:translateY(-2px);}
+  #buildBtn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+  .build-hint{font-size:11.5px;color:var(--muted);margin-top:8px;}
+
+  .edit-link{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--primary);background:var(--card);border:1px solid var(--border);padding:8px 15px;border-radius:9px;cursor:pointer;font-weight:600;}
+  .edit-link:hover{background:var(--bg);}
+  .edit-row{text-align:center;margin-bottom:18px;}
+
+  .controls-bar{display:flex;justify-content:center;align-items:center;gap:10px;margin:6px 0 8px;flex-wrap:wrap;}
+  .controls-bar label{font-size:12px;color:var(--muted);font-weight:600;}
+  select{background:var(--card);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;}
+
+  /* ---------- BUNDLE REELS ---------- */
+  #bundlesOuter{margin-top:22px;}
+  #bundles{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 6px 18px;-webkit-overflow-scrolling:touch;}
+  #bundles::-webkit-scrollbar{height:6px;}
+  #bundles::-webkit-scrollbar-thumb{background:#D7DAE4;border-radius:6px;}
+
+  .bundle{background:var(--card);border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(20,20,40,0.10);display:flex;flex-direction:column;border-top:6px solid var(--plat-color, var(--primary));flex:0 0 86%;max-width:380px;scroll-snap-align:center;}
+  @media (min-width:640px){ .bundle{flex:0 0 360px;} }
+
+  .bundle-head{padding:20px 22px 14px;}
+  .plat-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:8px;}
+  .plat-badge{font-weight:800;font-size:16px;color:var(--plat-color, var(--ink));}
+  .plat-sort{display:flex;gap:6px;flex-shrink:0;}
+  .plat-sort button{font-size:11px;font-family:'JetBrains Mono',monospace;background:var(--bg);border:1px solid var(--border);color:var(--muted);padding:5px 9px;border-radius:7px;cursor:pointer;font-weight:600;}
+
+  .bundle-price-top{
+    margin:12px 22px 0;padding:16px 18px;border-radius:14px;
+    background:linear-gradient(135deg, rgba(45,108,223,0.08), rgba(45,108,223,0.02));
+    border:1px solid rgba(45,108,223,0.15);
+  }
+  .price-top-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+  .price-top-value{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:24px;color:var(--ink);margin-top:3px;}
+  .price-top-meta{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin-top:6px;}
+  .price-top-meta b{font-family:'JetBrains Mono',monospace;color:var(--ink);}
+
+  .bundle-desc{font-size:11.5px;color:var(--muted);padding:12px 22px 0;line-height:1.5;}
+
+  .items{list-style:none;margin:0;padding:8px 22px 4px;flex:1;}
+  .item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
+  .item:last-child{border-bottom:none;}
+  .item-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .item-logo{width:26px;height:26px;border-radius:50%;background:#fff;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+  .item-logo img{width:65%;height:65%;object-fit:contain;}
+  .item-name{font-size:13.5px;font-weight:600;line-height:1.3;display:block;}
+  .item-cat{display:block;font-size:10.5px;font-weight:500;color:var(--muted);margin-top:2px;}
+  .item-right{text-align:right;flex-shrink:0;}
+  .item-price{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--ink);}
+  .item-rating{font-size:11px;color:var(--orange);margin-top:2px;font-weight:600;}
+  .item-link{display:inline-block;margin-top:5px;font-size:10px;text-decoration:none;color:var(--plat-color,var(--primary));font-weight:700;border-bottom:1px solid currentColor;}
+
+  .bundle-foot{padding:16px 22px 20px;background:var(--bg);display:flex;justify-content:center;align-items:center;}
+  .foot-cta{background:var(--primary);color:#fff;text-decoration:none;font-size:12.5px;font-weight:700;padding:10px 20px;border-radius:9px;}
+  .foot-cta:hover{background:var(--primary-dark);}
+
+  .reel-dots{display:flex;justify-content:center;gap:7px;margin-top:4px;}
+  .reel-dots span{width:7px;height:7px;border-radius:50%;background:#D7DAE4;transition:all .15s ease;}
+  .reel-dots span.active{background:var(--primary);width:20px;border-radius:5px;}
+  .reel-hint{text-align:center;font-size:10.5px;color:var(--muted);margin-top:2px;letter-spacing:.04em;}
+
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+  .empty-state .glyph{font-size:38px;display:block;margin-bottom:12px;}
+
+  footer{text-align:center;color:#9B9FB0;font-size:11px;margin-top:60px;padding:0 24px;}
+
+  @media (max-width:480px){ .topbar-inner{flex-wrap:wrap;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">&#128717; BundleIt</div>
+    <div class="search-pill">
+      <input id="query" type="text" placeholder="e.g. trekking, first day of college" autocomplete="off">
+      <button id="searchBtn" aria-label="Search">&rarr;</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultsWrap">
+  <div id="detectedWrap"></div>
+  <div id="prefWrap"></div>
+  <div id="controlsBar"></div>
+  <div id="bundlesOuter">
+    <div id="bundles"></div>
+    <div class="reel-dots" id="reelDots"></div>
+    <div class="reel-hint" id="reelHint"></div>
+  </div>
+</div>
+
+<footer>
+  Prices &amp; ratings shown are indicative estimates for planning — not live scraped data. Tap "View live" on any item to open real, current results on that platform.
+</footer>
+
+<script>
+const PLATFORM_META = {
+  Amazon:  { color:'#FF9900', logo:'https://www.google.com/s2/favicons?sz=128&domain=amazon.in' },
+  Flipkart:{ color:'#2874F0', logo:'https://www.google.com/s2/favicons?sz=128&domain=flipkart.com' },
+  Myntra:  { color:'#FF3F6C', logo:'https://www.google.com/s2/favicons?sz=128&domain=myntra.com' },
+  Meesho:  { color:'#9F2089', logo:'https://www.google.com/s2/favicons?sz=128&domain=meesho.com' }
+};
+const ALL_PLATFORMS = ['Amazon','Flipkart','Myntra','Meesho'];
+
+function searchUrl(platform, q){
+  const enc = encodeURIComponent(q);
+  switch(platform){
+    case 'Amazon':   return `https://www.amazon.in/s?k=${enc}`;
+    case 'Flipkart': return `https://www.flipkart.com/search?q=${enc}`;
+    case 'Myntra':   return `https://www.myntra.com/${enc.replace(/%20/g,'-')}`;
+    case 'Meesho':   return `https://www.meesho.com/search?q=${enc}`;
+    default: return '#';
+  }
+}
+
+/* ============================================================
+   CURATED OCCASIONS — instant match, richest hand-tuned data
+   ============================================================ */
+const OCCASIONS = {
+  'daily-wear': {
+    label:'Daily Wear', icon:'\ud83d\udc55',
+    keywords:['daily wear','everyday wear','casual wear','regular wear','daily use clothes','normal wear'],
+    items:[
+      {name:'Cotton Round-Neck T-Shirt', cat:'Clothing', best:'Meesho', p:{Amazon:[349,699,4.2],Flipkart:[299,649,4.1],Myntra:[399,899,4.3],Meesho:[199,449,3.9]}},
+      {name:'Slim Fit Casual Jeans', cat:'Clothing', best:'Myntra', p:{Amazon:[899,1499,4.1],Flipkart:[799,1399,4.0],Myntra:[999,1799,4.4],Meesho:[599,999,3.8]}},
+      {name:'Everyday Sneakers', cat:'Footwear', best:'Flipkart', p:{Amazon:[1199,2199,4.3],Flipkart:[999,1899,4.2],Myntra:[1399,2499,4.4],Meesho:[799,1399,3.7]}},
+      {name:'Casual Sling Bag / Backpack', cat:'Bags & Accessories', best:'Amazon', p:{Amazon:[599,1199,4.2],Flipkart:[549,1099,4.0],Myntra:[699,1399,4.1],Meesho:[349,749,3.8]}},
+      {name:'Everyday Wrist Watch', cat:'Bags & Accessories', best:'Amazon', p:{Amazon:[799,1999,4.3],Flipkart:[699,1799,4.1],Myntra:[999,2199,4.2],Meesho:[449,999,3.6]}}
+    ]
+  },
+  'wedding': {
+    label:'Wedding Ceremony', icon:'\ud83d\udc8d',
+    keywords:['wedding ceremony','wedding','shaadi','marriage function','wedding guest','attending a wedding'],
+    items:[
+      {name:'Embroidered Silk Saree', cat:'Clothing', best:'Myntra', p:{Amazon:[1999,4999,4.2],Flipkart:[1799,4499,4.1],Myntra:[2499,5999,4.5],Meesho:[999,2999,3.9]}},
+      {name:"Men's Sherwani / Kurta Set", cat:'Clothing', best:'Myntra', p:{Amazon:[2499,5999,4.1],Flipkart:[2199,5499,4.0],Myntra:[2999,6999,4.4],Meesho:[1499,3499,3.8]}},
+      {name:'Statement Jewellery Set', cat:'Jewellery', best:'Amazon', p:{Amazon:[799,2499,4.3],Flipkart:[699,2199,4.1],Myntra:[999,2799,4.3],Meesho:[449,1299,3.7]}},
+      {name:'Ethnic Juttis / Heels', cat:'Footwear', best:'Myntra', p:{Amazon:[899,1799,4.1],Flipkart:[799,1699,4.0],Myntra:[999,1999,4.4],Meesho:[499,999,3.7]}},
+      {name:'Clutch Bag', cat:'Bags & Accessories', best:'Myntra', p:{Amazon:[599,1299,4.0],Flipkart:[549,1199,3.9],Myntra:[699,1499,4.2],Meesho:[349,799,3.6]}},
+      {name:'Gift Hamper for Couple', cat:'Gifting', best:'Amazon', p:{Amazon:[999,2499,4.4],Flipkart:[899,2299,4.2],Myntra:[1199,2699,4.1],Meesho:[599,1499,3.8]}}
+    ]
+  },
+  'goa-trip': {
+    label:'Goa Trip', icon:'\ud83c\udfd6\ufe0f',
+    keywords:['goa','beach trip','beach vacation','planning to go to goa','vacation packing','holiday trip'],
+    items:[
+      {name:'Printed Beach Shorts / Shirt', cat:'Clothing', best:'Myntra', p:{Amazon:[499,999,4.1],Flipkart:[449,899,4.0],Myntra:[599,1199,4.3],Meesho:[299,599,3.7]}},
+      {name:'Sunglasses (UV Protected)', cat:'Bags & Accessories', best:'Amazon', p:{Amazon:[399,1299,4.2],Flipkart:[349,1199,4.0],Myntra:[499,1499,4.2],Meesho:[199,599,3.6]}},
+      {name:'Waterproof Flip Flops / Slides', cat:'Footwear', best:'Flipkart', p:{Amazon:[349,799,4.1],Flipkart:[299,699,4.0],Myntra:[399,899,4.2],Meesho:[199,449,3.7]}},
+      {name:'Travel Duffel Bag', cat:'Bags & Accessories', best:'Amazon', p:{Amazon:[899,1999,4.3],Flipkart:[799,1799,4.1],Myntra:[999,2199,4.1],Meesho:[599,1299,3.8]}},
+      {name:'Portable Bluetooth Speaker', cat:'Electronics', best:'Amazon', p:{Amazon:[1299,2999,4.4],Flipkart:[1199,2799,4.3],Myntra:[1499,3199,3.9],Meesho:[899,1999,3.7]}},
+      {name:'Sunscreen SPF 50', cat:'Beauty & Grooming', best:'Amazon', p:{Amazon:[299,699,4.3],Flipkart:[279,649,4.1],Myntra:[349,749,4.2],Meesho:[199,449,3.8]}}
+    ]
+  },
+  'ssc-exam': {
+    label:'SSC Exam Prep', icon:'\ud83d\udcda',
+    keywords:['ssc exam','ssc preparation','preparation for ssc','competitive exam','exam prep','study material','government exam'],
+    items:[
+      {name:'SSC CGL/CHSL Guide Book Set', cat:'Books & Study Material', best:'Amazon', p:{Amazon:[499,1299,4.4],Flipkart:[449,1199,4.3],Meesho:[349,899,3.9]}},
+      {name:'Practice Test Series Book', cat:'Books & Study Material', best:'Flipkart', p:{Amazon:[299,699,4.2],Flipkart:[249,649,4.2],Meesho:[199,449,3.8]}},
+      {name:'Study Table Lamp', cat:'Study Essentials', best:'Amazon', p:{Amazon:[399,899,4.3],Flipkart:[349,799,4.1],Meesho:[249,549,3.7]}},
+      {name:'Ergonomic Study Chair Cushion', cat:'Study Essentials', best:'Flipkart', p:{Amazon:[599,1299,4.1],Flipkart:[549,1199,4.0],Meesho:[349,799,3.6]}},
+      {name:'Stationery Combo (Pens, Highlighters, Notepad)', cat:'Stationery', best:'Meesho', p:{Amazon:[249,499,4.2],Flipkart:[229,479,4.0],Meesho:[149,349,3.9]}},
+      {name:'Wall Planner / Study Timetable', cat:'Stationery', best:'Meesho', p:{Amazon:[149,349,4.0],Flipkart:[129,329,3.9],Meesho:[99,249,3.8]}}
+    ]
+  },
+  'diwali-decoration': {
+    label:'Diwali Decoration', icon:'\ud83e\udea4',
+    keywords:['diwali decoration','diwali','deepavali','festival decoration','diya','lights decoration'],
+    items:[
+      {name:'LED String Fairy Lights', cat:'Decoration', best:'Amazon', p:{Amazon:[249,699,4.3],Flipkart:[219,649,4.2],Meesho:[149,399,3.9]}},
+      {name:'Terracotta Diya Set (Pack of 12)', cat:'Decoration', best:'Meesho', p:{Amazon:[199,449,4.2],Flipkart:[179,399,4.0],Meesho:[99,249,3.9]}},
+      {name:'Rangoli Stencil & Colour Set', cat:'Decoration', best:'Meesho', p:{Amazon:[249,549,4.1],Flipkart:[229,499,4.0],Meesho:[149,349,3.8]}},
+      {name:'Torans & Door Hangings', cat:'Decoration', best:'Flipkart', p:{Amazon:[199,499,4.2],Flipkart:[179,449,4.1],Meesho:[99,299,3.9]}},
+      {name:'Scented Candles Set', cat:'Home & Gifting', best:'Amazon', p:{Amazon:[299,699,4.3],Flipkart:[279,649,4.1],Meesho:[199,449,3.8]}},
+      {name:'Paper Lanterns / Pom-Poms', cat:'Decoration', best:'Meesho', p:{Amazon:[249,549,4.0],Flipkart:[229,499,3.9],Meesho:[129,299,3.9]}}
+    ]
+  },
+  'office-job': {
+    label:'New Office Job', icon:'\ud83d\udcbc',
+    keywords:['office job','new office','joining office','office wear','work outfit','corporate job','office essentials'],
+    items:[
+      {name:'Formal Shirts (Pack of 2)', cat:'Clothing', best:'Myntra', p:{Amazon:[899,1599,4.2],Flipkart:[799,1499,4.1],Myntra:[999,1799,4.4],Meesho:[599,1099,3.8]}},
+      {name:'Formal Trousers', cat:'Clothing', best:'Myntra', p:{Amazon:[799,1499,4.1],Flipkart:[699,1399,4.0],Myntra:[899,1699,4.3],Meesho:[549,999,3.7]}},
+      {name:'Formal Office Shoes', cat:'Footwear', best:'Amazon', p:{Amazon:[1299,2499,4.3],Flipkart:[1199,2299,4.2],Myntra:[1499,2699,4.3],Meesho:[899,1599,3.6]}},
+      {name:'Leather Belt', cat:'Bags & Accessories', best:'Flipkart', p:{Amazon:[399,799,4.2],Flipkart:[349,699,4.1],Myntra:[449,899,4.1],Meesho:[249,499,3.7]}},
+      {name:'Office Laptop Bag', cat:'Bags & Accessories', best:'Amazon', p:{Amazon:[999,2199,4.4],Flipkart:[899,1999,4.2],Myntra:[1199,2399,4.0],Meesho:[599,1299,3.6]}},
+      {name:'Grooming Kit (Trimmer/Shaving)', cat:'Beauty & Grooming', best:'Amazon', p:{Amazon:[799,1999,4.3],Flipkart:[699,1799,4.2],Myntra:[899,1899,3.9],Meesho:[449,999,3.6]}},
+      {name:'Deodorant / Perfume Combo', cat:'Beauty & Grooming', best:'Amazon', p:{Amazon:[399,899,4.2],Flipkart:[349,799,4.1],Myntra:[449,949,4.0],Meesho:[249,549,3.6]}},
+      {name:'Wireless Earbuds', cat:'Electronics', best:'Amazon', p:{Amazon:[1499,2999,4.3],Flipkart:[1399,2799,4.3],Meesho:[999,1899,3.6]}}
+    ]
+  },
+  'party-wear': {
+    label:'Party Wear', icon:'\ud83c\udf89',
+    keywords:['party wear','night out','clubbing outfit','party dress','birthday party outfit'],
+    items:[
+      {name:'Sequin / Bodycon Party Dress', cat:'Clothing', best:'Myntra', p:{Amazon:[999,2499,4.1],Flipkart:[899,2299,4.0],Myntra:[1199,2799,4.4],Meesho:[599,1399,3.7]}},
+      {name:"Men's Party Shirt", cat:'Clothing', best:'Myntra', p:{Amazon:[699,1499,4.1],Flipkart:[649,1399,4.0],Myntra:[799,1699,4.3],Meesho:[399,899,3.7]}},
+      {name:'Statement Heels', cat:'Footwear', best:'Myntra', p:{Amazon:[999,1999,4.0],Flipkart:[899,1799,3.9],Myntra:[1099,2199,4.3],Meesho:[599,1199,3.6]}},
+      {name:'Party Clutch / Sling', cat:'Bags & Accessories', best:'Myntra', p:{Amazon:[499,999,4.0],Flipkart:[449,899,3.9],Myntra:[599,1199,4.2],Meesho:[299,599,3.6]}},
+      {name:'Perfume / Body Mist', cat:'Beauty & Grooming', best:'Amazon', p:{Amazon:[399,1199,4.3],Flipkart:[349,1099,4.1],Myntra:[449,1299,4.1],Meesho:[249,699,3.7]}}
+    ]
+  },
+  'gym-fitness': {
+    label:'Gym & Fitness', icon:'\ud83c\udfcb\ufe0f',
+    keywords:['gym','fitness','workout','starting gym','exercise','yoga'],
+    items:[
+      {name:'Dry-Fit Gym T-Shirt', cat:'Clothing', best:'Myntra', p:{Amazon:[349,699,4.2],Flipkart:[299,649,4.1],Myntra:[399,799,4.3],Meesho:[199,449,3.8]}},
+      {name:'Track Pants / Joggers', cat:'Clothing', best:'Myntra', p:{Amazon:[599,1199,4.2],Flipkart:[549,1099,4.1],Myntra:[699,1399,4.3],Meesho:[349,749,3.8]}},
+      {name:'Running / Training Shoes', cat:'Footwear', best:'Flipkart', p:{Amazon:[1499,2999,4.4],Flipkart:[1299,2799,4.3],Myntra:[1699,3199,4.4],Meesho:[899,1799,3.7]}},
+      {name:'Gym Bag', cat:'Bags & Accessories', best:'Amazon', p:{Amazon:[599,1299,4.2],Flipkart:[549,1199,4.0],Myntra:[699,1399,4.1],Meesho:[349,799,3.7]}},
+      {name:'Yoga Mat', cat:'Fitness Equipment', best:'Amazon', p:{Amazon:[399,899,4.3],Flipkart:[349,799,4.2],Myntra:[449,949,3.9],Meesho:[249,549,3.8]}},
+      {name:'Shaker Bottle', cat:'Fitness Equipment', best:'Meesho', p:{Amazon:[199,449,4.1],Flipkart:[179,399,4.0],Myntra:[229,499,3.9],Meesho:[99,249,3.8]}}
+    ]
+  },
+  'monsoon': {
+    label:'Monsoon Essentials', icon:'\u2614',
+    keywords:['monsoon','rainy season','rain essentials','rain gear'],
+    items:[
+      {name:'Waterproof Raincoat', cat:'Clothing', best:'Amazon', p:{Amazon:[499,999,4.2],Flipkart:[449,899,4.1],Myntra:[599,1099,4.0],Meesho:[299,599,3.8]}},
+      {name:'Umbrella (Windproof)', cat:'Bags & Accessories', best:'Amazon', p:{Amazon:[299,699,4.3],Flipkart:[279,649,4.1],Myntra:[349,749,3.9],Meesho:[179,399,3.8]}},
+      {name:'Waterproof Shoe Covers', cat:'Footwear', best:'Meesho', p:{Amazon:[199,399,4.0],Flipkart:[179,349,3.9],Meesho:[99,249,3.7]}},
+      {name:'Waterproof Backpack Cover', cat:'Bags & Accessories', best:'Flipkart', p:{Amazon:[249,499,4.1],Flipkart:[229,449,4.0],Meesho:[149,299,3.8]}}
+    ]
+  }
+};
+
+// Normalizes text so keyword checks only match whole words, not substrings
+// inside unrelated words (e.g. "pet" must not match inside "carpet",
+// "cat" must not match inside "vacation").
+function normalizeText(t){
+  return ' ' + t.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim() + ' ';
+}
+function hasWord(normText, phrase){
+  return normText.includes(' ' + phrase.toLowerCase() + ' ');
+}
+
+function detectOccasion(input){
+  const text = normalizeText(input);
+  let best=null, bestScore=0;
+  for(const key in OCCASIONS){
+    const occ = OCCASIONS[key];
+    let score=0;
+    occ.keywords.forEach(k=>{ if(hasWord(text, k)) score += k.split(' ').length; });
+    occ.keywords.forEach(k=>{ k.split(' ').forEach(w=>{ if(w.length>3 && hasWord(text, w)) score += 0.3; }); });
+    if(score>bestScore){bestScore=score; best=key;}
+  }
+  return bestScore>0 ? best : null;
+}
+
+/* ============================================================
+   DYNAMIC / SEARCH-DRIVEN CATEGORIES — nothing defaults in.
+   Every category here must be matched by the query + real web
+   search text, or added manually by the user.
+   ============================================================ */
+const GENERIC_ITEMS = {
+  clothing:    {name:'Everyday Outfit Set', cat:'Clothing', best:'Myntra', p:{Amazon:[599,1499,4.1],Flipkart:[549,1399,4.0],Myntra:[699,1699,4.3],Meesho:[349,899,3.7]}},
+  footwear:    {name:'Comfort Footwear', cat:'Footwear', best:'Flipkart', p:{Amazon:[799,1999,4.2],Flipkart:[699,1799,4.1],Myntra:[899,2199,4.3],Meesho:[499,1099,3.6]}},
+  bag:         {name:'Everyday Bag / Backpack', cat:'Bags & Accessories', best:'Amazon', p:{Amazon:[599,1499,4.2],Flipkart:[549,1399,4.0],Myntra:[699,1599,4.1],Meesho:[349,899,3.7]}},
+  electronics: {name:'Wireless Earphones', cat:'Electronics', best:'Amazon', p:{Amazon:[999,2499,4.3],Flipkart:[899,2299,4.2],Meesho:[599,1399,3.6]}},
+  stationery:  {name:'Notebook & Stationery Combo', cat:'Stationery', best:'Meesho', p:{Amazon:[249,599,4.1],Flipkart:[229,549,4.0],Meesho:[149,399,3.8]}},
+  study:       {name:'Reference Books & Guides', cat:'Books & Study Material', best:'Amazon', p:{Amazon:[349,999,4.3],Flipkart:[299,899,4.2],Meesho:[199,549,3.8]}},
+  grooming:    {name:'Grooming & Skincare Essentials', cat:'Beauty & Grooming', best:'Amazon', p:{Amazon:[399,999,4.2],Flipkart:[349,899,4.1],Myntra:[449,1099,4.0],Meesho:[249,599,3.6]}},
+  fitness:     {name:'Fitness Essentials Kit', cat:'Fitness Equipment', best:'Amazon', p:{Amazon:[399,999,4.2],Flipkart:[349,899,4.1],Myntra:[449,1099,3.9],Meesho:[249,599,3.7]}},
+  decor:       {name:'Decoration & Party Supplies', cat:'Decoration', best:'Meesho', p:{Amazon:[299,799,4.1],Flipkart:[279,749,4.0],Meesho:[179,449,3.8]}},
+  travel:      {name:'Travel Essentials Kit', cat:'Travel Essentials', best:'Amazon', p:{Amazon:[399,999,4.2],Flipkart:[349,899,4.1],Meesho:[249,599,3.6]}},
+  homeware:    {name:'Home Essentials Set', cat:'Home & Living', best:'Amazon', p:{Amazon:[499,1299,4.2],Flipkart:[449,1199,4.1],Meesho:[299,799,3.7]}},
+  outdoor:     {name:'Outdoor & Trekking Gear', cat:'Outdoor & Trekking Gear', best:'Amazon', p:{Amazon:[799,2499,4.3],Flipkart:[699,2299,4.1],Meesho:[449,1399,3.7]}},
+  kitchen:     {name:'Kitchen & Cookware Set', cat:'Kitchen & Cooking', best:'Amazon', p:{Amazon:[399,1299,4.2],Flipkart:[349,1199,4.1],Meesho:[249,799,3.7]}},
+  baby:        {name:'Baby Care Essentials', cat:'Baby Care', best:'Amazon', p:{Amazon:[499,1499,4.4],Flipkart:[449,1399,4.3],Meesho:[299,899,3.8]}},
+  pet:         {name:'Pet Care Supplies', cat:'Pet Supplies', best:'Amazon', p:{Amazon:[299,999,4.2],Flipkart:[269,899,4.1],Meesho:[179,599,3.7]}},
+  photography: {name:'Photography Accessories', cat:'Photography Gear', best:'Amazon', p:{Amazon:[599,2499,4.2],Flipkart:[549,2299,4.1],Meesho:[349,1399,3.6]}},
+  gaming:      {name:'Gaming Accessories', cat:'Gaming Accessories', best:'Amazon', p:{Amazon:[699,2299,4.3],Flipkart:[649,2199,4.2],Meesho:[399,1299,3.6]}},
+  jewellery:   {name:'Jewellery & Adornments', cat:'Jewellery', best:'Myntra', p:{Amazon:[599,1999,4.2],Flipkart:[549,1899,4.1],Myntra:[699,2199,4.3],Meesho:[349,1199,3.6]}}
+};
+
+const CATEGORY_TRIGGERS = [
+  { item:'clothing',    keywords:['wear','outfit','outfits','dress','dresses','clothes','clothing','attire','wardrobe'] },
+  { item:'footwear',    keywords:['shoes','shoe','footwear','sneakers','sneaker','sandals','boots','boot','slippers','heels'] },
+  { item:'bag',         keywords:['bag','bags','backpack','rucksack','luggage','handbag','duffel'] },
+  { item:'electronics', keywords:['electronics','gadget','gadgets','laptop','earphones','headphones','camera','powerbank','charger','smartphone','tablet','speaker'] },
+  { item:'stationery',  keywords:['stationery','notebook','notebooks','pen','pens','pencil','pencils','notes','folder','diary'] },
+  { item:'study',       keywords:['study','exam','exams','book','books','textbook','textbooks','preparation','syllabus','coursework','tuition','coaching','student'] },
+  { item:'grooming',    keywords:['grooming','skincare','makeup','cosmetics','beauty','perfume','fragrance','deodorant'] },
+  { item:'fitness',     keywords:['gym','fitness','workout','yoga','exercise','dumbbell','treadmill'] },
+  { item:'decor',       keywords:['decor','decoration','decorations','diya','diyas','rangoli','fairylights','ornament','ornaments','centerpiece'] },
+  { item:'travel',      keywords:['travel','trip','vacation','holiday','tour','journey','flight','itinerary','sightseeing'] },
+  { item:'homeware',    keywords:['furnishing','furnishings','curtains','cushion','cushions','bedsheet','houseware','homeware'] },
+  { item:'outdoor',     keywords:['trek','trekking','hike','hiking','camp','camping','mountaineering','backpacking','expedition','trail'] },
+  { item:'kitchen',     keywords:['kitchen','cooking','cookware','utensils','baking','recipe'] },
+  { item:'baby',        keywords:['baby','babies','infant','newborn','toddler','pregnancy'] },
+  { item:'pet',         keywords:['pet','pets','puppy','kitten','petfood','leash'] },
+  { item:'photography', keywords:['photography','photoshoot','videography','vlogging'] },
+  { item:'gaming',      keywords:['gaming','videogame','videogames','console','esports'] },
+  { item:'jewellery',   keywords:['jewellery','jewelry','necklace','earrings','bracelet','engagement'] }
+];
+
+function pickDynamicIcon(text){
+  const t = normalizeText(text);
+  const any = words => words.some(w=>hasWord(t,w));
+  if(any(['trek','trekking','hike','hiking','camp','camping','outdoor'])) return '\ud83c\udfd5\ufe0f';
+  if(any(['trip','travel','vacation','holiday'])) return '\u2708\ufe0f';
+  if(any(['exam','study','college','school','university','class'])) return '\ud83c\udf93';
+  if(any(['gym','fitness','workout'])) return '\ud83c\udfcb\ufe0f';
+  if(any(['party','celebration','festival'])) return '\ud83c\udf89';
+  if(any(['office','job','work','interview'])) return '\ud83d\udcbc';
+  if(any(['home','house','room','hostel'])) return '\ud83c\udfe0';
+  if(any(['baby','infant'])) return '\ud83c\udf7c';
+  if(any(['pet','dog','cat','puppy','kitten'])) return '\ud83d\udc3e';
+  return '\ud83d\uded2';
+}
+
+function titleCase(s){
+  return s.trim().replace(/\s+/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
+}
+
+function matchTriggersFromText(rawText){
+  const text = normalizeText(rawText);
+  const items = []; const seenCats = new Set();
+  CATEGORY_TRIGGERS.forEach(t=>{
+    const hit = t.keywords.some(k=>hasWord(text, k));
+    const cat = GENERIC_ITEMS[t.item].cat;
+    if(hit && !seenCats.has(cat)){ items.push({...GENERIC_ITEMS[t.item]}); seenCats.add(cat); }
+  });
+  return items;
+}
+
+// Real web lookup — Wikipedia's search API is CORS-open and needs no key.
+async function fetchWebContext(query){
+  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=3&srsearch=${encodeURIComponent(query)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('search failed');
+  const data = await res.json();
+  const results = (data.query && data.query.search) || [];
+  return results.map(r => (r.title + ' ' + r.snippet).replace(/<[^>]+>/g,'')).join(' ').toLowerCase();
+}
+
+function fmt(n){ return '\u20b9' + n.toLocaleString('en-IN'); }
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let CURRENT = null;            // {label, icon}
+let ALL_ITEMS = [];            // every item across every found/added category
+let CATEGORY_INCLUDED = {};    // cat -> bool (user chooses which to actually shop)
+let CATEGORY_SELECTION = {};   // cat -> [platform,...]
+let bundleSortModes = {};
+let globalOrder = 'total-asc';
+
+function buildCategoryMap(items){
+  const map = {};
+  items.forEach(it=>{
+    if(!map[it.cat]) map[it.cat] = { items:[], platforms:[] };
+    map[it.cat].items.push(it);
+    ALL_PLATFORMS.forEach(p=>{
+      if(it.p[p] && it.p[p][2] > 0 && !map[it.cat].platforms.includes(p)) map[it.cat].platforms.push(p);
+    });
+  });
+  return map;
+}
+
+function ensureCategoryState(cat, info){
+  if(!(cat in CATEGORY_INCLUDED)) CATEGORY_INCLUDED[cat] = true;
+  if(!CATEGORY_SELECTION[cat] || CATEGORY_SELECTION[cat].length===0){
+    const fb = info.items[0].best && info.platforms.includes(info.items[0].best) ? info.items[0].best : info.platforms[0];
+    CATEGORY_SELECTION[cat] = [fb];
+  }
+}
+
+/* ============================================================
+   CATEGORY SELECTION SCREEN — shows every found category,
+   lets the user toggle which ones to actually shop, tap site
+   logos per category, and add more categories manually.
+   ============================================================ */
+function renderCategoryScreen(){
+  const map = buildCategoryMap(ALL_ITEMS);
+  const cats = Object.keys(map);
+  cats.forEach(cat=> ensureCategoryState(cat, map[cat]));
+
+  document.getElementById('detectedWrap').innerHTML = `
+    <div class="detected"><span>${CURRENT.icon}</span> <span class="tag">${CURRENT.label}</span></div>
+    <p class="pref-intro">${cats.length ? "Toggle off anything you don't need to shop for, tap 1&ndash;2 site logos for the rest." : "No categories found yet for this search &mdash; add some below."}</p>
+  `;
+  document.getElementById('controlsBar').innerHTML = '';
+  document.getElementById('bundles').innerHTML = '';
+  document.getElementById('reelDots').innerHTML = '';
+  document.getElementById('reelHint').innerHTML = '';
+
+  const cardsHtml = cats.map(cat=>{
+    const info = map[cat];
+    const itemNames = info.items.map(i=>i.name).join(' \u00b7 ');
+    const included = CATEGORY_INCLUDED[cat];
+    const selected = CATEGORY_SELECTION[cat] || [];
+    const opts = info.platforms.map(p=>{
+      const checked = selected.includes(p);
+      const meta = PLATFORM_META[p];
+      return `
+        <button class="site-icon-btn ${checked?'active':''}" data-cat="${escapeHtml(cat)}" data-plat="${p}" title="${p}" aria-label="${p}">
+          <span class="site-icon"><img src="${meta.logo}" alt="${p}" loading="lazy"></span>
+        </button>`;
+    }).join('');
+    return `
+      <div class="pref-card ${included?'':'excluded'}" data-cat-card="${escapeHtml(cat)}">
+        <div class="pref-card-top">
+          <h3>${cat}</h3>
+          <label class="toggle-switch">
+            <input type="checkbox" class="cat-toggle" data-cat="${escapeHtml(cat)}" ${included?'checked':''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="pref-items">${itemNames}</div>
+        <div class="pref-options">${opts}</div>
+        <div class="pref-hint">select 1-2 sites</div>
+      </div>`;
+  }).join('');
+
+  const remaining = Object.keys(GENERIC_ITEMS).filter(k=>!cats.includes(GENERIC_ITEMS[k].cat));
+  const addCatHtml = `
+    <div class="addcat-card">
+      <div class="addcat-label">Add a category</div>
+      <div class="addcat-chips">
+        ${remaining.slice(0,6).map(k=>`<button class="chip-suggest" data-key="${k}">+ ${GENERIC_ITEMS[k].cat}</button>`).join('')}
+      </div>
+      <div class="addcat-row">
+        <select id="addCategorySelect">
+          ${remaining.map(k=>`<option value="${k}">${GENERIC_ITEMS[k].cat}</option>`).join('')}
+        </select>
+        <button id="addCategoryBtn">+ Add</button>
+      </div>
+    </div>
+  `;
+
+  const includedCount = cats.filter(c=>CATEGORY_INCLUDED[c]).length;
+  document.getElementById('prefWrap').innerHTML =
+    (cats.length ? `<div class="pref-grid">${cardsHtml}</div>` : '') +
+    (remaining.length ? addCatHtml : '') +
+    `<div class="build-btn-row">
+       <button id="buildBtn" ${includedCount===0?'disabled':''}>Build my bundles &rarr;</button>
+       ${includedCount===0 ? '<div class="build-hint">Turn on at least one category (or add one) to continue.</div>' : ''}
+     </div>`;
+
+  document.querySelectorAll('.cat-toggle').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      CATEGORY_INCLUDED[cb.dataset.cat] = cb.checked;
+      renderCategoryScreen();
+    });
+  });
+
+  document.querySelectorAll('.pref-options .site-icon-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const cat = btn.dataset.cat, plat = btn.dataset.plat;
+      if(!CATEGORY_SELECTION[cat]) CATEGORY_SELECTION[cat] = [];
+      const isActive = btn.classList.contains('active');
+      if(!isActive){
+        if(CATEGORY_SELECTION[cat].length >= 2){
+          const removed = CATEGORY_SELECTION[cat].shift();
+          document.querySelectorAll('.pref-options .site-icon-btn').forEach(b=>{
+            if(b.dataset.cat===cat && b.dataset.plat===removed) b.classList.remove('active');
+          });
+        }
+        CATEGORY_SELECTION[cat].push(plat);
+        btn.classList.add('active');
+      } else {
+        CATEGORY_SELECTION[cat] = CATEGORY_SELECTION[cat].filter(p=>p!==plat);
+        btn.classList.remove('active');
+      }
+    });
+  });
+
+  document.querySelectorAll('.chip-suggest').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ addCategory(btn.dataset.key); renderCategoryScreen(); });
+  });
+  const addBtn = document.getElementById('addCategoryBtn');
+  if(addBtn){
+    addBtn.addEventListener('click', ()=>{
+      const sel = document.getElementById('addCategorySelect');
+      if(sel.value){ addCategory(sel.value); renderCategoryScreen(); }
+    });
+  }
+
+  const buildBtn = document.getElementById('buildBtn');
+  if(buildBtn && includedCount>0){
+    buildBtn.addEventListener('click', ()=>{
+      bundleSortModes = {};
+      renderBundlesPhase();
+    });
+  }
+}
+
+function addCategory(key){
+  const cat = GENERIC_ITEMS[key].cat;
+  if(ALL_ITEMS.some(it=>it.cat===cat)) return;
+  ALL_ITEMS.push({...GENERIC_ITEMS[key]});
+  CATEGORY_INCLUDED[cat] = true;
+}
+
+/* ============================================================
+   BUNDLES
+   ============================================================ */
+function itemBestValidPlatform(it, candidates){
+  const valid = candidates.filter(p=> it.p[p] && it.p[p][2] > 0);
+  return valid.length ? valid : ALL_PLATFORMS.filter(p=> it.p[p] && it.p[p][2] > 0);
+}
+
+function buildCustomBundles(items, selection){
+  const maxChoices = Math.max(...Object.values(selection).map(a=>a.length));
+  const bundles = [];
+  const pickCount = Math.min(maxChoices, 2);
+
+  for(let i=0;i<pickCount;i++){
+    const bItems = items.map(it=>{
+      const cands = selection[it.cat];
+      const preferred = cands[i] || cands[0];
+      const validList = itemBestValidPlatform(it, cands);
+      const plat = it.p[preferred] && it.p[preferred][2] > 0 ? preferred : validList[0];
+      const d = it.p[plat];
+      return { name:it.name, cat:it.cat, min:d[0], max:d[1], rating:d[2], platform:plat };
+    });
+    bundles.push({ key:`pick${i+1}`, label:`Your Pick ${i+1}`, accent: i===0?'var(--primary)':'var(--mix2)', items:bItems,
+      desc: i===0 ? 'Uses your first-choice site for every category.' : 'Uses your second-choice site where you picked one.' });
+  }
+
+  const valueItems = items.map(it=>{
+    const cands = selection[it.cat];
+    const validList = itemBestValidPlatform(it, cands);
+    let bestPlat = validList[0];
+    validList.forEach(p=>{ if(it.p[p][0] < it.p[bestPlat][0]) bestPlat = p; });
+    const d = it.p[bestPlat];
+    return { name:it.name, cat:it.cat, min:d[0], max:d[1], rating:d[2], platform:bestPlat };
+  });
+  const valueBundle = { key:'value', label:'Best Value Mix', accent:'var(--mix)', items:valueItems,
+    desc:'Cheapest option from your selected sites, per item.' };
+
+  const ratedItems = items.map(it=>{
+    const cands = selection[it.cat];
+    const validList = itemBestValidPlatform(it, cands);
+    let bestPlat = validList[0];
+    validList.forEach(p=>{ if(it.p[p][2] > it.p[bestPlat][2]) bestPlat = p; });
+    const d = it.p[bestPlat];
+    return { name:it.name, cat:it.cat, min:d[0], max:d[1], rating:d[2], platform:bestPlat };
+  });
+  const ratedBundle = { key:'rated', label:'Best Rated Mix', accent:'#3AA0A0', items:ratedItems,
+    desc:'Highest-rated option from your selected sites, per item.' };
+
+  bundles.push(valueBundle);
+  bundles.push(ratedBundle);
+
+  const seen = [];
+  const finalBundles = [];
+  bundles.forEach(b=>{
+    const sig = b.items.map(i=>i.platform).join(',');
+    if(!seen.includes(sig) && finalBundles.length < 3){ seen.push(sig); finalBundles.push(b); }
+  });
+  return finalBundles;
+}
+
+function bundleTotals(b){
+  const totalMin = b.items.reduce((s,i)=>s+i.min,0);
+  const totalMax = b.items.reduce((s,i)=>s+i.max,0);
+  const avgRating = b.items.reduce((s,i)=>s+i.rating,0) / b.items.length;
+  return {totalMin, totalMax, avgRating};
+}
+function sortItems(items, mode){
+  const arr = [...items];
+  if(mode === 'price') arr.sort((a,b)=> a.min - b.min);
+  else arr.sort((a,b)=> b.rating - a.rating);
+  return arr;
+}
+
+function renderBundlesPhase(){
+  const includedItems = ALL_ITEMS.filter(it=>CATEGORY_INCLUDED[it.cat]);
+
+  document.getElementById('prefWrap').innerHTML = `
+    <div class="edit-row"><button class="edit-link" id="editBtn">&larr; Edit categories &amp; sites</button></div>
+  `;
+  document.getElementById('editBtn').addEventListener('click', renderCategoryScreen);
+
+  document.getElementById('controlsBar').innerHTML = `
+    <label for="globalOrder">Order bundles by</label>
+    <select id="globalOrder">
+      <option value="total-asc">Total price: Low &rarr; High</option>
+      <option value="total-desc">Total price: High &rarr; Low</option>
+      <option value="rating-desc">Avg rating: High &rarr; Low</option>
+    </select>
+  `;
+  document.getElementById('globalOrder').value = globalOrder;
+  document.getElementById('globalOrder').addEventListener('change', e=>{ globalOrder = e.target.value; renderBundlesPhase(); });
+
+  let bundles = buildCustomBundles(includedItems, CATEGORY_SELECTION).map(b=>({...b, totals: bundleTotals(b)}));
+  if(globalOrder==='total-asc') bundles.sort((a,b)=> a.totals.totalMin - b.totals.totalMin);
+  else if(globalOrder==='total-desc') bundles.sort((a,b)=> b.totals.totalMin - a.totals.totalMin);
+  else bundles.sort((a,b)=> b.totals.avgRating - a.totals.avgRating);
+
+  document.getElementById('bundles').innerHTML = bundles.map(b=>renderBundleCard(b)).join('');
+
+  bundles.forEach(b=>{
+    document.getElementById(`sort-price-${b.key}`).addEventListener('click', ()=>{ bundleSortModes[b.key]='price'; renderBundlesPhase(); });
+    document.getElementById(`sort-rating-${b.key}`).addEventListener('click', ()=>{ bundleSortModes[b.key]='rating'; renderBundlesPhase(); });
+  });
+
+  setupReel(bundles.length);
+}
+
+function setupReel(count){
+  const dotsEl = document.getElementById('reelDots');
+  const hintEl = document.getElementById('reelHint');
+  if(count <= 1){ dotsEl.innerHTML=''; hintEl.innerHTML=''; return; }
+  dotsEl.innerHTML = Array.from({length:count}).map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('');
+  hintEl.textContent = 'swipe for more bundles \u2192';
+  const container = document.getElementById('bundles');
+  const cards = Array.from(container.children);
+  const dots = Array.from(dotsEl.children);
+  container.addEventListener('scroll', ()=>{
+    const center = container.scrollLeft + container.clientWidth/2;
+    let closest = 0, closestDist = Infinity;
+    cards.forEach((card,i)=>{
+      const cardCenter = card.offsetLeft + card.offsetWidth/2;
+      const dist = Math.abs(cardCenter - center);
+      if(dist < closestDist){ closestDist = dist; closest = i; }
+    });
+    dots.forEach((d,i)=> d.classList.toggle('active', i===closest));
+  }, {passive:true});
+}
+
+function renderBundleCard(b){
+  const mode = bundleSortModes[b.key] || 'price';
+  const items = sortItems(b.items, mode);
+  const color = b.accent;
+
+  return `
+  <div class="bundle" style="--plat-color:${color}">
+    <div class="bundle-head">
+      <div class="plat-row">
+        <span class="plat-badge" style="color:${color}">${b.label}</span>
+        <div class="plat-sort">
+          <button id="sort-price-${b.key}" style="${mode==='price'?`background:${color};border-color:${color};color:#fff`:''}">Price &uarr;</button>
+          <button id="sort-rating-${b.key}" style="${mode==='rating'?`background:${color};border-color:${color};color:#fff`:''}">Rating &darr;</button>
+        </div>
+      </div>
+    </div>
+    <div class="bundle-price-top" style="border-color:${color}22">
+      <div class="price-top-label">Total for this bundle</div>
+      <div class="price-top-value">${fmt(b.totals.totalMin)}&ndash;${fmt(b.totals.totalMax)}</div>
+      <div class="price-top-meta">
+        <span>${b.items.length} items</span>
+        <span>Avg rating <b>${b.totals.avgRating.toFixed(1)}\u2605</b></span>
+      </div>
+    </div>
+    <div class="bundle-desc">${b.desc}</div>
+    <ul class="items">
+      ${items.map(it=>`
+        <li class="item">
+          <div class="item-left">
+            <span class="item-logo"><img src="${PLATFORM_META[it.platform].logo}" alt="${it.platform}"></span>
+            <div>
+              <span class="item-name">${it.name}</span>
+              <span class="item-cat">${it.cat}</span>
+            </div>
+          </div>
+          <div class="item-right">
+            <div class="item-price">${fmt(it.min)}&ndash;${fmt(it.max)}</div>
+            <div class="item-rating">${it.rating.toFixed(1)}\u2605</div>
+            <a class="item-link" target="_blank" href="${searchUrl(it.platform, it.name)}">View live &#8599;</a>
+          </div>
+        </li>
+      `).join('')}
+    </ul>
+    <div class="bundle-foot">
+      <a class="foot-cta" style="background:${color}" target="_blank" href="${searchUrl(items[0].platform, CURRENT.label + ' ' + b.label)}">Shop this bundle &#8599;</a>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   SEARCH ENTRY
+   ============================================================ */
+function clearPanels(){
+  document.getElementById('controlsBar').innerHTML = '';
+  document.getElementById('bundles').innerHTML = '';
+  document.getElementById('reelDots').innerHTML = '';
+  document.getElementById('reelHint').innerHTML = '';
+}
+
+function showSearchingState(q){
+  clearPanels();
+  document.getElementById('detectedWrap').innerHTML = `
+    <div class="detected"><span class="spinner"></span> <span class="tag">Searching the web for "${escapeHtml(q)}"&hellip;</span></div>
+  `;
+  document.getElementById('prefWrap').innerHTML = '';
+}
+
+async function runSearch(){
+  const q = document.getElementById('query').value.trim();
+  if(!q) return;
+
+  const occKey = detectOccasion(q);
+  if(occKey){
+    const occ = OCCASIONS[occKey];
+    CURRENT = { label: occ.label, icon: occ.icon };
+    ALL_ITEMS = occ.items.map(it=>({...it}));
+    CATEGORY_INCLUDED = {};
+    CATEGORY_SELECTION = {};
+    renderCategoryScreen();
+    return;
+  }
+
+  CURRENT = { label: titleCase(q), icon: pickDynamicIcon(q.toLowerCase()) };
+  showSearchingState(q);
+
+  let corpus = q.toLowerCase();
+  try {
+    corpus += ' ' + await fetchWebContext(q);
+  } catch(e){ /* fall through with just the query text */ }
+
+  ALL_ITEMS = matchTriggersFromText(corpus);
+  CATEGORY_INCLUDED = {};
+  CATEGORY_SELECTION = {};
+  renderCategoryScreen();
+}
+
+document.getElementById('searchBtn').addEventListener('click', runSearch);
+document.getElementById('query').addEventListener('keydown', e=>{ if(e.key==='Enter') runSearch(); });
+
+document.getElementById('bundles').innerHTML = `
+  <div class="empty-state" style="width:100%;">
+    <span class="glyph">\ud83d\uded2</span>
+    Type an occasion above to get started.
+  </div>`;
+</script>
+</body>
+</html>

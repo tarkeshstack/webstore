@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Report Reader — Medical Report Interpreter</title>
+<style>
+  :root {
+    --paper: #FFFFFF;
+    --card: #FFFFFF;
+    --card-soft: #FAFAF9;
+    --ink: #1A1F1E;
+    --ink-soft: #6B7570;
+    --ink-faint: #98A19C;
+    --teal: #1F5F5B;
+    --teal-deep: #123936;
+    --blue: #4A90E2;
+    --line: #E7E9E6;
+    --green: #22794F;   --green-bg: #EAF6EF;
+    --amber: #B4750D;   --amber-bg: #FDF3DF;
+    --red: #C13B2C;     --red-bg: #FCEAE7;
+    --shadow: 0 1px 2px rgba(20,30,28,0.04), 0 6px 20px rgba(20,30,28,0.05);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background:
+      radial-gradient(1100px 500px at 8% -8%, rgba(31,95,91,0.10), transparent 60%),
+      radial-gradient(1000px 480px at 100% 0%, rgba(74,144,226,0.10), transparent 55%),
+      var(--paper);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: Georgia, "Iowan Old Style", serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--teal-deep);
+  }
+  .topbar-title-icon { font-size: 19px; }
+
+  .person-btn {
+    position: relative;
+    z-index: 40;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  .person-btn.has-profile { border: 1.5px solid var(--teal); }
+  .person-btn.has-profile::after {
+    content: "";
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--teal);
+    border: 2px solid var(--card);
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 30, 28, 0.42);
+    z-index: 50;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-card {
+    background: var(--card);
+    width: 100%;
+    max-width: 480px;
+    border-radius: 18px 18px 0 0;
+    box-shadow: var(--shadow);
+    padding: 20px 20px 24px;
+  }
+  @media (min-width: 560px) {
+    .modal-overlay { align-items: center; }
+    .modal-card { border-radius: 18px; margin-bottom: 6vh; }
+  }
+  .modal-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .modal-close {
+    border: none;
+    background: var(--card-soft);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    color: var(--ink-soft);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .modal-done {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: var(--teal-deep);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-skip {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--ink-faint);
+    font-size: 12.5px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .disclaimer-chip {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 35;
+    align-items: center;
+    gap: 6px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 9px 16px;
+    font-size: 12.5px;
+    font-weight: 700;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+  }
+  .disclaimer-chip.visible { display: flex; }
+  .profile-heading {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+  .profile-sub {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  @media (min-width: 560px) {
+    .profile-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .field-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .field-input, .field-select {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--card-soft);
+    color: var(--ink);
+  }
+  .field-input:focus, .field-select:focus {
+    outline: 2px solid var(--teal);
+    outline-offset: 1px;
+  }
+  .pill-toggle { display: flex; gap: 8px; }
+  .pill-toggle .pill {
+    flex: 1;
+    text-align: center;
+  }
+  .pill-toggle-wrap { flex-wrap: wrap; }
+  .pill-toggle-wrap .pill { flex: 0 1 auto; }
+  .profile-note {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--teal);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    display: none;
+  }
+  .profile-note.visible { display: block; }
+
+  .search-wrap {
+    position: relative;
+    max-width: 780px;
+    margin: 18px auto 0;
+    padding: 0 16px;
+  }
+  .search-input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 16px;
+    padding: 15px 18px;
+    border-radius: 14px;
+    border: 1.5px solid var(--line);
+    background: var(--card-soft);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+  .search-input:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+  .search-results {
+    display: none;
+    position: absolute;
+    left: 16px; right: 16px;
+    top: calc(100% + 6px);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 30;
+  }
+  .search-results.open { display: block; }
+  .search-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .search-item:last-child { border-bottom: none; }
+  .search-item:hover, .search-item:focus { background: var(--card-soft); }
+  .search-item-icon { font-size: 18px; line-height: 1; }
+  .search-item-name { flex: 1; font-weight: 500; }
+  .search-item-count {
+    font-size: 10px;
+    background: rgba(31,95,91,0.10);
+    color: var(--teal);
+    border-radius: 999px;
+    padding: 1px 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .search-empty { padding: 14px; font-size: 13px; color: var(--ink-faint); }
+
+  .main { max-width: 720px; margin: 0 auto; padding: 14px 16px 50px; }
+  .cat-banner {
+    position: relative;
+    overflow: hidden;
+    margin: 0 0 14px;
+    padding: 18px 18px 16px;
+    border-radius: 16px;
+    background:
+      linear-gradient(135deg, rgba(74,144,226,0.10), rgba(34,121,79,0.10)),
+      var(--card-soft);
+    border: 1px solid var(--line);
+  }
+  .cat-banner::before {
+    content: attr(data-icon);
+    position: absolute;
+    right: -18px;
+    top: -36px;
+    font-size: 168px;
+    line-height: 1;
+    opacity: 0.12;
+    filter: saturate(0.7);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .cat-heading-row { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; }
+  .cat-icon-big { font-size: 36px; line-height: 1; }
+  .cat-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px; color: var(--teal); letter-spacing: 0.1em;
+  }
+  .cat-name { font-family: Georgia, "Iowan Old Style", serif; font-size: 22px; margin: 3px 0 2px; }
+  .cat-note { position: relative; z-index: 1; font-size: 12.5px; color: var(--ink-faint); margin-top: 4px; }
+
+  .row {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px 14px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 9px;
+    gap: 10px;
+  }
+  .row-label { font-size: 14.5px; font-weight: 600; }
+  .row-unit { font-weight: 400; color: var(--ink-faint); font-size: 12.5px; }
+
+  .rag-indicator { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex: 0 0 auto; box-sizing: border-box; }
+  .dot-green { background: var(--green); }
+  .dot-yellow { background: var(--amber); }
+  .dot-red { background: var(--red); }
+  .rag-label {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .rag-label.rag-green { color: var(--green); }
+  .rag-label.rag-yellow { color: var(--amber); }
+  .rag-label.rag-red { color: var(--red); }
+
+  .row-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 10px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--card-soft);
+    color: var(--ink);
+    width: 100%;
+    text-align: center;
+    transition: font-size 0.1s ease;
+  }
+  .row-input:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+  .row-input.has-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--teal-deep);
+    border-color: var(--teal);
+    background: #fff;
+  }
+
+  .row-info {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0 0 10px;
+  }
+
+  .range-inline {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .range-tag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: var(--card-soft);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 8px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .details-slot {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+  }
+  .details-range {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: var(--ink);
+    margin: 0;
+  }
+  .details-range strong { color: var(--teal-deep); }
+  .details-adjusted {
+    font-size: 11px;
+    color: var(--teal);
+    margin-top: 3px;
+  }
+  .listen-btn {
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--teal);
+    background: transparent;
+    color: var(--teal);
+    cursor: pointer;
+  }
+  .listen-btn:hover { background: rgba(31,95,91,0.06); }
+
+  .row-textarea {
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13.5px;
+    padding: 10px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--card-soft);
+    color: var(--ink);
+    resize: vertical;
+  }
+  .row-textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+  .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 13px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--card-soft);
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+  .pill.pill-active {
+    color: #fff;
+    border-color: transparent;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: 0 3px 10px rgba(20,30,28,0.16);
+    transform: scale(1.03);
+  }
+  .pill.pill-active.pill-green { background: var(--green); }
+  .pill.pill-active.pill-yellow { background: var(--amber); }
+  .pill.pill-active.pill-red { background: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title"><span class="topbar-title-icon">🩺</span> Report Reader</div>
+  <button class="person-btn" id="personBtn" type="button" aria-label="Your details">
+    <span id="personIcon">👤</span>
+  </button>
+</div>
+
+<div class="modal-overlay" id="onboardingOverlay">
+  <div class="modal-card">
+    <div class="profile-heading">Before you start</div>
+    <div class="profile-sub">Just two quick things — this helps tailor reference ranges to you. Everything else can be filled in later.</div>
+    <div style="margin-bottom:14px;">
+      <label class="field-label">Age range</label>
+      <div class="pill-toggle pill-toggle-wrap">
+        <button type="button" class="pill" data-agerange="under18">Under 18</button>
+        <button type="button" class="pill" data-agerange="18-30">18–30</button>
+        <button type="button" class="pill" data-agerange="31-45">31–45</button>
+        <button type="button" class="pill" data-agerange="46-60">46–60</button>
+        <button type="button" class="pill" data-agerange="60plus">60+</button>
+      </div>
+    </div>
+    <div>
+      <label class="field-label">Gender</label>
+      <div class="pill-toggle">
+        <button type="button" class="pill" data-sex="male">Male</button>
+        <button type="button" class="pill" data-sex="female">Female</button>
+      </div>
+    </div>
+    <button class="modal-done" id="onboardingDone" type="button">Continue</button>
+    <button class="modal-skip" id="onboardingSkip" type="button">Skip for now</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+    <div class="modal-top">
+      <div class="profile-heading">Your details</div>
+      <button class="modal-close" id="modalClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="profile-sub">Optional — used to fine-tune reference ranges and units where they typically differ.</div>
+    <div class="profile-grid">
+      <div>
+        <label class="field-label">Age range</label>
+        <div class="pill-toggle pill-toggle-wrap">
+          <button type="button" class="pill" data-agerange="under18">Under 18</button>
+          <button type="button" class="pill" data-agerange="18-30">18–30</button>
+          <button type="button" class="pill" data-agerange="31-45">31–45</button>
+          <button type="button" class="pill" data-agerange="46-60">46–60</button>
+          <button type="button" class="pill" data-agerange="60plus">60+</button>
+        </div>
+      </div>
+      <div>
+        <label class="field-label">Sex</label>
+        <div class="pill-toggle">
+          <button type="button" class="pill" data-sex="male">Male</button>
+          <button type="button" class="pill" data-sex="female">Female</button>
+        </div>
+      </div>
+      <div>
+        <label class="field-label" for="regionSelect">Region / country</label>
+        <select class="field-select" id="regionSelect">
+          <option value="">Not specified</option>
+          <option value="us">United States</option>
+          <option value="india">India</option>
+          <option value="uk">United Kingdom</option>
+          <option value="europe">Europe</option>
+          <option value="canada">Canada</option>
+          <option value="australia">Australia</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="languageSelect">Language (for "Hear details")</label>
+        <select class="field-select" id="languageSelect">
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+          <option value="ta">Tamil</option>
+          <option value="kn">Kannada</option>
+          <option value="te">Telugu</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="ar">Arabic</option>
+          <option value="zh">Chinese</option>
+        </select>
+      </div>
+    </div>
+    <div class="profile-note" id="profileNote"></div>
+    <button class="modal-done" id="modalDone" type="button">Done</button>
+  </div>
+</div>
+
+
+<div class="search-wrap">
+  <input class="search-input" id="searchInput" type="text" placeholder="Search a test — e.g. blood pressure, sugar, ECG" autocomplete="off" />
+  <div class="search-results" id="searchResults"></div>
+</div>
+
+<main class="main">
+  <div class="cat-banner" id="catBanner" data-icon="">
+    <div class="cat-heading-row">
+      <span class="cat-icon-big" id="catIcon"></span>
+      <div>
+        <div class="cat-code" id="catCode"></div>
+        <h2 class="cat-name" id="catName"></h2>
+      </div>
+    </div>
+    <div class="cat-note" id="catNote"></div>
+  </div>
+  <div id="rows"></div>
+</main>
+
+<div class="modal-overlay" id="disclaimerOverlay">
+  <div class="modal-card">
+    <div class="modal-top">
+      <div class="profile-heading">Before you start</div>
+      <button class="modal-close" id="disclaimerClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="profile-sub" style="margin-bottom:0;">
+      Reference ranges shown here are general approximations, adjusted only for the
+      factors we know are commonly used to vary them (age, sex, and regional unit
+      conventions). Your report's own reference column — set by the lab that ran the
+      test — is always the authoritative one. This tool does not diagnose or interpret
+      medical significance; share your full report with a doctor for any borderline or
+      out-of-range result.
+    </div>
+    <button class="modal-done" id="disclaimerDone" type="button">Got it</button>
+  </div>
+</div>
+
+<button class="disclaimer-chip" id="disclaimerChip" type="button">✓ Disclaimer read</button>
+
+<script>
+/* ---------------------------------------------------------
+   Reference data
+--------------------------------------------------------- */
+const CATEGORIES = [
+  { id: "bp", icon: "🩺", code: "BP", name: "Blood Pressure", note: "Sphygmomanometer reading", params: [
+    { id: "sys", label: "Systolic", unit: "mmHg", min: 90, max: 120, step: 1,
+      desc: "The pressure in your arteries at the moment your heart beats." },
+    { id: "dia", label: "Diastolic", unit: "mmHg", min: 60, max: 80, step: 1,
+      desc: "The pressure in your arteries while your heart rests between beats." },
+  ]},
+  { id: "cbc", icon: "🩸", code: "CBC", name: "Blood Count", note: "Complete Blood Count", params: [
+    { id: "hb", label: "Hemoglobin", unit: "g/dL", min: 12.0, max: 16.5, step: 0.1,
+      desc: "The protein in red blood cells that carries oxygen from your lungs to the rest of your body." },
+    { id: "wbc", label: "White Blood Cells", unit: "×10³/µL", min: 4.0, max: 11.0, step: 0.1,
+      desc: "White blood cells fight infection; the count reflects how active your immune system is right now." },
+    { id: "plt", label: "Platelets", unit: "×10³/µL", min: 150, max: 450, step: 1,
+      desc: "Cell fragments that help your blood clot and stop bleeding." },
+    { id: "rbc", label: "Red Blood Cells", unit: "×10⁶/µL", min: 4.2, max: 5.9, step: 0.1,
+      desc: "Red blood cells carry oxygen around the body; this counts how many are circulating." },
+    { id: "hct", label: "Hematocrit", unit: "%", min: 36, max: 50, step: 0.1,
+      desc: "The percentage of your blood's volume that is made up of red blood cells." },
+  ]},
+  { id: "glu", icon: "🍬", code: "GLU", name: "Blood Sugar", note: "Glucose panel", params: [
+    { id: "fasting", label: "Fasting Glucose", unit: "mg/dL", min: 70, max: 100, step: 1,
+      desc: "Your blood sugar level measured after at least 8 hours without eating." },
+    { id: "pp", label: "Post-Prandial Glucose", unit: "mg/dL", min: 70, max: 140, step: 1,
+      desc: "Your blood sugar level measured about 2 hours after a meal." },
+    { id: "hba1c", label: "HbA1c", unit: "%", min: 4.0, max: 5.6, step: 0.1,
+      desc: "Your average blood sugar over the past 2–3 months, based on sugar attached to red blood cells." },
+  ]},
+  { id: "lipid", icon: "🫀", code: "LIPID", name: "Lipid Profile", note: "Cholesterol panel", params: [
+    { id: "total", label: "Total Cholesterol", unit: "mg/dL", min: 125, max: 200, step: 1,
+      desc: "The total amount of cholesterol circulating in your blood." },
+    { id: "ldl", label: "LDL Cholesterol", unit: "mg/dL", min: 0, max: 100, step: 1,
+      desc: "Often called 'bad' cholesterol — it can build up inside artery walls over time." },
+    { id: "hdl", label: "HDL Cholesterol", unit: "mg/dL", min: 40, max: 60, step: 1,
+      desc: "Often called 'good' cholesterol — it helps clear excess cholesterol from your bloodstream." },
+    { id: "trig", label: "Triglycerides", unit: "mg/dL", min: 0, max: 150, step: 1,
+      desc: "A type of fat in the blood used for energy; high levels are linked to heart risk." },
+  ]},
+  { id: "ua", icon: "🧪", code: "UA", name: "Urine Test", note: "Urinalysis", params: [
+    { id: "ph", label: "pH", unit: "", min: 4.5, max: 8.0, step: 0.1,
+      desc: "How acidic or alkaline your urine is." },
+    { id: "sg", label: "Specific Gravity", unit: "", min: 1.005, max: 1.03, step: 0.001,
+      desc: "How concentrated your urine is compared with pure water." },
+    { id: "protein", label: "Protein", type: "select",
+      desc: "Presence of protein in urine, which can indicate kidney strain.",
+      options: [
+        { label: "Negative", status: "green" },
+        { label: "Trace", status: "yellow" },
+        { label: "Positive", status: "red" },
+      ]},
+    { id: "glucose", label: "Glucose", type: "select",
+      desc: "Presence of sugar in urine, which can indicate high blood sugar.",
+      options: [
+        { label: "Negative", status: "green" },
+        { label: "Trace", status: "yellow" },
+        { label: "Positive", status: "red" },
+      ]},
+  ]},
+  { id: "ecg", icon: "💓", code: "ECG", name: "ECG", note: "Electrocardiogram", params: [
+    { id: "hr", label: "Heart Rate", unit: "bpm", min: 60, max: 100, step: 1,
+      desc: "The number of times your heart beats per minute." },
+    { id: "rhythm", label: "Rhythm", type: "select",
+      desc: "Whether your heart's electrical pattern is regular or shows irregularities.",
+      options: [
+        { label: "Normal sinus rhythm", status: "green" },
+        { label: "Borderline / sinus arrhythmia", status: "yellow" },
+        { label: "Atrial fibrillation / irregular", status: "red" },
+        { label: "Other abnormality noted", status: "red" },
+      ]},
+  ]},
+  { id: "eye", icon: "👁️", code: "EYE", name: "Eye Test", note: "Ophthalmic exam", params: [
+    { id: "iop", label: "Intraocular Pressure", unit: "mmHg", min: 10, max: 21, step: 0.5,
+      desc: "The fluid pressure inside your eye; sustained high pressure is linked to glaucoma risk." },
+    { id: "acuity", label: "Visual Acuity", type: "select",
+      desc: "How clearly you can see at a distance, compared with normal vision. Shown in metric (6/6) and imperial (20/20) notation.",
+      options: [
+        { label: "6/6 (20/20) — normal", status: "green" },
+        { label: "6/9 – 6/12 (20/25 – 20/40) — mild reduction", status: "yellow" },
+        { label: "6/18 or worse (20/50 or worse)", status: "red" },
+      ]},
+  ]},
+  { id: "xray", icon: "🩻", code: "XRAY", name: "X-Ray", note: "Radiograph", params: [
+    { id: "impression", label: "Radiologist Impression", type: "select",
+      desc: "The radiologist's overall conclusion after reviewing the image.",
+      options: [
+        { label: "Normal", status: "green" },
+        { label: "Mild abnormality", status: "yellow" },
+        { label: "Significant abnormality", status: "red" },
+      ]},
+    { id: "notes", label: "Findings (notes)", type: "text",
+      desc: "Optional — jot down any specific wording from the report." },
+  ]},
+  { id: "spine", icon: "🦴", code: "SPINE", name: "Spine Imaging", note: "Cervical, thoracic & lumbosacral (LS) spine", params: [
+    { id: "cCanal", label: "Cervical Canal Diameter", unit: "mm", min: 13, max: 25, step: 0.5,
+      desc: "The width of the spinal canal at neck level; narrowing here can compress the spinal cord." },
+    { id: "cDisc", label: "Cervical Disc Space (Gap)", unit: "mm", min: 3, max: 6, step: 0.5,
+      desc: "The height of the cushioning disc between neck vertebrae; a reduced gap can signal disc wear." },
+    { id: "tCanal", label: "Thoracic Canal Diameter", unit: "mm", min: 12, max: 20, step: 0.5,
+      desc: "The width of the spinal canal at mid-back level, protecting the spinal cord through the chest region." },
+    { id: "tDisc", label: "Thoracic Disc Space (Gap)", unit: "mm", min: 3, max: 5, step: 0.5,
+      desc: "The height of the cushioning disc between mid-back vertebrae." },
+    { id: "lCanal", label: "Lumbosacral (LS) Canal Diameter", unit: "mm", min: 15, max: 25, step: 0.5,
+      desc: "The width of the spinal canal in the lower back; narrowing here is a common cause of leg pain or numbness." },
+    { id: "lDisc", label: "Lumbosacral (LS) Disc Space (Gap)", unit: "mm", min: 8, max: 14, step: 0.5,
+      desc: "The height of the cushioning disc between lower-back vertebrae, which bear the most load." },
+    { id: "impression", label: "Radiologist Impression", type: "select",
+      desc: "The radiologist's overall conclusion after reviewing the spine images.",
+      options: [
+        { label: "Normal", status: "green" },
+        { label: "Mild degenerative changes", status: "yellow" },
+        { label: "Significant narrowing or herniation", status: "red" },
+      ]},
+    { id: "notes", label: "Findings (notes)", type: "text",
+      desc: "Optional — jot down any specific wording from the report." },
+  ]},
+  { id: "pft", icon: "🫁", code: "PFT", name: "Lung Test", note: "Pulmonary function / spirometry", params: [
+    { id: "spo2", label: "Oxygen Saturation (SpO2)", unit: "%", min: 95, max: 100, step: 0.5,
+      desc: "The percentage of oxygen your blood is carrying, measured with a pulse oximeter." },
+    { id: "fev1fvc", label: "FEV1 / FVC Ratio", unit: "%", min: 70, max: 100, step: 1,
+      desc: "The share of air you can forcefully exhale in one second versus your total exhaled air; used to detect airway obstruction." },
+    { id: "rr", label: "Respiratory Rate", unit: "breaths/min", min: 12, max: 20, step: 1,
+      desc: "The number of breaths you take per minute." },
+  ]},
+  { id: "stool", icon: "🧫", code: "STOOL", name: "Stool Test", note: "Stool examination", params: [
+    { id: "occult", label: "Occult Blood", type: "select",
+      desc: "Checks for hidden, non-visible blood in the stool sample.",
+      options: [
+        { label: "Negative", status: "green" },
+        { label: "Positive", status: "red" },
+      ]},
+    { id: "parasites", label: "Parasites / Ova", type: "select",
+      desc: "Checks for intestinal parasites or their eggs.",
+      options: [
+        { label: "None seen", status: "green" },
+        { label: "Present", status: "red" },
+      ]},
+    { id: "consistency", label: "Consistency", type: "select",
+      desc: "The texture and form of the stool sample.",
+      options: [
+        { label: "Normal / formed", status: "green" },
+        { label: "Loose", status: "yellow" },
+        { label: "Watery", status: "red" },
+      ]},
+  ]},
+  { id: "mri", icon: "🧲", code: "MRI", name: "MRI", note: "Magnetic Resonance Imaging", params: [
+    { id: "impression", label: "Radiologist Impression", type: "select",
+      desc: "The radiologist's overall conclusion after reviewing the scan.",
+      options: [
+        { label: "No abnormality detected", status: "green" },
+        { label: "Minor / incidental finding", status: "yellow" },
+        { label: "Significant finding — follow-up advised", status: "red" },
+      ]},
+    { id: "notes", label: "Findings (notes)", type: "text",
+      desc: "Optional — jot down any specific wording from the report." },
+  ]},
+];
+
+/* ---------------------------------------------------------
+   Language support — spoken output only.
+   Visible text always stays in English; "Hear details" speaks
+   in the chosen language, using translated param text where
+   available (Hindi, Spanish) and translated template phrases
+   for every listed language.
+--------------------------------------------------------- */
+const LANGUAGES = [
+  { code: "en", speechLang: "en-US", label: "English" },
+  { code: "hi", speechLang: "hi-IN", label: "Hindi" },
+  { code: "ta", speechLang: "ta-IN", label: "Tamil" },
+  { code: "kn", speechLang: "kn-IN", label: "Kannada" },
+  { code: "te", speechLang: "te-IN", label: "Telugu" },
+  { code: "es", speechLang: "es-ES", label: "Spanish" },
+  { code: "fr", speechLang: "fr-FR", label: "French" },
+  { code: "ar", speechLang: "ar-SA", label: "Arabic" },
+  { code: "zh", speechLang: "zh-CN", label: "Chinese" },
+];
+
+const TEMPLATE_TRANSLATIONS = {
+  en: { yourReading: "Your reading is", refRange: "The reference range is", markedAs: "This is marked as",
+        youSelected: "You selected", to: "to",
+        inRange: "In range", borderlineLow: "Borderline low", borderlineHigh: "Borderline high",
+        deficiency: "Deficiency", elevated: "Elevated",
+        normal: "Normal", borderline: "Borderline", outOfRange: "Out of range" },
+  hi: { yourReading: "आपका मान है", refRange: "सामान्य सीमा है", markedAs: "इसे बताया गया है",
+        youSelected: "आपने चुना", to: "से",
+        inRange: "सामान्य सीमा में", borderlineLow: "सीमा रेखा कम", borderlineHigh: "सीमा रेखा अधिक",
+        deficiency: "कमी", elevated: "अधिक",
+        normal: "सामान्य", borderline: "सीमा रेखा", outOfRange: "सीमा से बाहर" },
+  ta: { yourReading: "உங்கள் அளவு", refRange: "இயல்பான வரம்பு", markedAs: "இது குறிக்கப்பட்டுள்ளது",
+        youSelected: "நீங்கள் தேர்ந்தெடுத்தது", to: "முதல்",
+        inRange: "இயல்பான வரம்பில்", borderlineLow: "எல்லைக்கோடு குறைவு", borderlineHigh: "எல்லைக்கோடு அதிகம்",
+        deficiency: "குறைபாடு", elevated: "அதிகரிப்பு",
+        normal: "இயல்பானது", borderline: "எல்லைக்கோடு", outOfRange: "வரம்புக்கு வெளியே" },
+  kn: { yourReading: "ನಿಮ್ಮ ಮೌಲ್ಯ", refRange: "ಸಾಮಾನ್ಯ ವ್ಯಾಪ್ತಿ", markedAs: "ಇದನ್ನು ಗುರುತಿಸಲಾಗಿದೆ",
+        youSelected: "ನೀವು ಆಯ್ಕೆ ಮಾಡಿದ್ದೀರಿ", to: "ರಿಂದ",
+        inRange: "ಸಾಮಾನ್ಯ ವ್ಯಾಪ್ತಿಯಲ್ಲಿ", borderlineLow: "ಗಡಿರೇಖೆ ಕಡಿಮೆ", borderlineHigh: "ಗಡಿರೇಖೆ ಹೆಚ್ಚು",
+        deficiency: "ಕೊರತೆ", elevated: "ಹೆಚ್ಚಳ",
+        normal: "ಸಾಮಾನ್ಯ", borderline: "ಗಡಿರೇಖೆ", outOfRange: "ವ್ಯಾಪ್ತಿಯಿಂದ ಹೊರಗೆ" },
+  te: { yourReading: "మీ విలువ", refRange: "సాధారణ పరిధి", markedAs: "ఇది గుర్తించబడింది",
+        youSelected: "మీరు ఎంచుకున్నారు", to: "నుండి",
+        inRange: "సాధారణ పరిధిలో", borderlineLow: "సరిహద్దు తక్కువ", borderlineHigh: "సరిహద్దు ఎక్కువ",
+        deficiency: "లోపం", elevated: "అధికం",
+        normal: "సాధారణ", borderline: "సరిహద్దు", outOfRange: "పరిధి దాటి" },
+  es: { yourReading: "Tu lectura es", refRange: "El rango de referencia es", markedAs: "Esto está marcado como",
+        youSelected: "Seleccionaste", to: "a",
+        inRange: "Dentro del rango", borderlineLow: "Límite bajo", borderlineHigh: "Límite alto",
+        deficiency: "Deficiencia", elevated: "Elevado",
+        normal: "Normal", borderline: "Límite", outOfRange: "Fuera de rango" },
+  fr: { yourReading: "Votre valeur est", refRange: "La plage de référence est", markedAs: "Ceci est marqué comme",
+        youSelected: "Vous avez choisi", to: "à",
+        inRange: "Dans la norme", borderlineLow: "Limite basse", borderlineHigh: "Limite haute",
+        deficiency: "Carence", elevated: "Élevé",
+        normal: "Normal", borderline: "Limite", outOfRange: "Hors norme" },
+  ar: { yourReading: "قراءتك هي", refRange: "النطاق المرجعي هو", markedAs: "تم تصنيف هذا كـ",
+        youSelected: "لقد اخترت", to: "إلى",
+        inRange: "ضمن النطاق", borderlineLow: "حدي منخفض", borderlineHigh: "حدي مرتفع",
+        deficiency: "نقص", elevated: "مرتفع",
+        normal: "طبيعي", borderline: "حدي", outOfRange: "خارج النطاق" },
+  zh: { yourReading: "您的数值是", refRange: "参考范围是", markedAs: "这被标记为",
+        youSelected: "您选择了", to: "至",
+        inRange: "正常范围内", borderlineLow: "临界偏低", borderlineHigh: "临界偏高",
+        deficiency: "偏低", elevated: "偏高",
+        normal: "正常", borderline: "临界", outOfRange: "超出范围" },
+};
+
+const PARAM_I18N = {
+  hi: {
+    "bp.sys": { label: "सिस्टोलिक", desc: "यह वह दबाव है जब आपका हृदय धड़कता है।" },
+    "bp.dia": { label: "डायस्टोलिक", desc: "यह वह दबाव है जब आपका हृदय धड़कनों के बीच आराम करता है।" },
+    "cbc.hb": { label: "हीमोग्लोबिन", desc: "यह लाल रक्त कोशिकाओं का प्रोटीन है जो ऑक्सीजन को फेफड़ों से शरीर में ले जाता है।" },
+    "cbc.wbc": { label: "श्वेत रक्त कोशिकाएं", desc: "ये संक्रमण से लड़ती हैं; यह गिनती आपकी प्रतिरक्षा प्रणाली की सक्रियता दर्शाती है।" },
+    "cbc.plt": { label: "प्लेटलेट्स", desc: "ये रक्त कोशिका के टुकड़े हैं जो खून का थक्का जमाने में मदद करते हैं।" },
+    "cbc.rbc": { label: "लाल रक्त कोशिकाएं", desc: "ये पूरे शरीर में ऑक्सीजन पहुंचाती हैं; यह गिनती बताती है कि कितनी कोशिकाएं मौजूद हैं।" },
+    "cbc.hct": { label: "हेमाटोक्रिट", desc: "यह आपके रक्त की मात्रा में लाल रक्त कोशिकाओं का प्रतिशत है।" },
+    "glu.fasting": { label: "उपवास शर्करा", desc: "कम से कम 8 घंटे बिना कुछ खाए मापा गया आपका रक्त शर्करा स्तर।" },
+    "glu.pp": { label: "भोजनोपरांत शर्करा", desc: "भोजन के लगभग 2 घंटे बाद मापा गया आपका रक्त शर्करा स्तर।" },
+    "glu.hba1c": { label: "एचबीए1सी", desc: "पिछले 2–3 महीनों का आपका औसत रक्त शर्करा स्तर।" },
+    "lipid.total": { label: "कुल कोलेस्ट्रॉल", desc: "आपके रक्त में मौजूद कुल कोलेस्ट्रॉल की मात्रा।" },
+    "lipid.ldl": { label: "एलडीएल कोलेस्ट्रॉल", desc: "इसे 'खराब' कोलेस्ट्रॉल कहा जाता है — यह धमनियों की दीवारों में जमा हो सकता है।" },
+    "lipid.hdl": { label: "एचडीएल कोलेस्ट्रॉल", desc: "इसे 'अच्छा' कोलेस्ट्रॉल कहा जाता है — यह अतिरिक्त कोलेस्ट्रॉल को साफ करने में मदद करता है।" },
+    "lipid.trig": { label: "ट्राइग्लिसराइड्स", desc: "रक्त में मौजूद एक प्रकार की चर्बी जिसका उपयोग ऊर्जा के लिए होता है।" },
+    "ua.ph": { label: "पीएच", desc: "आपका मूत्र कितना अम्लीय या क्षारीय है।" },
+    "ua.sg": { label: "विशिष्ट गुरुत्व", desc: "आपका मूत्र शुद्ध पानी की तुलना में कितना गाढ़ा है।" },
+    "ua.protein": { label: "प्रोटीन", desc: "मूत्र में प्रोटीन की उपस्थिति, जो गुर्दे पर दबाव का संकेत हो सकती है।" },
+    "ua.glucose": { label: "शर्करा", desc: "मूत्र में शर्करा की उपस्थिति, जो उच्च रक्त शर्करा का संकेत हो सकती है।" },
+    "ecg.hr": { label: "हृदय गति", desc: "प्रति मिनट आपके हृदय की धड़कनों की संख्या।" },
+    "ecg.rhythm": { label: "लय", desc: "आपके हृदय का विद्युत पैटर्न नियमित है या अनियमितता दिखाता है।" },
+    "eye.iop": { label: "अंतःनेत्र दबाव", desc: "आपकी आंख के अंदर तरल पदार्थ का दबाव।" },
+    "eye.acuity": { label: "दृश्य तीक्ष्णता", desc: "आप दूरी पर कितनी स्पष्टता से देख सकते हैं।" },
+    "xray.impression": { label: "रेडियोलॉजिस्ट की राय", desc: "स्कैन देखने के बाद रेडियोलॉजिस्ट का समग्र निष्कर्ष।" },
+    "xray.notes": { label: "निष्कर्ष (नोट्स)", desc: "वैकल्पिक — रिपोर्ट के विशिष्ट शब्द नोट करें।" },
+    "pft.spo2": { label: "ऑक्सीजन संतृप्ति", desc: "पल्स ऑक्सीमीटर से मापा गया आपके रक्त में ऑक्सीजन का प्रतिशत।" },
+    "pft.fev1fvc": { label: "एफईवी1/एफवीसी अनुपात", desc: "एक सेकंड में जितनी हवा आप बाहर निकाल सकते हैं, उसका अनुपात।" },
+    "pft.rr": { label: "श्वसन दर", desc: "प्रति मिनट आपकी सांसों की संख्या।" },
+    "stool.occult": { label: "गुप्त रक्त", desc: "मल के नमूने में छिपे हुए रक्त की जांच।" },
+    "stool.parasites": { label: "परजीवी / अंडे", desc: "आंत के परजीवियों या उनके अंडों की जांच।" },
+    "stool.consistency": { label: "स्थिरता", desc: "मल के नमूने की बनावट और रूप।" },
+    "mri.impression": { label: "रेडियोलॉजिस्ट की राय", desc: "स्कैन देखने के बाद रेडियोलॉजिस्ट का समग्र निष्कर्ष।" },
+    "mri.notes": { label: "निष्कर्ष (नोट्स)", desc: "वैकल्पिक — रिपोर्ट के विशिष्ट शब्द नोट करें।" },
+    "spine.cCanal": { label: "सर्वाइकल नहर व्यास", desc: "गर्दन के स्तर पर रीढ़ की नाल की चौड़ाई; यहां संकुचन रीढ़ की हड्डी पर दबाव डाल सकता है।" },
+    "spine.cDisc": { label: "सर्वाइकल डिस्क स्थान (गैप)", desc: "गर्दन की कशेरुकाओं के बीच कुशनिंग डिस्क की ऊंचाई; कम गैप डिस्क घिसाव का संकेत हो सकता है।" },
+    "spine.tCanal": { label: "थोरैसिक नहर व्यास", desc: "पीठ के मध्य स्तर पर रीढ़ की नाल की चौड़ाई, जो छाती क्षेत्र में रीढ़ की हड्डी की रक्षा करती है।" },
+    "spine.tDisc": { label: "थोरैसिक डिस्क स्थान (गैप)", desc: "पीठ के मध्य की कशेरुकाओं के बीच कुशनिंग डिस्क की ऊंचाई।" },
+    "spine.lCanal": { label: "लम्बोसैक्रल (LS) नहर व्यास", desc: "पीठ के निचले हिस्से में रीढ़ की नाल की चौड़ाई; यहां संकुचन पैर में दर्द या सुन्नता का सामान्य कारण है।" },
+    "spine.lDisc": { label: "लम्बोसैक्रल (LS) डिस्क स्थान (गैप)", desc: "पीठ के निचले हिस्से की कशेरुकाओं के बीच कुशनिंग डिस्क की ऊंचाई, जो सबसे अधिक भार सहन करती हैं।" },
+    "spine.impression": { label: "रेडियोलॉजिस्ट की राय", desc: "रीढ़ की छवियों की समीक्षा के बाद रेडियोलॉजिस्ट का समग्र निष्कर्ष।" },
+    "spine.notes": { label: "निष्कर्ष (नोट्स)", desc: "वैकल्पिक — रिपोर्ट के विशिष्ट शब्द नोट करें।" },
+  },
+  ta: {
+    "bp.sys": { label: "சிஸ்டாலிக்", desc: "உங்கள் இதயம் துடிக்கும் தருணத்தில் தமனிகளில் ஏற்படும் அழுத்தம்." },
+    "bp.dia": { label: "டயஸ்டாலிக்", desc: "இதயம் துடிப்புகளுக்கு இடையே ஓய்வெடுக்கும்போது தமனிகளில் ஏற்படும் அழுத்தம்." },
+    "cbc.hb": { label: "ஹீமோகுளோபின்", desc: "நுரையீரலில் இருந்து உடல் முழுவதும் ஆக்ஸிஜனைக் கொண்டு செல்லும் சிவப்பணுக்களின் புரதம்." },
+    "cbc.wbc": { label: "வெள்ளை இரத்த அணுக்கள்", desc: "இவை நோய்த்தொற்றுகளை எதிர்த்துப் போராடுகின்றன; இந்த எண்ணிக்கை உங்கள் நோயெதிர்ப்பு அமைப்பின் செயல்பாட்டைக் காட்டுகிறது." },
+    "cbc.plt": { label: "பிளேட்லெட்கள்", desc: "இரத்தம் உறைவதற்கும் இரத்தப்போக்கை நிறுத்துவதற்கும் உதவும் செல் துகள்கள்." },
+    "cbc.rbc": { label: "சிவப்பு இரத்த அணுக்கள்", desc: "உடல் முழுவதும் ஆக்ஸிஜனைக் கொண்டு செல்கின்றன; எத்தனை சுழல்கின்றன என்பதை இது எண்ணுகிறது." },
+    "cbc.hct": { label: "ஹீமாடோகிரிட்", desc: "உங்கள் இரத்த அளவில் சிவப்பணுக்களின் சதவீதம்." },
+    "glu.fasting": { label: "உண்ணாநோன்பு சர்க்கரை", desc: "குறைந்தது 8 மணி நேரம் எதுவும் சாப்பிடாமல் அளவிடப்பட்ட உங்கள் இரத்த சர்க்கரை அளவு." },
+    "glu.pp": { label: "உணவுக்குப் பிந்தைய சர்க்கரை", desc: "உணவுக்குப் பின் சுமார் 2 மணி நேரம் கழித்து அளவிடப்பட்ட உங்கள் இரத்த சர்க்கரை அளவு." },
+    "glu.hba1c": { label: "HbA1c", desc: "கடந்த 2–3 மாதங்களின் உங்கள் சராசரி இரத்த சர்க்கரை அளவு." },
+    "lipid.total": { label: "மொத்த கொலஸ்ட்ரால்", desc: "உங்கள் இரத்தத்தில் சுழலும் மொத்த கொலஸ்ட்ரால் அளவு." },
+    "lipid.ldl": { label: "LDL கொலஸ்ட்ரால்", desc: "'கெட்ட' கொலஸ்ட்ரால் எனப்படும் — இது தமனிச் சுவர்களில் காலப்போக்கில் படியலாம்." },
+    "lipid.hdl": { label: "HDL கொலஸ்ட்ரால்", desc: "'நல்ல' கொலஸ்ட்ரால் எனப்படும் — இது அதிகப்படியான கொலஸ்ட்ராலை அகற்ற உதவுகிறது." },
+    "lipid.trig": { label: "ட்ரைகிளிசரைடுகள்", desc: "ஆற்றலுக்குப் பயன்படும் இரத்தத்தில் உள்ள ஒரு வகை கொழுப்பு." },
+    "ua.ph": { label: "pH", desc: "உங்கள் சிறுநீர் எவ்வளவு காடித்தன்மை அல்லது காரத்தன்மை கொண்டது." },
+    "ua.sg": { label: "விசேட ஈர்ப்பு", desc: "தூய நீருடன் ஒப்பிடும்போது உங்கள் சிறுநீர் எவ்வளவு செறிவானது." },
+    "ua.protein": { label: "புரதம்", desc: "சிறுநீரில் புரதம் இருப்பது சிறுநீரக அழுத்தத்தைக் குறிக்கலாம்." },
+    "ua.glucose": { label: "சர்க்கரை", desc: "சிறுநீரில் சர்க்கரை இருப்பது அதிக இரத்த சர்க்கரையைக் குறிக்கலாம்." },
+    "ecg.hr": { label: "இதய துடிப்பு விகிதம்", desc: "நிமிடத்திற்கு உங்கள் இதயம் துடிக்கும் முறை." },
+    "ecg.rhythm": { label: "தாளம்", desc: "உங்கள் இதயத்தின் மின் தாள முறை சீரானதா அல்லது ஒழுங்கின்மையா எனக் காட்டுகிறது." },
+    "eye.iop": { label: "கண் உள் அழுத்தம்", desc: "உங்கள் கண்ணுக்குள் திரவத்தின் அழுத்தம்." },
+    "eye.acuity": { label: "பார்வைத் தெளிவு", desc: "இயல்பான பார்வையுடன் ஒப்பிடும்போது தூரத்தில் நீங்கள் எவ்வளவு தெளிவாகப் பார்க்கிறீர்கள்." },
+    "xray.impression": { label: "கதிரியக்க நிபுணரின் கருத்து", desc: "படத்தை பரிசோதித்த பின் கதிரியக்க நிபுணரின் ஒட்டுமொத்த முடிவு." },
+    "xray.notes": { label: "கண்டறிதல்கள் (குறிப்புகள்)", desc: "விருப்பத்தேர்வு — அறிக்கையிலிருந்து குறிப்பிட்ட வார்த்தைகளை குறித்துக் கொள்ளுங்கள்." },
+    "pft.spo2": { label: "ஆக்ஸிஜன் செறிவூட்டம்", desc: "பல்ஸ் ஆக்சிமீட்டர் மூலம் அளவிடப்பட்ட உங்கள் இரத்தத்தில் உள்ள ஆக்ஸிஜன் சதவீதம்." },
+    "pft.fev1fvc": { label: "FEV1/FVC விகிதம்", desc: "ஒரு வினாடியில் நீங்கள் பலமாக வெளியேற்றக்கூடிய காற்றின் விகிதம்; காற்றுப்பாதை அடைப்பைக் கண்டறிய பயன்படுகிறது." },
+    "pft.rr": { label: "சுவாச விகிதம்", desc: "நிமிடத்திற்கு நீங்கள் எடுக்கும் சுவாசங்களின் எண்ணிக்கை." },
+    "stool.occult": { label: "மறைந்த இரத்தம்", desc: "மலக் கழிவில் மறைந்திருக்கும் இரத்தத்தை சோதிக்கிறது." },
+    "stool.parasites": { label: "ஒட்டுண்ணிகள் / முட்டைகள்", desc: "குடல் ஒட்டுண்ணிகள் அல்லது அவற்றின் முட்டைகளை சோதிக்கிறது." },
+    "stool.consistency": { label: "அமைப்பு", desc: "மலக் கழிவின் அமைப்பு மற்றும் வடிவம்." },
+    "mri.impression": { label: "கதிரியக்க நிபுணரின் கருத்து", desc: "ஸ்கேனை பரிசோதித்த பின் கதிரியக்க நிபுணரின் ஒட்டுமொத்த முடிவு." },
+    "mri.notes": { label: "கண்டறிதல்கள் (குறிப்புகள்)", desc: "விருப்பத்தேர்வு — அறிக்கையிலிருந்து குறிப்பிட்ட வார்த்தைகளை குறித்துக் கொள்ளுங்கள்." },
+    "spine.cCanal": { label: "கழுத்து முள்ளந்தண்டு குழாய் விட்டம்", desc: "கழுத்து மட்டத்தில் முள்ளந்தண்டு குழாயின் அகலம்; இங்கு குறுகுவது முள்ளந்தண்டுத் தண்டை அழுத்தலாம்." },
+    "spine.cDisc": { label: "கழுத்து வட்டு இடைவெளி (இடைவெளி)", desc: "கழுத்து முதுகெலும்புகளுக்கு இடையேயான திண்டு வட்டின் உயரம்; குறைந்த இடைவெளி வட்டு தேய்மானத்தைக் காட்டலாம்." },
+    "spine.tCanal": { label: "மார்பு முள்ளந்தண்டு குழாய் விட்டம்", desc: "முதுகின் நடு மட்டத்தில் முள்ளந்தண்டு குழாயின் அகலம், மார்பு பகுதியில் முள்ளந்தண்டுத் தண்டை பாதுகாக்கிறது." },
+    "spine.tDisc": { label: "மார்பு வட்டு இடைவெளி (இடைவெளி)", desc: "முதுகின் நடு முதுகெலும்புகளுக்கு இடையேயான திண்டு வட்டின் உயரம்." },
+    "spine.lCanal": { label: "இடுப்பு-குத்திறை (LS) குழாய் விட்டம்", desc: "கீழ் முதுகில் முள்ளந்தண்டு குழாயின் அகலம்; இங்கு குறுகுவது கால் வலி அல்லது உணர்வின்மைக்கு பொதுவான காரணம்." },
+    "spine.lDisc": { label: "இடுப்பு-குத்திறை (LS) வட்டு இடைவெளி (இடைவெளி)", desc: "கீழ் முதுகு முதுகெலும்புகளுக்கு இடையேயான திண்டு வட்டின் உயரம், அவை அதிக சுமையைத் தாங்குகின்றன." },
+    "spine.impression": { label: "கதிரியக்க நிபுணரின் கருத்து", desc: "முள்ளந்தண்டு படங்களை பரிசோதித்த பின் கதிரியக்க நிபுணரின் ஒட்டுமொத்த முடிவு." },
+    "spine.notes": { label: "கண்டறிதல்கள் (குறிப்புகள்)", desc: "விருப்பத்தேர்வு — அறிக்கையிலிருந்து குறிப்பிட்ட வார்த்தைகளை குறித்துக் கொள்ளுங்கள்." },
+  },
+  kn: {
+    "bp.sys": { label: "ಸಿಸ್ಟೊಲಿಕ್", desc: "ನಿಮ್ಮ ಹೃದಯ ಬಡಿದುಕೊಳ್ಳುವ ಕ್ಷಣದಲ್ಲಿ ಅಪಧಮನಿಗಳಲ್ಲಿನ ಒತ್ತಡ." },
+    "bp.dia": { label: "ಡಯಾಸ್ಟೊಲಿಕ್", desc: "ಹೃದಯವು ಬಡಿತಗಳ ನಡುವೆ ವಿಶ್ರಾಂತಿ ಪಡೆಯುವಾಗ ಅಪಧಮನಿಗಳಲ್ಲಿನ ಒತ್ತಡ." },
+    "cbc.hb": { label: "ಹಿಮೋಗ್ಲೋಬಿನ್", desc: "ಶ್ವಾಸಕೋಶಗಳಿಂದ ದೇಹದ ಉಳಿದ ಭಾಗಗಳಿಗೆ ಆಮ್ಲಜನಕವನ್ನು ಸಾಗಿಸುವ ಕೆಂಪು ರಕ್ತಕಣಗಳ ಪ್ರೋಟೀನ್." },
+    "cbc.wbc": { label: "ಬಿಳಿ ರಕ್ತ ಕಣಗಳು", desc: "ಇವು ಸೋಂಕುಗಳ ವಿರುದ್ಧ ಹೋರಾಡುತ್ತವೆ; ಈ ಎಣಿಕೆ ನಿಮ್ಮ ರೋಗನಿರೋಧಕ ವ್ಯವಸ್ಥೆ ಎಷ್ಟು ಸಕ್ರಿಯವಾಗಿದೆ ಎಂಬುದನ್ನು ತೋರಿಸುತ್ತದೆ." },
+    "cbc.plt": { label: "ಪ್ಲೇಟ್‌ಲೆಟ್‌ಗಳು", desc: "ರಕ್ತ ಹೆಪ್ಪುಗಟ್ಟಲು ಮತ್ತು ರಕ್ತಸ್ರಾವ ನಿಲ್ಲಿಸಲು ಸಹಾಯ ಮಾಡುವ ಜೀವಕೋಶದ ತುಣುಕುಗಳು." },
+    "cbc.rbc": { label: "ಕೆಂಪು ರಕ್ತ ಕಣಗಳು", desc: "ದೇಹದಾದ್ಯಂತ ಆಮ್ಲಜನಕವನ್ನು ಸಾಗಿಸುತ್ತವೆ; ಎಷ್ಟು ಪ್ರಸರಿಸುತ್ತಿವೆ ಎಂಬುದನ್ನು ಇದು ಎಣಿಸುತ್ತದೆ." },
+    "cbc.hct": { label: "ಹೆಮಟೋಕ್ರಿಟ್", desc: "ನಿಮ್ಮ ರಕ್ತದ ಪ್ರಮಾಣದಲ್ಲಿ ಕೆಂಪು ರಕ್ತ ಕಣಗಳ ಶೇಕಡಾವಾರು." },
+    "glu.fasting": { label: "ಉಪವಾಸ ಸಕ್ಕರೆ", desc: "ಕನಿಷ್ಠ 8 ಗಂಟೆಗಳ ಕಾಲ ಏನೂ ತಿನ್ನದೆ ಅಳೆಯಲಾದ ನಿಮ್ಮ ರಕ್ತದ ಸಕ್ಕರೆ ಮಟ್ಟ." },
+    "glu.pp": { label: "ಊಟದ ನಂತರದ ಸಕ್ಕರೆ", desc: "ಊಟದ ಸುಮಾರು 2 ಗಂಟೆಗಳ ನಂತರ ಅಳೆಯಲಾದ ನಿಮ್ಮ ರಕ್ತದ ಸಕ್ಕರೆ ಮಟ್ಟ." },
+    "glu.hba1c": { label: "HbA1c", desc: "ಕಳೆದ 2–3 ತಿಂಗಳುಗಳ ನಿಮ್ಮ ಸರಾಸರಿ ರಕ್ತದ ಸಕ್ಕರೆ ಮಟ್ಟ." },
+    "lipid.total": { label: "ಒಟ್ಟು ಕೊಲೆಸ್ಟ್ರಾಲ್", desc: "ನಿಮ್ಮ ರಕ್ತದಲ್ಲಿ ಪರಿಚಲಿಸುವ ಒಟ್ಟು ಕೊಲೆಸ್ಟ್ರಾಲ್ ಪ್ರಮಾಣ." },
+    "lipid.ldl": { label: "LDL ಕೊಲೆಸ್ಟ್ರಾಲ್", desc: "'ಕೆಟ್ಟ' ಕೊಲೆಸ್ಟ್ರಾಲ್ ಎಂದು ಕರೆಯಲಾಗುತ್ತದೆ — ಇದು ಕಾಲಾನಂತರದಲ್ಲಿ ಅಪಧಮನಿ ಗೋಡೆಗಳಲ್ಲಿ ಸಂಗ್ರಹಗೊಳ್ಳಬಹುದು." },
+    "lipid.hdl": { label: "HDL ಕೊಲೆಸ್ಟ್ರಾಲ್", desc: "'ಒಳ್ಳೆಯ' ಕೊಲೆಸ್ಟ್ರಾಲ್ ಎಂದು ಕರೆಯಲಾಗುತ್ತದೆ — ಇದು ಹೆಚ್ಚುವರಿ ಕೊಲೆಸ್ಟ್ರಾಲ್ ಅನ್ನು ತೆರವುಗೊಳಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ." },
+    "lipid.trig": { label: "ಟ್ರೈಗ್ಲಿಸರೈಡ್‌ಗಳು", desc: "ಶಕ್ತಿಗಾಗಿ ಬಳಸಲಾಗುವ ರಕ್ತದಲ್ಲಿನ ಒಂದು ರೀತಿಯ ಕೊಬ್ಬು." },
+    "ua.ph": { label: "pH", desc: "ನಿಮ್ಮ ಮೂತ್ರ ಎಷ್ಟು ಆಮ್ಲೀಯ ಅಥವಾ ಕ್ಷಾರೀಯವಾಗಿದೆ." },
+    "ua.sg": { label: "ನಿರ್ದಿಷ್ಟ ಗುರುತ್ವ", desc: "ಶುದ್ಧ ನೀರಿಗೆ ಹೋಲಿಸಿದರೆ ನಿಮ್ಮ ಮೂತ್ರ ಎಷ್ಟು ಸಾಂದ್ರವಾಗಿದೆ." },
+    "ua.protein": { label: "ಪ್ರೋಟೀನ್", desc: "ಮೂತ್ರದಲ್ಲಿ ಪ್ರೋಟೀನ್ ಇರುವಿಕೆ, ಇದು ಮೂತ್ರಪಿಂಡದ ಒತ್ತಡವನ್ನು ಸೂಚಿಸಬಹುದು." },
+    "ua.glucose": { label: "ಸಕ್ಕರೆ", desc: "ಮೂತ್ರದಲ್ಲಿ ಸಕ್ಕರೆ ಇರುವಿಕೆ, ಇದು ಹೆಚ್ಚಿನ ರಕ್ತದ ಸಕ್ಕರೆಯನ್ನು ಸೂಚಿಸಬಹುದು." },
+    "ecg.hr": { label: "ಹೃದಯ ಬಡಿತ", desc: "ನಿಮಿಷಕ್ಕೆ ನಿಮ್ಮ ಹೃದಯ ಬಡಿಯುವ ಸಂಖ್ಯೆ." },
+    "ecg.rhythm": { label: "ಲಯ", desc: "ನಿಮ್ಮ ಹೃದಯದ ವಿದ್ಯುತ್ ಮಾದರಿ ನಿಯಮಿತವಾಗಿದೆಯೇ ಅಥವಾ ಅಕ್ರಮಗಳನ್ನು ತೋರಿಸುತ್ತದೆಯೇ." },
+    "eye.iop": { label: "ಕಣ್ಣಿನ ಒಳ ಒತ್ತಡ", desc: "ನಿಮ್ಮ ಕಣ್ಣಿನೊಳಗಿನ ದ್ರವದ ಒತ್ತಡ." },
+    "eye.acuity": { label: "ದೃಷ್ಟಿ ತೀಕ್ಷ್ಣತೆ", desc: "ಸಾಮಾನ್ಯ ದೃಷ್ಟಿಗೆ ಹೋಲಿಸಿದರೆ ದೂರದಲ್ಲಿ ನೀವು ಎಷ್ಟು ಸ್ಪಷ್ಟವಾಗಿ ನೋಡುತ್ತೀರಿ." },
+    "xray.impression": { label: "ರೇಡಿಯಾಲಜಿಸ್ಟ್ ಅಭಿಪ್ರಾಯ", desc: "ಚಿತ್ರವನ್ನು ಪರಿಶೀಲಿಸಿದ ನಂತರ ರೇಡಿಯಾಲಜಿಸ್ಟ್‌ನ ಒಟ್ಟಾರೆ ತೀರ್ಮಾನ." },
+    "xray.notes": { label: "ಸಂಶೋಧನೆಗಳು (ಟಿಪ್ಪಣಿಗಳು)", desc: "ಐಚ್ಛಿಕ — ವರದಿಯಿಂದ ನಿರ್ದಿಷ್ಟ ಪದಗಳನ್ನು ಬರೆದಿಡಿ." },
+    "pft.spo2": { label: "ಆಮ್ಲಜನಕ ಶುದ್ಧತ್ವ", desc: "ಪಲ್ಸ್ ಆಕ್ಸಿಮೀಟರ್ ಮೂಲಕ ಅಳೆಯಲಾದ ನಿಮ್ಮ ರಕ್ತದಲ್ಲಿನ ಆಮ್ಲಜನಕದ ಶೇಕಡಾವಾರು." },
+    "pft.fev1fvc": { label: "FEV1/FVC ಅನುಪಾತ", desc: "ಒಂದು ಸೆಕೆಂಡಿನಲ್ಲಿ ನೀವು ಬಲವಾಗಿ ಹೊರಹಾಕಬಹುದಾದ ಗಾಳಿಯ ಪ್ರಮಾಣ; ಶ್ವಾಸನಾಳ ಅಡಚಣೆಯನ್ನು ಪತ್ತೆಹಚ್ಚಲು ಬಳಸಲಾಗುತ್ತದೆ." },
+    "pft.rr": { label: "ಉಸಿರಾಟದ ದರ", desc: "ನಿಮಿಷಕ್ಕೆ ನೀವು ತೆಗೆದುಕೊಳ್ಳುವ ಉಸಿರಾಟಗಳ ಸಂಖ್ಯೆ." },
+    "stool.occult": { label: "ಗುಪ್ತ ರಕ್ತ", desc: "ಮಲ ಮಾದರಿಯಲ್ಲಿ ಅಗೋಚರ ರಕ್ತವನ್ನು ಪರಿಶೀಲಿಸುತ್ತದೆ." },
+    "stool.parasites": { label: "ಪರಾವಲಂಬಿಗಳು / ಮೊಟ್ಟೆಗಳು", desc: "ಕರುಳಿನ ಪರಾವಲಂಬಿಗಳು ಅಥವಾ ಅವುಗಳ ಮೊಟ್ಟೆಗಳನ್ನು ಪರಿಶೀಲಿಸುತ್ತದೆ." },
+    "stool.consistency": { label: "ಸ್ಥಿರತೆ", desc: "ಮಲ ಮಾದರಿಯ ವಿನ್ಯಾಸ ಮತ್ತು ರೂಪ." },
+    "mri.impression": { label: "ರೇಡಿಯಾಲಜಿಸ್ಟ್ ಅಭಿಪ್ರಾಯ", desc: "ಸ್ಕ್ಯಾನ್ ಅನ್ನು ಪರಿಶೀಲಿಸಿದ ನಂತರ ರೇಡಿಯಾಲಜಿಸ್ಟ್‌ನ ಒಟ್ಟಾರೆ ತೀರ್ಮಾನ." },
+    "mri.notes": { label: "ಸಂಶೋಧನೆಗಳು (ಟಿಪ್ಪಣಿಗಳು)", desc: "ಐಚ್ಛಿಕ — ವರದಿಯಿಂದ ನಿರ್ದಿಷ್ಟ ಪದಗಳನ್ನು ಬರೆದಿಡಿ." },
+    "spine.cCanal": { label: "ಗರ್ಭಕಂಠ ಕಾಲುವೆ ವ್ಯಾಸ", desc: "ಕುತ್ತಿಗೆ ಮಟ್ಟದಲ್ಲಿ ಬೆನ್ನುಹುರಿ ಕಾಲುವೆಯ ಅಗಲ; ಇಲ್ಲಿ ಕಿರಿದಾಗುವಿಕೆ ಬೆನ್ನುಹುರಿಯನ್ನು ಒತ್ತಬಹುದು." },
+    "spine.cDisc": { label: "ಗರ್ಭಕಂಠ ಡಿಸ್ಕ್ ಅಂತರ (ಗ್ಯಾಪ್)", desc: "ಕುತ್ತಿಗೆ ಕಶೇರುಖಂಡಗಳ ನಡುವಿನ ಕುಶನ್ ಡಿಸ್ಕ್‌ನ ಎತ್ತರ; ಕಡಿಮೆ ಅಂತರವು ಡಿಸ್ಕ್ ಸವೆತವನ್ನು ಸೂಚಿಸಬಹುದು." },
+    "spine.tCanal": { label: "ಎದೆಗೂಡಿನ ಕಾಲುವೆ ವ್ಯಾಸ", desc: "ಬೆನ್ನಿನ ಮಧ್ಯ ಮಟ್ಟದಲ್ಲಿ ಬೆನ್ನುಹುರಿ ಕಾಲುವೆಯ ಅಗಲ, ಎದೆಯ ಪ್ರದೇಶದ ಮೂಲಕ ಬೆನ್ನುಹುರಿಯನ್ನು ರಕ್ಷಿಸುತ್ತದೆ." },
+    "spine.tDisc": { label: "ಎದೆಗೂಡಿನ ಡಿಸ್ಕ್ ಅಂತರ (ಗ್ಯಾಪ್)", desc: "ಬೆನ್ನಿನ ಮಧ್ಯ ಕಶೇರುಖಂಡಗಳ ನಡುವಿನ ಕುಶನ್ ಡಿಸ್ಕ್‌ನ ಎತ್ತರ." },
+    "spine.lCanal": { label: "ಲಂಬೋಸ್ಯಾಕ್ರಲ್ (LS) ಕಾಲುವೆ ವ್ಯಾಸ", desc: "ಕೆಳ ಬೆನ್ನಿನಲ್ಲಿ ಬೆನ್ನುಹುರಿ ಕಾಲುವೆಯ ಅಗಲ; ಇಲ್ಲಿ ಕಿರಿದಾಗುವಿಕೆ ಕಾಲು ನೋವು ಅಥವಾ ಮರಗಟ್ಟುವಿಕೆಗೆ ಸಾಮಾನ್ಯ ಕಾರಣ." },
+    "spine.lDisc": { label: "ಲಂಬೋಸ್ಯಾಕ್ರಲ್ (LS) ಡಿಸ್ಕ್ ಅಂತರ (ಗ್ಯಾಪ್)", desc: "ಕೆಳ ಬೆನ್ನಿನ ಕಶೇರುಖಂಡಗಳ ನಡುವಿನ ಕುಶನ್ ಡಿಸ್ಕ್‌ನ ಎತ್ತರ, ಇವು ಹೆಚ್ಚಿನ ಭಾರವನ್ನು ಹೊರುತ್ತವೆ." },
+    "spine.impression": { label: "ರೇಡಿಯಾಲಜಿಸ್ಟ್ ಅಭಿಪ್ರಾಯ", desc: "ಬೆನ್ನುಮೂಳೆಯ ಚಿತ್ರಗಳನ್ನು ಪರಿಶೀಲಿಸಿದ ನಂತರ ರೇಡಿಯಾಲಜಿಸ್ಟ್‌ನ ಒಟ್ಟಾರೆ ತೀರ್ಮಾನ." },
+    "spine.notes": { label: "ಸಂಶೋಧನೆಗಳು (ಟಿಪ್ಪಣಿಗಳು)", desc: "ಐಚ್ಛಿಕ — ವರದಿಯಿಂದ ನಿರ್ದಿಷ್ಟ ಪದಗಳನ್ನು ಬರೆದಿಡಿ." },
+  },
+  te: {
+    "bp.sys": { label: "సిస్టోలిక్", desc: "మీ హృదయం కొట్టుకునే క్షణంలో ధమనులలో ఉండే పీడనం." },
+    "bp.dia": { label: "డయాస్టోలిక్", desc: "హృదయం కొట్టుకోవడాల మధ్య విశ్రాంతి తీసుకునేటప్పుడు ధమనులలో ఉండే పీడనం." },
+    "cbc.hb": { label: "హిమోగ్లోబిన్", desc: "ఊపిరితిత్తుల నుండి శరీరమంతా ఆక్సిజన్‌ను తీసుకెళ్లే ఎర్రరక్తకణాల ప్రోటీన్." },
+    "cbc.wbc": { label: "తెల్ల రక్త కణాలు", desc: "ఇవి ఇన్ఫెక్షన్లతో పోరాడతాయి; ఈ లెక్క మీ రోగనిరోధక వ్యవస్థ ఎంత చురుకుగా ఉందో చూపిస్తుంది." },
+    "cbc.plt": { label: "ప్లేట్‌లెట్లు", desc: "రక్తం గడ్డకట్టడానికి, రక్తస్రావం ఆగడానికి సహాయపడే కణ ముక్కలు." },
+    "cbc.rbc": { label: "ఎర్ర రక్త కణాలు", desc: "శరీరమంతా ఆక్సిజన్‌ను తీసుకెళ్తాయి; ఎన్ని ప్రసరిస్తున్నాయో ఇది లెక్కిస్తుంది." },
+    "cbc.hct": { label: "హిమాటోక్రిట్", desc: "మీ రక్త పరిమాణంలో ఎర్ర రక్త కణాల శాతం." },
+    "glu.fasting": { label: "ఉపవాస చక్కెర", desc: "కనీసం 8 గంటలు ఏమీ తినకుండా కొలిచిన మీ రక్త చక్కెర స్థాయి." },
+    "glu.pp": { label: "భోజనానంతర చక్కెర", desc: "భోజనం చేసిన సుమారు 2 గంటల తర్వాత కొలిచిన మీ రక్త చక్కెర స్థాయి." },
+    "glu.hba1c": { label: "HbA1c", desc: "గత 2–3 నెలల మీ సగటు రక్త చక్కెర స్థాయి." },
+    "lipid.total": { label: "మొత్తం కొలెస్ట్రాల్", desc: "మీ రక్తంలో ప్రసరించే మొత్తం కొలెస్ట్రాల్ మొత్తం." },
+    "lipid.ldl": { label: "LDL కొలెస్ట్రాల్", desc: "'చెడు' కొలెస్ట్రాల్ అని పిలుస్తారు — ఇది కాలక్రమేణా ధమని గోడలలో పేరుకుపోవచ్చు." },
+    "lipid.hdl": { label: "HDL కొలెస్ట్రాల్", desc: "'మంచి' కొలెస్ట్రాల్ అని పిలుస్తారు — ఇది అదనపు కొలెస్ట్రాల్‌ను తొలగించడానికి సహాయపడుతుంది." },
+    "lipid.trig": { label: "ట్రైగ్లిజరైడ్‌లు", desc: "శక్తి కోసం ఉపయోగించే రక్తంలోని ఒక రకమైన కొవ్వు." },
+    "ua.ph": { label: "pH", desc: "మీ మూత్రం ఎంత ఆమ్లత్వం లేదా క్షారత్వం కలిగి ఉందో." },
+    "ua.sg": { label: "నిర్దిష్ట గురుత్వం", desc: "స్వచ్ఛమైన నీటితో పోలిస్తే మీ మూత్రం ఎంత గాఢంగా ఉందో." },
+    "ua.protein": { label: "ప్రోటీన్", desc: "మూత్రంలో ప్రోటీన్ ఉండటం, ఇది మూత్రపిండాలపై ఒత్తిడిని సూచించవచ్చు." },
+    "ua.glucose": { label: "చక్కెర", desc: "మూత్రంలో చక్కెర ఉండటం, ఇది అధిక రక్త చక్కెరను సూచించవచ్చు." },
+    "ecg.hr": { label: "హృదయ స్పందన రేటు", desc: "నిమిషానికి మీ హృదయం కొట్టుకునే సంఖ్య." },
+    "ecg.rhythm": { label: "లయ", desc: "మీ హృదయ విద్యుత్ నమూనా క్రమబద్ధంగా ఉందా లేదా అవకతవకలు చూపిస్తుందా." },
+    "eye.iop": { label: "కంటి లోపలి పీడనం", desc: "మీ కంటి లోపల ద్రవం యొక్క పీడనం." },
+    "eye.acuity": { label: "దృష్టి తీక్షణత", desc: "సాధారణ దృష్టితో పోలిస్తే దూరంలో మీరు ఎంత స్పష్టంగా చూడగలరు." },
+    "xray.impression": { label: "రేడియాలజిస్ట్ అభిప్రాయం", desc: "చిత్రాన్ని పరిశీలించిన తర్వాత రేడియాలజిస్ట్ యొక్క మొత్తం నిర్ధారణ." },
+    "xray.notes": { label: "ఫలితాలు (గమనికలు)", desc: "ఐచ్ఛికం — నివేదిక నుండి నిర్దిష్ట పదాలను గమనించండి." },
+    "pft.spo2": { label: "ఆక్సిజన్ సంతృప్తత", desc: "పల్స్ ఆక్సిమీటర్‌తో కొలిచిన మీ రక్తంలోని ఆక్సిజన్ శాతం." },
+    "pft.fev1fvc": { label: "FEV1/FVC నిష్పత్తి", desc: "ఒక సెకనులో మీరు బలంగా వదలగలిగే గాలి నిష్పత్తి; శ్వాసనాళ అవరోధాన్ని గుర్తించడానికి ఉపయోగిస్తారు." },
+    "pft.rr": { label: "శ్వాస రేటు", desc: "నిమిషానికి మీరు తీసుకునే శ్వాసల సంఖ్య." },
+    "stool.occult": { label: "గుప్త రక్తం", desc: "మల నమూనాలో కనిపించని రక్తాన్ని పరీక్షిస్తుంది." },
+    "stool.parasites": { label: "పరాన్నజీవులు / గుడ్లు", desc: "పేగు పరాన్నజీవులు లేదా వాటి గుడ్లను పరీక్షిస్తుంది." },
+    "stool.consistency": { label: "స్థిరత్వం", desc: "మల నమూనా యొక్క ఆకృతి మరియు రూపం." },
+    "mri.impression": { label: "రేడియాలజిస్ట్ అభిప్రాయం", desc: "స్కాన్‌ను పరిశీలించిన తర్వాత రేడియాలజిస్ట్ యొక్క మొత్తం నిర్ధారణ." },
+    "mri.notes": { label: "ఫలితాలు (గమనికలు)", desc: "ఐచ్ఛికం — నివేదిక నుండి నిర్దిష్ట పదాలను గమనించండి." },
+    "spine.cCanal": { label: "సర్వైకల్ కాలువ వ్యాసం", desc: "మెడ స్థాయిలో వెన్నుపాము కాలువ వెడల్పు; ఇక్కడ సంకుచితం వెన్నుపాముపై ఒత్తిడి కలిగించవచ్చు." },
+    "spine.cDisc": { label: "సర్వైకల్ డిస్క్ అంతరం (గ్యాప్)", desc: "మెడ వెన్నుపూసల మధ్య కుషనింగ్ డిస్క్ ఎత్తు; తక్కువ అంతరం డిస్క్ అరుగుదలను సూచించవచ్చు." },
+    "spine.tCanal": { label: "థొరాసిక్ కాలువ వ్యాసం", desc: "వీపు మధ్య స్థాయిలో వెన్నుపాము కాలువ వెడల్పు, ఛాతీ ప్రాంతంలో వెన్నుపామును రక్షిస్తుంది." },
+    "spine.tDisc": { label: "థొరాసిక్ డిస్క్ అంతరం (గ్యాప్)", desc: "వీపు మధ్య వెన్నుపూసల మధ్య కుషనింగ్ డిస్క్ ఎత్తు." },
+    "spine.lCanal": { label: "లంబోసాక్రల్ (LS) కాలువ వ్యాసం", desc: "కింది వీపులో వెన్నుపాము కాలువ వెడల్పు; ఇక్కడ సంకుచితం కాలు నొప్పి లేదా తిమ్మిరికి సాధారణ కారణం." },
+    "spine.lDisc": { label: "లంబోసాక్రల్ (LS) డిస్క్ అంతరం (గ్యాప్)", desc: "కింది వీపు వెన్నుపూసల మధ్య కుషనింగ్ డిస్క్ ఎత్తు, ఇవి అత్యధిక భారాన్ని మోస్తాయి." },
+    "spine.impression": { label: "రేడియాలజిస్ట్ అభిప్రాయం", desc: "వెన్నెముక చిత్రాలను పరిశీలించిన తర్వాత రేడియాలజిస్ట్ యొక్క మొత్తం నిర్ధారణ." },
+    "spine.notes": { label: "ఫలితాలు (గమనికలు)", desc: "ఐచ్ఛికం — నివేదిక నుండి నిర్దిష్ట పదాలను గమనించండి." },
+  },
+  es: {
+    "bp.sys": { label: "Sistólica", desc: "La presión en tus arterias en el momento en que tu corazón late." },
+    "bp.dia": { label: "Diastólica", desc: "La presión en tus arterias mientras tu corazón descansa entre latidos." },
+    "cbc.hb": { label: "Hemoglobina", desc: "La proteína en los glóbulos rojos que transporta oxígeno desde los pulmones al resto del cuerpo." },
+    "cbc.wbc": { label: "Glóbulos blancos", desc: "Combaten infecciones; el conteo refleja qué tan activo está tu sistema inmunológico." },
+    "cbc.plt": { label: "Plaquetas", desc: "Fragmentos celulares que ayudan a que la sangre coagule." },
+    "cbc.rbc": { label: "Glóbulos rojos", desc: "Transportan oxígeno por todo el cuerpo; esto cuenta cuántos están circulando." },
+    "cbc.hct": { label: "Hematocrito", desc: "El porcentaje del volumen de tu sangre compuesto por glóbulos rojos." },
+    "glu.fasting": { label: "Glucosa en ayunas", desc: "Tu nivel de azúcar en sangre medido tras al menos 8 horas sin comer." },
+    "glu.pp": { label: "Glucosa posprandial", desc: "Tu nivel de azúcar en sangre medido unas 2 horas después de comer." },
+    "glu.hba1c": { label: "HbA1c", desc: "Tu promedio de azúcar en sangre de los últimos 2 a 3 meses." },
+    "lipid.total": { label: "Colesterol total", desc: "La cantidad total de colesterol circulando en tu sangre." },
+    "lipid.ldl": { label: "Colesterol LDL", desc: "Llamado colesterol 'malo' — puede acumularse en las paredes arteriales." },
+    "lipid.hdl": { label: "Colesterol HDL", desc: "Llamado colesterol 'bueno' — ayuda a eliminar el exceso de colesterol." },
+    "lipid.trig": { label: "Triglicéridos", desc: "Un tipo de grasa en la sangre usada como energía." },
+    "ua.ph": { label: "pH", desc: "Qué tan ácida o alcalina es tu orina." },
+    "ua.sg": { label: "Densidad específica", desc: "Qué tan concentrada está tu orina comparada con agua pura." },
+    "ua.protein": { label: "Proteína", desc: "Presencia de proteína en la orina, que puede indicar estrés renal." },
+    "ua.glucose": { label: "Glucosa", desc: "Presencia de azúcar en la orina, que puede indicar glucosa alta." },
+    "ecg.hr": { label: "Frecuencia cardíaca", desc: "El número de veces que tu corazón late por minuto." },
+    "ecg.rhythm": { label: "Ritmo", desc: "Si el patrón eléctrico de tu corazón es regular o muestra irregularidades." },
+    "eye.iop": { label: "Presión intraocular", desc: "La presión del líquido dentro de tu ojo." },
+    "eye.acuity": { label: "Agudeza visual", desc: "Qué tan claro ves a distancia, comparado con la visión normal." },
+    "xray.impression": { label: "Impresión del radiólogo", desc: "La conclusión general del radiólogo tras revisar la imagen." },
+    "xray.notes": { label: "Hallazgos (notas)", desc: "Opcional — anota cualquier texto específico del informe." },
+    "pft.spo2": { label: "Saturación de oxígeno", desc: "El porcentaje de oxígeno que transporta tu sangre, medido con un oxímetro." },
+    "pft.fev1fvc": { label: "Relación FEV1/FVC", desc: "La proporción de aire que puedes exhalar con fuerza en un segundo." },
+    "pft.rr": { label: "Frecuencia respiratoria", desc: "El número de respiraciones que haces por minuto." },
+    "stool.occult": { label: "Sangre oculta", desc: "Detecta sangre no visible en la muestra de heces." },
+    "stool.parasites": { label: "Parásitos / huevos", desc: "Detecta parásitos intestinales o sus huevos." },
+    "stool.consistency": { label: "Consistencia", desc: "La textura y forma de la muestra de heces." },
+    "mri.impression": { label: "Impresión del radiólogo", desc: "La conclusión general del radiólogo tras revisar el escaneo." },
+    "mri.notes": { label: "Hallazgos (notas)", desc: "Opcional — anota cualquier texto específico del informe." },
+    "spine.cCanal": { label: "Diámetro del canal cervical", desc: "El ancho del canal espinal a nivel del cuello; el estrechamiento aquí puede comprimir la médula espinal." },
+    "spine.cDisc": { label: "Espacio discal cervical (separación)", desc: "La altura del disco amortiguador entre las vértebras del cuello; un espacio reducido puede indicar desgaste discal." },
+    "spine.tCanal": { label: "Diámetro del canal torácico", desc: "El ancho del canal espinal a nivel medio de la espalda, que protege la médula espinal en la región torácica." },
+    "spine.tDisc": { label: "Espacio discal torácico (separación)", desc: "La altura del disco amortiguador entre las vértebras medias de la espalda." },
+    "spine.lCanal": { label: "Diámetro del canal lumbosacro (LS)", desc: "El ancho del canal espinal en la parte baja de la espalda; el estrechamiento aquí es una causa común de dolor o entumecimiento en las piernas." },
+    "spine.lDisc": { label: "Espacio discal lumbosacro (LS) (separación)", desc: "La altura del disco amortiguador entre las vértebras de la parte baja de la espalda, que soportan la mayor carga." },
+    "spine.impression": { label: "Impresión del radiólogo", desc: "La conclusión general del radiólogo tras revisar las imágenes de la columna." },
+    "spine.notes": { label: "Hallazgos (notas)", desc: "Opcional — anota cualquier texto específico del informe." },
+  },
+};
+
+const STATUS_TEXT_EN = {
+  inRange: "In range", borderlineLow: "Borderline low", borderlineHigh: "Borderline high",
+  deficiency: "Deficiency", elevated: "Elevated",
+  normal: "Normal", borderline: "Borderline", outOfRange: "Out of range",
+};
+
+function statusLabelKey(status) {
+  if (!status) return null;
+  if (status.kind === "select") {
+    if (status.level === "green") return "normal";
+    if (status.level === "yellow") return "borderline";
+    return "outOfRange";
+  }
+  if (status.level === "green") return "inRange";
+  if (status.level === "yellow") return status.direction === "high" ? "borderlineHigh" : "borderlineLow";
+  return status.direction === "high" ? "elevated" : "deficiency";
+}
+
+const REGION_UNIT = {
+  "": "mgdl", us: "mgdl", india: "mgdl",
+  uk: "mmol", europe: "mmol", canada: "mmol", australia: "mmol", other: "mmol",
+};
+const REGION_NAME = {
+  "": "", us: "United States", india: "India", uk: "United Kingdom",
+  europe: "Europe", canada: "Canada", australia: "Australia", other: "Other",
+};
+const CONVERT_FACTOR = { fasting: 18.0182, pp: 18.0182, total: 38.67, ldl: 38.67, hdl: 38.67, trig: 88.57 };
+
+function round1(n) { return Math.round(n * 10) / 10; }
+function round2(n) { return Math.round(n * 100) / 100; }
+
+/* value store */
+const values = {};
+const profile = { ageRange: "", sex: "", region: "", language: "en" };
+let activeId = CATEGORIES[0].id;
+
+const AGE_RANGES = [
+  { id: "under18", label: "Under 18" },
+  { id: "18-30", label: "18–30" },
+  { id: "31-45", label: "31–45" },
+  { id: "46-60", label: "46–60" },
+  { id: "60plus", label: "60+" },
+];
+
+/* ---------------------------------------------------------
+   Range adjustment based on age / sex / region
+--------------------------------------------------------- */
+function getEffectiveRange(param) {
+  let min = param.min, max = param.max, unit = param.unit, step = param.step;
+  const sex = profile.sex;
+  const ageRange = profile.ageRange;
+  let adjustedBy = [];
+
+  if (param.id === "hb") {
+    if (sex === "male") { min = 13.0; max = 17.0; adjustedBy.push("sex"); }
+    else if (sex === "female") { min = 12.0; max = 15.5; adjustedBy.push("sex"); }
+  }
+  if (param.id === "rbc") {
+    if (sex === "male") { min = 4.5; max = 5.9; adjustedBy.push("sex"); }
+    else if (sex === "female") { min = 4.0; max = 5.2; adjustedBy.push("sex"); }
+  }
+  if (param.id === "hct") {
+    if (sex === "male") { min = 41; max = 50; adjustedBy.push("sex"); }
+    else if (sex === "female") { min = 36; max = 44; adjustedBy.push("sex"); }
+  }
+  if (param.id === "sys" && ageRange === "60plus") { max = 130; adjustedBy.push("age"); }
+  if (param.id === "hr" && ageRange === "under18") { min = 70; max = 120; adjustedBy.push("age"); }
+  if (param.id === "fev1fvc" && ageRange === "60plus") { min = 65; adjustedBy.push("age"); }
+
+  const system = REGION_UNIT[profile.region] || "mgdl";
+  if (system === "mmol") {
+    if (param.id === "hba1c") {
+      min = Math.round((min - 2.15) * 10.929);
+      max = Math.round((max - 2.15) * 10.929);
+      unit = "mmol/mol"; step = 1;
+      adjustedBy.push("region");
+    } else if (CONVERT_FACTOR[param.id]) {
+      const f = CONVERT_FACTOR[param.id];
+      min = round2(min / f); max = round2(max / f);
+      unit = "mmol/L"; step = 0.1;
+      adjustedBy.push("region");
+    }
+  }
+  return { min, max, unit, step, adjustedBy };
+}
+
+function convertStoredValue(paramId, val, fromSystem, toSystem) {
+  if (fromSystem === toSystem || val === "" || val === undefined) return val;
+  const v = parseFloat(val);
+  if (isNaN(v)) return val;
+  if (paramId === "hba1c") {
+    return fromSystem === "mgdl" ? round1((v - 2.15) * 10.929) : round1(v / 10.929 + 2.15);
+  }
+  const f = CONVERT_FACTOR[paramId];
+  if (!f) return val;
+  return fromSystem === "mgdl" ? round2(v / f) : round2(v * f);
+}
+
+/* ---------------------------------------------------------
+   Status logic
+--------------------------------------------------------- */
+function numericStatus(value, min, max) {
+  if (value === "" || value === undefined || value === null) return null;
+  const v = parseFloat(value);
+  if (isNaN(v)) return null;
+  const range = max - min;
+  const buffer = range * 0.12;
+  if (v < min) return { level: (min - v) <= buffer ? "yellow" : "red", direction: "low", kind: "numeric" };
+  if (v > max) return { level: (v - max) <= buffer ? "yellow" : "red", direction: "high", kind: "numeric" };
+  const distLow = v - min, distHigh = max - v;
+  const direction = distLow <= distHigh ? "low" : "high";
+  const nearestEdge = Math.min(distLow, distHigh);
+  return { level: nearestEdge <= buffer ? "yellow" : "green", direction, kind: "numeric" };
+}
+
+function paramStatus(cat, param) {
+  const v = (values[cat.id] && values[cat.id][param.id]) || "";
+  if (v === "") return null;
+  if (param.type === "select") {
+    const opt = param.options.find(o => o.label === v);
+    return opt ? { level: opt.status, direction: null, kind: "select" } : null;
+  }
+  if (param.type === "text") return null;
+  const eff = getEffectiveRange(param);
+  return numericStatus(v, eff.min, eff.max);
+}
+
+function setValue(catId, paramId, v) {
+  if (!values[catId]) values[catId] = {};
+  values[catId][paramId] = v;
+}
+
+function ragDotHtml(status) {
+  if (!status) return "";
+  const key = statusLabelKey(status);
+  return `<span class="rag-indicator"><span class="dot dot-${status.level}"></span><span class="rag-label rag-${status.level}">${STATUS_TEXT_EN[key]}</span></span>`;
+}
+
+/* ---------------------------------------------------------
+   Speech ("Hear details")
+--------------------------------------------------------- */
+function speakParamDetails(catId, paramId) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  if (!cat) return;
+  const param = cat.params.find(p => p.id === paramId);
+  if (!param) return;
+  const value = (values[catId] && values[catId][paramId]) || "";
+  const status = paramStatus(cat, param);
+
+  const langCode = profile.language || "en";
+  const t = TEMPLATE_TRANSLATIONS[langCode] || TEMPLATE_TRANSLATIONS.en;
+  const translatedParam = PARAM_I18N[langCode] && PARAM_I18N[langCode][`${catId}.${paramId}`];
+  const label = translatedParam ? translatedParam.label : param.label;
+  const desc = translatedParam ? translatedParam.desc : param.desc;
+
+  let text = `${label}. ${desc}`;
+  if (param.type === "select") {
+    if (value) text += ` ${t.youSelected}: ${value}.`;
+  } else if (param.type === "text") {
+    // no numeric range to add
+  } else {
+    const eff = getEffectiveRange(param);
+    if (value !== "") text += ` ${t.yourReading} ${value} ${eff.unit}.`;
+    text += ` ${t.refRange} ${eff.min} ${t.to} ${eff.max} ${eff.unit}.`;
+  }
+  if (status) text += ` ${t.markedAs} ${t[statusLabelKey(status)]}.`;
+
+  if (!("speechSynthesis" in window)) return;
+  const langInfo = LANGUAGES.find(l => l.code === langCode);
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = langInfo ? langInfo.speechLang : "en-US";
+  utter.rate = 0.95;
+  window.speechSynthesis.speak(utter);
+}
+
+/* ---------------------------------------------------------
+   Rendering
+--------------------------------------------------------- */
+function renderSearchResults(query) {
+  const list = document.getElementById("searchResults");
+  const q = (query || "").toLowerCase().trim();
+  const matches = CATEGORIES.filter(c =>
+    c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+  );
+
+  if (matches.length === 0) {
+    list.innerHTML = `<div class="search-empty">No matching test</div>`;
+    list.classList.add("open");
+    return;
+  }
+
+  list.innerHTML = matches.map(cat => {
+    const count = cat.params.filter(p => (values[cat.id] && values[cat.id][p.id])).length;
+    return `
+      <button type="button" class="search-item" data-cat="${cat.id}">
+        <span class="search-item-icon">${cat.icon}</span>
+        <span class="search-item-name">${cat.name}</span>
+        ${count > 0 ? `<span class="search-item-count">${count}</span>` : ""}
+      </button>
+    `;
+  }).join("");
+  list.classList.add("open");
+
+  list.querySelectorAll(".search-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeId = btn.getAttribute("data-cat");
+      const cat = CATEGORIES.find(c => c.id === activeId);
+      document.getElementById("searchInput").value = cat.name;
+      list.classList.remove("open");
+      renderRows();
+      maybeShowDisclaimer();
+    });
+  });
+}
+
+let disclaimerShown = false;
+function maybeShowDisclaimer() {
+  if (disclaimerShown) return;
+  disclaimerShown = true;
+  document.getElementById("disclaimerOverlay").classList.add("open");
+}
+
+function adjustedNote(adjustedBy) {
+  if (!adjustedBy || adjustedBy.length === 0) return "";
+  const parts = [];
+  if (adjustedBy.includes("sex") && profile.sex) parts.push(profile.sex);
+  if (adjustedBy.includes("age") && profile.ageRange) {
+    const ar = AGE_RANGES.find(a => a.id === profile.ageRange);
+    if (ar) parts.push(ar.label);
+  }
+  if (adjustedBy.includes("region") && profile.region) parts.push(REGION_NAME[profile.region]);
+  if (parts.length === 0) return "";
+  return `<div class="details-adjusted">Adjusted for ${parts.join(", ")}</div>`;
+}
+
+function buildDetailsHtml(cat, param, value, status, eff) {
+  let html = "";
+  if (param.type === "select" && value) {
+    html += `<p class="details-range">You selected: <strong>${value}</strong></p>`;
+  }
+  if (eff) {
+    html += adjustedNote(eff.adjustedBy);
+  }
+  html += `<button type="button" class="listen-btn" data-cat="${cat.id}" data-param="${param.id}" data-kind="listen">🔊 Hear details</button>`;
+  return html;
+}
+
+function updateRowUI(catId, paramId) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  const param = cat.params.find(p => p.id === paramId);
+  const value = (values[catId] && values[catId][paramId]) || "";
+  const hasValue = value !== "";
+  const status = paramStatus(cat, param);
+
+  const rowEl = document.querySelector(`[data-row-key="${catId}.${paramId}"]`);
+  if (!rowEl) return;
+
+  const ragSlot = rowEl.querySelector(".rag-slot");
+  if (ragSlot) ragSlot.innerHTML = hasValue ? ragDotHtml(status) : "";
+
+  const numInput = rowEl.querySelector('.row-input[data-kind="number"]');
+  if (numInput) numInput.classList.toggle("has-value", hasValue);
+
+  const detailsSlot = rowEl.querySelector(".details-slot");
+  if (detailsSlot) {
+    const eff = (param.type === "select" || param.type === "text") ? null : getEffectiveRange(param);
+    detailsSlot.innerHTML = buildDetailsHtml(cat, param, value, status, eff);
+  }
+}
+
+function renderRows() {
+  const cat = CATEGORIES.find(c => c.id === activeId);
+  document.getElementById("catBanner").setAttribute("data-icon", cat.icon);
+  document.getElementById("catIcon").textContent = cat.icon;
+  document.getElementById("catCode").textContent = cat.code;
+  document.getElementById("catName").textContent = cat.name;
+  document.getElementById("catNote").textContent = cat.note;
+
+  const rows = document.getElementById("rows");
+  rows.innerHTML = cat.params.map(param => {
+    const value = (values[cat.id] && values[cat.id][param.id]) || "";
+    const hasValue = value !== "";
+    const status = paramStatus(cat, param);
+    const rowKey = `${cat.id}.${param.id}`;
+
+    if (param.type === "select") {
+      const pills = param.options.map(o => {
+        const active = value === o.label;
+        return `<button type="button" class="pill pill-${o.status} ${active ? "pill-active" : ""}"
+                  data-cat="${cat.id}" data-param="${param.id}" data-value="${o.label.replace(/"/g, '&quot;')}"
+                  data-kind="select">${o.label}</button>`;
+      }).join("");
+      return `
+        <div class="row" data-row-key="${rowKey}">
+          <div class="row-top">
+            <div class="row-label">${param.label}</div>
+            <span class="rag-slot">${hasValue ? ragDotHtml(status) : ""}</span>
+          </div>
+          <p class="row-info">${param.desc}</p>
+          <div class="pill-group">${pills}</div>
+          <div class="details-slot">${buildDetailsHtml(cat, param, value, status, null)}</div>
+        </div>
+      `;
+    }
+
+    if (param.type === "text") {
+      return `
+        <div class="row" data-row-key="${rowKey}">
+          <div class="row-top">
+            <div class="row-label">${param.label}</div>
+            <span class="rag-slot"></span>
+          </div>
+          <p class="row-info">${param.desc}</p>
+          <textarea class="row-textarea" rows="2" data-cat="${cat.id}" data-param="${param.id}" data-kind="text"
+            placeholder="Optional — describe any findings mentioned in the report">${value}</textarea>
+          <div class="details-slot">${buildDetailsHtml(cat, param, value, status, null)}</div>
+        </div>
+      `;
+    }
+
+    const eff = getEffectiveRange(param);
+    return `
+      <div class="row" data-row-key="${rowKey}">
+        <div class="row-top">
+          <div class="row-label">${param.label}${eff.unit ? `<span class="row-unit"> (${eff.unit})</span>` : ""}</div>
+          <span class="rag-slot">${hasValue ? ragDotHtml(status) : ""}</span>
+        </div>
+        <p class="row-info">${param.desc}</p>
+        <div class="range-inline">
+          <span class="range-tag">Min ${eff.min}</span>
+          <input class="row-input${hasValue ? " has-value" : ""}" type="number" step="${eff.step}" data-cat="${cat.id}" data-param="${param.id}" data-kind="number"
+            placeholder="Enter finding" value="${value}" />
+          <span class="range-tag">Max ${eff.max}</span>
+        </div>
+        <div class="details-slot">${buildDetailsHtml(cat, param, value, status, eff)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderProfileNote() {
+  const note = document.getElementById("profileNote");
+  const parts = [];
+  if (profile.ageRange) {
+    const ar = AGE_RANGES.find(a => a.id === profile.ageRange);
+    if (ar) parts.push(ar.label);
+  }
+  if (profile.sex) parts.push(profile.sex);
+  if (profile.region) parts.push(REGION_NAME[profile.region]);
+
+  const personBtn = document.getElementById("personBtn");
+  personBtn.classList.toggle("has-profile", parts.length > 0);
+
+  const langInfo = LANGUAGES.find(l => l.code === profile.language);
+  const langNote = langInfo && langInfo.code !== "en" ? `Voice language: ${langInfo.label}.` : "";
+
+  if (parts.length === 0 && !langNote) { note.classList.remove("visible"); return; }
+  const rangeNote = parts.length > 0 ? "Ranges will adjust where relevant for: " + parts.join(", ") + ". " : "";
+  note.textContent = rangeNote + langNote;
+  note.classList.add("visible");
+}
+
+function renderAll() {
+  renderRows();
+}
+
+/* ---------------------------------------------------------
+   Delegated events for the rows container
+   (bound once, so re-rendering rows never disturbs focus/typing)
+--------------------------------------------------------- */
+const rowsContainer = document.getElementById("rows");
+
+rowsContainer.addEventListener("input", (e) => {
+  const target = e.target;
+  if (target.matches('[data-kind="number"]') || target.matches('[data-kind="text"]')) {
+    const catId = target.getAttribute("data-cat");
+    const paramId = target.getAttribute("data-param");
+    setValue(catId, paramId, target.value);
+    updateRowUI(catId, paramId);
+  }
+});
+
+rowsContainer.addEventListener("click", (e) => {
+  const pillEl = e.target.closest('[data-kind="select"]');
+  if (pillEl) {
+    const catId = pillEl.getAttribute("data-cat");
+    const paramId = pillEl.getAttribute("data-param");
+    const val = pillEl.getAttribute("data-value");
+    const current = (values[catId] && values[catId][paramId]) || "";
+    const newVal = current === val ? "" : val;
+    setValue(catId, paramId, newVal);
+
+    const rowEl = pillEl.closest(".row");
+    rowEl.querySelectorAll('[data-kind="select"]').forEach(p => {
+      p.classList.toggle("pill-active", p.getAttribute("data-value") === newVal);
+    });
+    updateRowUI(catId, paramId);
+    return;
+  }
+  const listenEl = e.target.closest('[data-kind="listen"]');
+  if (listenEl) {
+    speakParamDetails(listenEl.getAttribute("data-cat"), listenEl.getAttribute("data-param"));
+  }
+});
+
+/* ---------------------------------------------------------
+   Search wiring
+--------------------------------------------------------- */
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+searchInput.addEventListener("input", (e) => renderSearchResults(e.target.value));
+searchInput.addEventListener("focus", (e) => renderSearchResults(e.target.value));
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".search-wrap")) searchResults.classList.remove("open");
+});
+
+/* ---------------------------------------------------------
+   Modal wiring
+--------------------------------------------------------- */
+const modalOverlay = document.getElementById("modalOverlay");
+document.getElementById("personBtn").addEventListener("click", () => {
+  modalOverlay.classList.add("open");
+});
+document.getElementById("modalClose").addEventListener("click", () => {
+  modalOverlay.classList.remove("open");
+});
+document.getElementById("modalDone").addEventListener("click", () => {
+  modalOverlay.classList.remove("open");
+});
+modalOverlay.addEventListener("click", (e) => {
+  if (e.target === modalOverlay) modalOverlay.classList.remove("open");
+});
+
+const disclaimerOverlay = document.getElementById("disclaimerOverlay");
+const disclaimerChip = document.getElementById("disclaimerChip");
+
+function closeDisclaimer() {
+  disclaimerOverlay.classList.remove("open");
+  disclaimerChip.classList.add("visible");
+}
+
+document.getElementById("disclaimerClose").addEventListener("click", closeDisclaimer);
+document.getElementById("disclaimerDone").addEventListener("click", closeDisclaimer);
+disclaimerOverlay.addEventListener("click", (e) => {
+  if (e.target === disclaimerOverlay) closeDisclaimer();
+});
+disclaimerChip.addEventListener("click", () => {
+  disclaimerOverlay.classList.add("open");
+});
+
+/* ---------------------------------------------------------
+   Profile field wiring
+--------------------------------------------------------- */
+document.querySelectorAll('[data-agerange]').forEach(btn => {
+  btn.addEventListener("click", () => {
+    const ar = btn.getAttribute("data-agerange");
+    profile.ageRange = profile.ageRange === ar ? "" : ar;
+    document.querySelectorAll('[data-agerange]').forEach(b => {
+      const active = b.getAttribute("data-agerange") === profile.ageRange;
+      b.classList.toggle("pill-active", active);
+      b.classList.toggle("pill-green", active);
+    });
+    renderProfileNote();
+    renderRows();
+  });
+});
+
+document.querySelectorAll('[data-sex]').forEach(btn => {
+  btn.addEventListener("click", () => {
+    const sex = btn.getAttribute("data-sex");
+    profile.sex = profile.sex === sex ? "" : sex;
+    document.querySelectorAll('[data-sex]').forEach(b => {
+      const active = b.getAttribute("data-sex") === profile.sex;
+      b.classList.toggle("pill-active", active);
+      b.classList.toggle("pill-green", active);
+    });
+    renderProfileNote();
+    renderRows();
+  });
+});
+
+document.getElementById("regionSelect").addEventListener("change", (e) => {
+  const oldSystem = REGION_UNIT[profile.region] || "mgdl";
+  const newRegion = e.target.value;
+  const newSystem = REGION_UNIT[newRegion] || "mgdl";
+
+  if (oldSystem !== newSystem) {
+    const glu = values["glu"];
+    if (glu) {
+      Object.keys(glu).forEach(paramId => { glu[paramId] = convertStoredValue(paramId, glu[paramId], oldSystem, newSystem); });
+    }
+    const lipid = values["lipid"];
+    if (lipid) {
+      Object.keys(lipid).forEach(paramId => { lipid[paramId] = convertStoredValue(paramId, lipid[paramId], oldSystem, newSystem); });
+    }
+  }
+  profile.region = newRegion;
+  renderProfileNote();
+  renderAll();
+});
+
+document.getElementById("languageSelect").addEventListener("change", (e) => {
+  profile.language = e.target.value;
+  renderProfileNote();
+});
+
+/* ---------------------------------------------------------
+   Onboarding — shown once, automatically, before first use
+--------------------------------------------------------- */
+const onboardingOverlay = document.getElementById("onboardingOverlay");
+document.getElementById("onboardingDone").addEventListener("click", () => {
+  onboardingOverlay.classList.remove("open");
+});
+document.getElementById("onboardingSkip").addEventListener("click", () => {
+  onboardingOverlay.classList.remove("open");
+});
+
+renderAll();
+renderProfileNote();
+onboardingOverlay.classList.add("open");
+</script>
+</body>
+</html>

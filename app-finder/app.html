@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Appley</title>
+
+<!-- ===== PWA MANIFEST (INLINE) ===== -->
+<link rel="manifest" href="data:application/json,{
+  &quot;name&quot;:&quot;Smart App Finder&quot;,
+  &quot;short_name&quot;:&quot;App Finder&quot;,
+  &quot;start_url&quot;:&quot;.&quot;,
+  &quot;display&quot;:&quot;standalone&quot;,
+  &quot;background_color&quot;:&quot;#f1f5f9&quot;,
+  &quot;theme_color&quot;:&quot;#2563eb&quot;,
+  &quot;icons&quot;:[
+    {
+      &quot;src&quot;:&quot;https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg&quot;,
+      &quot;sizes&quot;:&quot;192x192&quot;,
+      &quot;type&quot;:&quot;image/png&quot;
+    }
+  ]
+}">
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont;
+  background:#dfecff;
+  padding:16px;
+}
+h1{text-align:center;color:#002489;margin-bottom:60px;font-size: 45px;}
+.subtitle{text-align:center;color:#64b;font-size:10px;margin-bottom:10px;}
+input{
+  width:95%;padding:14px;border-radius:12px;
+  border:1px solid #cbd5e1;font-size:14px;margin-bottom:5px;
+}
+.os-badge{text-align:center;font-size:12px;color:#2563eb;margin-bottom:10px;}
+
+.install-btn{
+  display:none;
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  background:#2563eb;
+  color:#fff;
+  border:none;
+  font-size:15px;
+  margin-bottom:14px;
+  cursor:pointer;
+}
+
+.apps{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap:14px;
+  max-height: calc(100vh - 300px);
+  overflow-y:auto;
+}
+.app-card{
+  background:#dfecff;
+  border-radius:14px;
+  padding:10px 6px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+  text-align:center;
+  cursor:pointer;
+}
+.app-card img{
+  width:56px;height:56px;border-radius:14px;
+  object-fit:contain;margin-bottom:6px;
+}
+.app-card h3{font-size:11px;margin:0;line-height:1.25;}
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+</style>
+</head>
+
+<body>
+<h1><b>Appley</b></h1>
+<div class="subtitle">Google for apps</div>
+
+<button id="installBtn" class="install-btn">➕ Add to Home Screen</button>
+
+<input id="searchBox" font-size=5px,
+  padding=1px, placeholder="type to search e.g commute in london, groceries in delhi">
+
+<div class="os-badge" id="osInfo"></div>
+<div class="apps" id="results"></div>
+
+<script>
+/* ========== OS DETECTION ========== */
+const ua = navigator.userAgent.toLowerCase();
+const isAndroid = ua.includes("android");
+const isIOS = ua.includes("iphone") || ua.includes("ipad");
+
+document.getElementById("osInfo").textContent =
+  isAndroid ? "" :
+  isIOS ? "iPhone / iPad detected" :
+  "Device detected";
+
+/* ========== ADD TO HOME SCREEN ========== */
+let deferredPrompt;
+const installBtn = document.getElementById("installBtn");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = "block";
+});
+
+installBtn.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.style.display = "none";
+});
+
+/* ========== SEARCH (JSONP) ========== */
+const input = document.getElementById("searchBox");
+let lastScript;
+
+input.addEventListener("input", () => {
+  const q = input.value.trim();
+  if (q.length < 2) {
+    document.getElementById("results").innerHTML = "";
+    return;
+  }
+  searchITunesJSONP(q);
+});
+
+function searchITunesJSONP(query) {
+  if (lastScript) document.body.removeChild(lastScript);
+
+  const cb = "itunes_cb_" + Date.now();
+  window[cb] = data => {
+    renderApps(data.results || []);
+    delete window[cb];
+  };
+
+  const s = document.createElement("script");
+  s.src =
+    "https://itunes.apple.com/search" +
+    "?term=" + encodeURIComponent(query) +
+    "&entity=software&limit=30" +
+    "&callback=" + cb;
+
+  document.body.appendChild(s);
+  lastScript = s;
+}
+
+function renderApps(apps){
+  const c = document.getElementById("results");
+  c.innerHTML = "";
+
+  apps.forEach(app => {
+    const name = app.trackName;
+    const icon = app.artworkUrl100 || app.artworkUrl60;
+    const link = isIOS
+      ? app.trackViewUrl
+      : "https://play.google.com/store/search?q=" +
+        encodeURIComponent(name) + "&c=apps";
+
+    c.innerHTML += `
+      <div class="app-card" onclick="window.open('${link}','_blank')">
+        <img src="${icon}">
+        <h3>${name}</h3>
+      </div>`;
+  });
+}
+</script>
+
+</body>
+</html>

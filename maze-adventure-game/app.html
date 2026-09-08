@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>🌀 Maze Adventure!</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    height: 100dvh;
+    display: flex; flex-direction: column; align-items: center;
+    font-family: 'Fredoka One', 'Comic Sans MS', cursive;
+    background: #F5E6C8;
+    overflow: hidden;
+  }
+
+  #topbar {
+    width: 100%; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 12px 5px; gap: 5px;
+  }
+  h1 {
+    font-size: clamp(18px, 4.5vw, 30px);
+    letter-spacing: 2px; color: #C47800;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+    line-height: 1.1;
+  }
+
+  /* ── stats row ── */
+  .stats {
+    display: flex; gap: 6px; align-items: center; justify-content: center;
+    flex-wrap: wrap;
+  }
+  .stat-box {
+    background: white; border-radius: 9px; padding: 3px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+    border: 2px solid #ddd;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .stat-icon { font-size: 14px; }
+  .stat-val  { font-size: 15px; font-weight: 700; color: #C47800; }
+  .stat-lbl  { font-size: 8px; color: #bbb; }
+
+  /* points box gets a gold highlight */
+  #boxPoints { border-color: #F5C518 !important; }
+  #pointsVal { color: #C8960A !important; }
+
+  .btn-row { display: flex; gap: 5px; }
+  .icon-btn {
+    background: white; border-radius: 9px; padding: 3px 10px;
+    border: 2px solid #ddd; cursor: pointer;
+    font-family: inherit; font-size: 12px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.13); touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; gap: 3px;
+  }
+  .hint-btn { color: #D07000; border-color: #D0700033; }
+  .hint-btn.lit { background: #E07800; color: white; border-color: #E07800; }
+  .reset-btn { color: #2A9A55; border-color: #2A9A5533; }
+  .hint-badge {
+    background: #E07800; color: white; border-radius: 8px;
+    padding: 0 5px; font-size: 9px; min-width: 15px;
+    height: 15px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .hint-badge.empty { background: #bbb; }
+
+  /* ── maze ── */
+  #mazeArea {
+    flex: 1; width: 100%; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 3px 6px 3px;
+  }
+  #mazeWrap {
+    background: white; border-radius: 14px; padding: 6px;
+    box-shadow: 0 8px 36px rgba(0,0,0,0.2);
+    border: 3px solid #F5C51888;
+    touch-action: none; user-select: none; line-height: 0;
+  }
+  canvas { display: block; }
+
+  /* ── win overlay ── */
+  #winOverlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.52); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  #winOverlay.show { display: flex; }
+  .win-card {
+    background: white; border-radius: 24px; padding: 24px 32px;
+    text-align: center; box-shadow: 0 16px 50px rgba(0,0,0,0.3);
+    animation: popIn 0.4s cubic-bezier(.34,1.56,.64,1); max-width: 86vw;
+  }
+  .win-emoji { font-size: 48px; line-height: 1; }
+  .win-title { font-size: 24px; margin: 6px 0 2px; }
+  .win-points-big {
+    font-size: 32px; color: #C8960A;
+    margin: 4px 0 2px;
+  }
+  .win-sub   { font-size: 12px; color: #999; margin-bottom: 14px; }
+  .win-btns  { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .win-btn {
+    padding: 9px 20px; border-radius: 18px; border: none;
+    font-family: inherit; font-weight: 700; font-size: 13px;
+    cursor: pointer; color: white; touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wb-new { background: #44BB66; }
+
+  /* floating +point popup */
+  .pt-pop {
+    position: fixed; font-size: 18px; font-weight: 700;
+    color: #C8960A; pointer-events: none; z-index: 200;
+    animation: ptFloat 0.9s ease forwards;
+  }
+  @keyframes ptFloat {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-40px) scale(1.3); }
+  }
+
+  #foot {
+    font-size: 11px; color: #aaa; text-align: center;
+    padding: 2px 0 5px; flex-shrink: 0;
+  }
+
+  @keyframes popIn {
+    0%   { transform: scale(0.55); opacity: 0; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1 id="title">🌀 MAZE ADVENTURE!</h1>
+  <div class="stats">
+    <div class="stat-box" id="boxPoints">
+      <span class="stat-icon">⭐</span>
+      <div><div class="stat-val" id="pointsVal">0</div><div class="stat-lbl">Points</div></div>
+    </div>
+    <div class="stat-box">
+      <span class="stat-icon">👣</span>
+      <div><div class="stat-val" id="stepsVal">0</div><div class="stat-lbl">Steps</div></div>
+    </div>
+    <div class="stat-box">
+      <span class="stat-icon">⏱️</span>
+      <div><div class="stat-val" id="timeVal">0s</div><div class="stat-lbl">Time</div></div>
+    </div>
+    <div class="btn-row">
+      <button class="icon-btn hint-btn" id="hintBtn" onclick="useHint()">
+        💡<span class="hint-badge" id="hintBadge">3</span>
+      </button>
+      <button class="icon-btn reset-btn" onclick="startGame()">🔄</button>
+    </div>
+  </div>
+</div>
+
+<div id="winOverlay">
+  <div class="win-card">
+    <div class="win-emoji">🎉</div>
+    <div class="win-title">You Win!</div>
+    <div class="win-points-big" id="winPointsBig"></div>
+    <div class="win-sub" id="winSub"></div>
+    <div class="win-btns">
+      <button class="win-btn wb-new" onclick="startGame()">🔀 New Maze</button>
+    </div>
+  </div>
+</div>
+
+<div id="mazeArea">
+  <div id="mazeWrap"><canvas id="mazeCanvas"></canvas></div>
+</div>
+
+<div id="foot">👆 Swipe anywhere · ⌨️ Arrow keys · H = hint</div>
+
+<script>
+/* ══════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════ */
+const COLS      = 11;      // easy fixed size
+const ROWS      = 11;
+const COLOR     = '#C47800';
+const BG        = '#F5E6C8';
+const MAX_HINTS = 3;
+const LERP      = 0.18;
+
+/* scoring */
+const PTS_STAR    = 10;   // per ⭐ collected
+const PTS_FINISH  = 50;   // bonus for reaching goal
+const PTS_HINT    = -15;  // penalty per hint used
+
+const canvas = document.getElementById('mazeCanvas');
+const ctx    = canvas.getContext('2d');
+
+let maze=[], stars=new Map(), steps=0, elapsed=0, won=false, points=0, totalStars=0;
+let timerInterval=null, rafId=null, hintTimer=null;
+let hintsLeft=MAX_HINTS, hintCells=[], hintOn=false;
+let px={x:0,y:0}, target={x:0,y:0}, grid={r:0,c:0};
+
+/* ── cell pixel size filling the screen ── */
+function CS(){
+  const tb   = document.getElementById('topbar').getBoundingClientRect();
+  const foot = document.getElementById('foot').getBoundingClientRect();
+  const aw   = window.innerWidth  - 24;
+  const ah   = window.innerHeight - tb.height - foot.height - 22;
+  return Math.max(12, Math.floor(Math.min(aw/COLS, ah/ROWS)));
+}
+
+/* ══════════════════════════════════════════
+   MAZE GENERATION — iterative DFS
+══════════════════════════════════════════ */
+function generateMaze(){
+  const g = Array.from({length:ROWS}, ()=>
+    Array.from({length:COLS}, ()=>({N:true,S:true,W:true,E:true,v:false})));
+  const DIRS=[{dr:-1,dc:0,o:'N',i:'S'},{dr:1,dc:0,o:'S',i:'N'},
+              {dr:0,dc:-1,o:'W',i:'E'},{dr:0,dc:1,o:'E',i:'W'}];
+  const stack=[{r:0,c:0}]; g[0][0].v=true;
+  while(stack.length){
+    const {r,c}=stack[stack.length-1];
+    const nb=DIRS.map(d=>({...d,nr:r+d.dr,nc:c+d.dc}))
+                 .filter(d=>d.nr>=0&&d.nr<ROWS&&d.nc>=0&&d.nc<COLS&&!g[d.nr][d.nc].v);
+    if(!nb.length){stack.pop();continue;}
+    const d=nb[Math.floor(Math.random()*nb.length)];
+    g[r][c][d.o]=false; g[d.nr][d.nc][d.i]=false;
+    g[d.nr][d.nc].v=true; stack.push({r:d.nr,c:d.nc});
+  }
+  return g;
+}
+
+/* ── place stars scattered through maze (not on start or goal) ── */
+function placeStars(){
+  const m = new Map();
+  // collect all reachable inner cells via BFS
+  const cells = [];
+  for(let r=0;r<ROWS;r++)
+    for(let c=0;c<COLS;c++)
+      if(!(r===0&&c===0) && !(r===ROWS-1&&c===COLS-1))
+        cells.push({r,c});
+  // shuffle and pick ~30% of cells for stars
+  cells.sort(()=>Math.random()-0.5);
+  const count = Math.round(cells.length * 0.28);
+  for(let i=0;i<count;i++) m.set(`${cells[i].r},${cells[i].c}`, true);
+  return m;
+}
+
+/* ══════════════════════════════════════════
+   BFS SOLVER
+══════════════════════════════════════════ */
+function solve(sr,sc){
+  const vis=new Set([`${sr},${sc}`]);
+  const q=[{r:sr,c:sc,path:[]}];
+  const D=[{d:'N',dr:-1,dc:0},{d:'S',dr:1,dc:0},{d:'W',dr:0,dc:-1},{d:'E',dr:0,dc:1}];
+  while(q.length){
+    const {r,c,path}=q.shift();
+    if(r===ROWS-1&&c===COLS-1) return path;
+    for(const {d,dr,dc} of D){
+      const nr=r+dr,nc=c+dc,k=`${nr},${nc}`;
+      if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!maze[r][c][d]&&!vis.has(k)){
+        vis.add(k); q.push({r:nr,c:nc,path:[...path,{r:nr,c:nc}]});
+      }
+    }
+  }
+  return [];
+}
+
+/* ══════════════════════════════════════════
+   HINT
+══════════════════════════════════════════ */
+function updateHintUI(){
+  const b=document.getElementById('hintBadge');
+  b.textContent=hintsLeft;
+  b.className='hint-badge'+(hintsLeft===0?' empty':'');
+  document.getElementById('hintBtn').classList.toggle('lit',hintOn);
+}
+function useHint(){
+  if(won) return;
+  if(hintsLeft<=0){
+    const b=document.getElementById('hintBadge');
+    b.style.background='#E53030';
+    setTimeout(()=>{b.style.background='';updateHintUI();},350);
+    return;
+  }
+  hintsLeft--;
+  points = Math.max(0, points + PTS_HINT);
+  document.getElementById('pointsVal').textContent=points;
+  hintCells=solve(grid.r,grid.c).slice(0,5);
+  hintOn=true; updateHintUI();
+  clearTimeout(hintTimer);
+  hintTimer=setTimeout(()=>{hintOn=false;hintCells=[];updateHintUI();},3500);
+}
+
+/* ══════════════════════════════════════════
+   START GAME
+══════════════════════════════════════════ */
+function startGame(){
+  maze  = generateMaze();
+  stars = placeStars();
+  totalStars = stars.size;
+  grid  = {r:0,c:0};
+  const cs=CS();
+  px={x:cs/2+2,y:cs/2+2}; target={...px};
+  steps=0; elapsed=0; won=false; points=0;
+  hintsLeft=MAX_HINTS; hintCells=[]; hintOn=false;
+  clearTimeout(hintTimer); clearInterval(timerInterval);
+  document.getElementById('stepsVal').textContent='0';
+  document.getElementById('timeVal').textContent='0s';
+  document.getElementById('pointsVal').textContent='0';
+  document.getElementById('winOverlay').classList.remove('show');
+  updateHintUI();
+  timerInterval=setInterval(()=>{
+    elapsed++;
+    document.getElementById('timeVal').textContent=elapsed+'s';
+  },1000);
+  cancelAnimationFrame(rafId);
+  loop();
+}
+
+/* ══════════════════════════════════════════
+   ANIMATION LOOP
+══════════════════════════════════════════ */
+function loop(){
+  px.x+=(target.x-px.x)*LERP;
+  px.y+=(target.y-px.y)*LERP;
+  draw();
+  rafId=requestAnimationFrame(loop);
+}
+
+/* ══════════════════════════════════════════
+   DRAW
+══════════════════════════════════════════ */
+/* star animation: pulse scale over time */
+let drawT=0;
+function draw(){
+  drawT++;
+  const cs = CS();
+  const W  = COLS*cs+4, H=ROWS*cs+4;
+  if(canvas.width!==W||canvas.height!==H){ canvas.width=W; canvas.height=H; }
+  ctx.clearRect(0,0,W,H);
+
+  const hSet=new Set(hintCells.map(({r,c})=>`${r},${c}`));
+
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const x=c*cs+2, y=r*cs+2;
+      const cell=maze[r][c];
+      const isGoal=r===ROWS-1&&c===COLS-1;
+      const key=`${r},${c}`;
+
+      /* hint glow */
+      if(hintOn&&hSet.has(key)){
+        ctx.fillStyle='#FF8C0042';
+        rr(x,y,cs,cs,3);
+        const dot=Math.max(2.5,cs*0.11);
+        ctx.fillStyle='#FF8C00BB';
+        ctx.beginPath(); ctx.arc(x+cs/2,y+cs/2,dot,0,Math.PI*2); ctx.fill();
+      }
+
+      /* goal glow */
+      if(isGoal){ ctx.fillStyle='#FFD70050'; rr(x+1,y+1,cs-2,cs-2,4); }
+
+      /* walls */
+      ctx.strokeStyle=COLOR; ctx.lineWidth=1.8; ctx.lineCap='square';
+      if(cell.N) seg(x,   y,   x+cs,y   );
+      if(cell.S) seg(x,   y+cs,x+cs,y+cs);
+      if(cell.W) seg(x,   y,   x,   y+cs);
+      if(cell.E) seg(x+cs,y,   x+cs,y+cs);
+
+      /* trophy */
+      if(isGoal){
+        ctx.font=`${Math.max(10,Math.floor(cs*0.52))}px serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('🏆',x+cs/2,y+cs/2+1);
+      }
+
+      /* stars — pulsing */
+      if(stars.has(key)){
+        const pulse = 0.82 + 0.18 * Math.sin(drawT*0.08 + (r*COLS+c)*0.7);
+        const sz    = Math.max(8, cs * 0.44) * pulse;
+        ctx.font=`${sz}px serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.globalAlpha = 0.85 + 0.15*Math.sin(drawT*0.1+(r+c)*0.5);
+        ctx.fillText('⭐',x+cs/2,y+cs/2+1);
+        ctx.globalAlpha=1;
+      }
+    }
+  }
+
+  /* outer border */
+  ctx.strokeStyle=COLOR; ctx.lineWidth=3; ctx.lineCap='square';
+  ctx.strokeRect(2,2,COLS*cs,ROWS*cs);
+
+  /* player */
+  ctx.font=`${Math.max(11,Math.floor(cs*0.70))}px serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🐱',px.x,px.y+1);
+}
+
+function seg(x1,y1,x2,y2){ ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke(); }
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect){ ctx.roundRect(x,y,w,h,r); }
+  else{
+    ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+    ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+    ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+    ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+  }
+  ctx.fill();
+}
+
+/* ── floating +10 popup ── */
+function showPointPop(r,c,pts){
+  const cs=CS();
+  const wrap=document.getElementById('mazeWrap').getBoundingClientRect();
+  const cx = wrap.left + 6 + c*cs + 2 + cs/2;
+  const cy = wrap.top  + 6 + r*cs + 2 + cs/2;
+  const el=document.createElement('div');
+  el.className='pt-pop';
+  el.textContent=(pts>0?'+':'')+pts;
+  el.style.left=(cx-20)+'px';
+  el.style.top =(cy-10)+'px';
+  if(pts<0) el.style.color='#E53030';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),950);
+}
+
+/* ══════════════════════════════════════════
+   MOVE
+══════════════════════════════════════════ */
+function move(dir){
+  if(!maze.length||won) return;
+  const {r,c}=grid;
+  if(maze[r][c][dir]) return;
+  let nr=r,nc=c;
+  if(dir==='N') nr--; if(dir==='S') nr++;
+  if(dir==='W') nc--; if(dir==='E') nc++;
+  if(nr<0||nr>=ROWS||nc<0||nc>=COLS) return;
+
+  grid={r:nr,c:nc};
+  steps++;
+  document.getElementById('stepsVal').textContent=steps;
+
+  /* collect star */
+  const key=`${nr},${nc}`;
+  if(stars.has(key)){
+    stars.delete(key);
+    points+=PTS_STAR;
+    document.getElementById('pointsVal').textContent=points;
+    showPointPop(nr,nc,PTS_STAR);
+  }
+
+  /* consume hint path */
+  if(hintOn&&hintCells.length&&hintCells[0].r===nr&&hintCells[0].c===nc){
+    hintCells.shift();
+    if(!hintCells.length){ hintOn=false; updateHintUI(); }
+  }
+
+  const cs=CS();
+  target={x:nc*cs+2+cs/2, y:nr*cs+2+cs/2};
+
+  if(nr===ROWS-1&&nc===COLS-1){
+    won=true;
+    clearInterval(timerInterval); clearTimeout(hintTimer);
+    setTimeout(showWin,340);
+  }
+}
+
+/* ══════════════════════════════════════════
+   WIN
+══════════════════════════════════════════ */
+function showWin(){
+  const finalPts = points + PTS_FINISH;
+  points = finalPts;
+  document.getElementById('pointsVal').textContent=points;
+  const starsGot = totalStars - stars.size;
+  document.getElementById('winPointsBig').textContent=`⭐ ${points} pts`;
+  document.getElementById('winSub').textContent=
+    `${starsGot}/${totalStars} stars · ${steps} steps · ${elapsed}s`;
+  document.getElementById('winOverlay').classList.add('show');
+  setTimeout(()=>{ if(won) startGame(); },3000);
+}
+
+/* ══════════════════════════════════════════
+   INPUT
+══════════════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  const m={ArrowUp:'N',ArrowDown:'S',ArrowLeft:'W',ArrowRight:'E'};
+  if(m[e.key]){ e.preventDefault(); move(m[e.key]); }
+  if(e.key==='h'||e.key==='H') useHint();
+});
+
+let ptDown=false,ptX=0,ptY=0,ptId=null;
+document.addEventListener('pointerdown',e=>{
+  ptDown=true; ptX=e.clientX; ptY=e.clientY; ptId=e.pointerId;
+},{passive:true});
+document.addEventListener('pointermove',e=>{
+  if(!ptDown||e.pointerId!==ptId) return;
+  const cs=CS();
+  const thr=Math.max(cs*0.45,14);
+  const dx=e.clientX-ptX, dy=e.clientY-ptY;
+  if(Math.abs(dx)>=thr||Math.abs(dy)>=thr){
+    if(Math.abs(dx)>=Math.abs(dy)) move(dx>0?'E':'W');
+    else                            move(dy>0?'S':'N');
+    ptX=e.clientX; ptY=e.clientY;
+  }
+},{passive:true});
+document.addEventListener('pointerup',   ()=>ptDown=false,{passive:true});
+document.addEventListener('pointercancel',()=>ptDown=false,{passive:true});
+document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+
+window.addEventListener('resize',()=>{
+  if(!maze.length) return;
+  const cs=CS();
+  target={x:grid.c*cs+2+cs/2, y:grid.r*cs+2+cs/2};
+  px={...target};
+});
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+startGame();
+</script>
+</body>
+</html>

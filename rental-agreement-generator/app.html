@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rental Agreement Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --ink:#1c2430;
+    --ink-soft:#4a5568;
+    --paper:#f7f4ec;
+    --paper-card:#fffdf8;
+    --navy:#213a52;
+    --navy-deep:#152838;
+    --brass:#a9803f;
+    --brass-soft:#e4d3ac;
+    --line:#d8cfb8;
+    --good:#3a6b4c;
+    --danger:#a1423b;
+    --radius:10px;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:"Segoe UI",Avenir,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+  }
+  .app{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
+  header.hero{
+    display:flex;align-items:center;gap:18px;
+    padding:26px 26px;margin-bottom:28px;
+    background:linear-gradient(135deg,var(--navy-deep),var(--navy));
+    border-radius:var(--radius);
+    color:#f4ecd8;
+  }
+  header.hero .seal{
+    width:56px;height:56px;border-radius:50%;
+    border:2px solid var(--brass-soft);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);font-size:22px;font-weight:700;
+    color:var(--brass-soft);flex:none;
+  }
+  header.hero h1{margin:0;font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:.3px;}
+  header.hero p{margin:4px 0 0;font-size:13.5px;color:#cdd8e0;}
+
+  .section-card{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:18px;
+  }
+  .section-card h2{
+    font-family:var(--serif);
+    font-size:18px;margin:0 0 4px;
+    display:flex;align-items:baseline;gap:10px;
+    color:var(--navy-deep);
+  }
+  .section-card h2 .num{
+    font-family:var(--sans);
+    font-size:12px;font-weight:700;color:#fff;background:var(--brass);
+    border-radius:50%;width:22px;height:22px;
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+  }
+  .section-card .hint{font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 16px;}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;}
+  input[type=text],input[type=number],input[type=tel],input[type=email],input[type=date],input[type=time],select,textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;
+    font-size:13.5px;font-family:var(--sans);background:#fff;color:var(--ink);
+  }
+  textarea{resize:vertical;min-height:64px;}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--navy);outline-offset:1px;}
+  .field{margin-bottom:2px;}
+
+  .person-block{
+    border:1px dashed var(--line);border-radius:8px;padding:14px 16px;margin-bottom:14px;position:relative;background:#fffefb;
+  }
+  .person-block .block-title{font-weight:700;font-size:13px;color:var(--navy);margin-bottom:10px;}
+  .remove-btn{
+    position:absolute;top:10px;right:10px;background:none;border:none;color:var(--danger);
+    font-size:12px;cursor:pointer;font-weight:600;
+  }
+  .photo-row{display:flex;align-items:center;gap:10px;}
+  .p-photo-preview{width:46px;height:46px;border-radius:6px;object-fit:cover;border:1px solid var(--line);}
+  .count-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .count-row label{margin:0;}
+  .count-row input[type=number]{width:80px;}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:9px 16px;border-radius:7px;border:1px solid var(--navy);
+    background:var(--navy);color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;
+  }
+  .btn.secondary{background:#fff;color:var(--navy);}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--ink-soft);}
+  .btn.small{padding:6px 11px;font-size:12px;}
+  .btn.danger{background:#fff;color:var(--danger);border-color:var(--danger);}
+  .btn:hover{filter:brightness(1.08);}
+
+  table.inv-table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  table.inv-table th{font-size:11.5px;text-align:left;color:var(--ink-soft);padding:4px 6px;}
+  table.inv-table td{padding:4px 6px;}
+  table.inv-table input,table.inv-table select{padding:7px 8px;font-size:13px;}
+  .inv-item-col{width:42%;}
+  .inv-qty-col{width:16%;}
+  .inv-cond-col{width:26%;}
+  .inv-rm-col{width:8%;text-align:center;}
+
+  .checklist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 14px;margin-bottom:12px;}
+  .checklist label{
+    display:flex;align-items:flex-start;gap:8px;font-weight:400;font-size:13.5px;color:var(--ink);
+    cursor:pointer;
+  }
+  .checklist input[type=checkbox]{margin-top:3px;width:15px;height:15px;flex:none;}
+
+  .sig-block{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:14px;background:#fffefb;}
+  .sig-block .block-title{font-weight:700;font-size:13px;color:var(--navy);margin-bottom:8px;}
+  canvas.sig-pad{
+    width:100%;height:130px;border:1px dashed var(--line);border-radius:6px;
+    background:#fff;touch-action:none;cursor:crosshair;
+  }
+  .sig-controls{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:10px;flex-wrap:wrap;}
+
+  .create-bar{text-align:center;margin:26px 0 4px;}
+  .create-bar .btn{padding:13px 32px;font-size:15px;}
+
+  #previewSection{margin-top:34px;}
+  .preview-toolbar{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    margin-bottom:16px;
+  }
+  .preview-toolbar .title{font-family:var(--serif);font-size:20px;color:var(--navy-deep);}
+  .download-bar{display:flex;gap:10px;flex-wrap:wrap;}
+
+  #previewDoc{
+    background:#fffefb;border:1px solid var(--line);border-radius:8px;
+    padding:44px 50px;font-family:var(--serif);color:#1a1a1a;font-size:14.5px;line-height:1.65;
+  }
+  #previewDoc h2.doc-title{text-align:center;font-size:22px;margin:0 0 4px;letter-spacing:.5px;}
+  #previewDoc .doc-sub{text-align:center;font-size:12.5px;color:#666;margin:0 0 26px;font-family:var(--sans);}
+  #previewDoc h3.clause{font-size:15.5px;margin:26px 0 8px;border-bottom:1px solid #cfc6ac;padding-bottom:4px;}
+  #previewDoc p{margin:6px 0;}
+  #previewDoc table{width:100%;border-collapse:collapse;margin:10px 0 4px;font-size:13px;}
+  #previewDoc table th,#previewDoc table td{border:1px solid #cbbf9c;padding:6px 8px;text-align:left;}
+  #previewDoc table th{background:#f1e9d3;}
+  #previewDoc .photo-cell{width:44px;}
+  #previewDoc .party-photo{width:38px;height:38px;object-fit:cover;border-radius:5px;border:1px solid #cbbf9c;display:block;}
+  #previewDoc ul{margin:6px 0;padding-left:22px;}
+  #previewDoc .sig-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:14px;}
+  #previewDoc .sig-cell{border-top:1px solid #1a1a1a;padding-top:6px;}
+  #previewDoc .sig-cell img{max-height:70px;display:block;margin-bottom:4px;}
+  #previewDoc .sig-cell .name{font-weight:700;}
+  #previewDoc .sig-cell .role{font-size:11.5px;color:#555;font-family:var(--sans);}
+
+  #previewDoc .cover-page{
+    min-height:560px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:30px 10px 50px;
+  }
+  #previewDoc .cover-eyebrow{
+    font-family:var(--sans);font-size:12px;letter-spacing:3px;color:var(--brass);
+    text-transform:uppercase;margin-bottom:18px;font-weight:700;
+  }
+  #previewDoc .cover-title{font-size:34px;margin:0 0 26px;letter-spacing:.5px;}
+  #previewDoc .cover-between,#previewDoc .cover-and,#previewDoc .cover-for{
+    font-size:13px;color:#666;font-family:var(--sans);margin:10px 0;letter-spacing:.5px;text-transform:uppercase;
+  }
+  #previewDoc .cover-party{font-size:20px;font-weight:700;margin:2px 0;color:var(--navy-deep);}
+  #previewDoc .cover-property{font-size:16px;margin:4px 0 22px;max-width:480px;color:#333;}
+  #previewDoc .cover-date{font-size:12.5px;color:#666;font-family:var(--sans);margin-top:20px;border-top:1px solid #cfc6ac;padding-top:14px;}
+  #previewDoc .page-break{border:none;border-top:1px dashed #cbbf9c;margin:20px 0 30px;position:relative;page-break-after:always;}
+  #previewDoc .page-break::after{
+    content:"";
+  }
+  @media print{ #previewDoc .page-break{ page-break-after:always; } }
+
+  #previewDoc .rent-schedule-wrap{max-height:none;}
+  #previewDoc table.rent-schedule th{background:#e9dfc2;}
+
+  /* PDF export overrides: white background, no table shading */
+  .pdf-export, .pdf-export *{background-color:#ffffff !important;}
+  .pdf-export table th{background:#ffffff !important;border-bottom:2px solid #333 !important;}
+  .pdf-export .cover-eyebrow{color:#555 !important;}
+  .pdf-export .cover-party{color:#111 !important;}
+
+  .empty-note{font-size:12px;color:var(--ink-soft);font-style:italic;}
+  @media(max-width:640px){
+    #previewDoc{padding:24px 18px;}
+    header.hero{flex-direction:column;text-align:center;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="hero">
+    <div class="seal">RA</div>
+    <div style="flex:1;">
+      <h1>Rental Agreement Generator</h1>
+      <p>Fill in the details below, preview the agreement, then download it as Word or PDF.</p>
+    </div>
+    <button type="button" class="btn secondary" id="fillSampleBtn" style="flex:none;">⚡ Fill sample data</button>
+  </header>
+
+  <main id="formView">
+
+    <!-- 1. Tenants -->
+    <section class="section-card">
+      <h2><span class="num">1</span>Tenant Details</h2>
+      <p class="hint">Enter the number of tenants and their individual details.</p>
+      <div class="field" style="max-width:320px;">
+        <label for="tenancyType">Who is renting the property?</label>
+        <select id="tenancyType">
+          <option value="individual">Individual tenant(s) only</option>
+          <option value="family">Tenant(s) renting with family</option>
+          <option value="roommates">Tenant(s) renting with roommates</option>
+        </select>
+      </div>
+      <div class="count-row">
+        <label for="tenantCount">Number of tenants</label>
+        <input type="number" id="tenantCount" min="1" max="10" value="1">
+      </div>
+      <p class="hint" style="margin:-4px 0 10px;">Tick "Primary tenant" for whoever is responsible for paying rent and financial obligations under this Agreement.</p>
+      <div id="tenantsContainer"></div>
+
+      <div id="occupantsWrap" style="display:none;margin-top:8px;">
+        <div class="block-title" style="font-weight:700;font-size:13px;color:var(--navy);margin-bottom:8px;">Additional Occupants (Family Members / Roommates)</div>
+        <table class="inv-table">
+          <thead><tr><th class="inv-item-col">Name</th><th class="inv-cond-col">Relationship</th><th class="inv-qty-col">Age (optional)</th><th class="inv-rm-col"></th></tr></thead>
+          <tbody id="occupantsBody"></tbody>
+        </table>
+        <button type="button" class="btn secondary small" id="addOccupantRow">+ Add occupant</button>
+      </div>
+    </section>
+
+    <!-- 2. Landlord & Property -->
+    <section class="section-card">
+      <h2><span class="num">2</span>Landlord &amp; Property Details</h2>
+      <p class="hint">Enter the number of landlords/owners and the address of the property being rented.</p>
+      <div class="count-row">
+        <label for="landlordCount">Number of landlords</label>
+        <input type="number" id="landlordCount" min="1" max="6" value="1">
+      </div>
+      <div id="landlordsContainer"></div>
+      <div class="grid" style="margin-top:6px;">
+        <div class="field" style="grid-column:1/-1;">
+          <label>Rental property address (the property being let out)</label>
+          <textarea id="propertyAddress" rows="2" placeholder="Full address of the property being rented"></textarea>
+        </div>
+        <div class="field">
+          <label>Property type</label>
+          <select id="propertyType">
+            <option>Apartment / Flat</option>
+            <option>Independent House</option>
+            <option>Villa</option>
+            <option>Studio</option>
+            <option>Shared Room</option>
+            <option>Commercial Space</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>No. of bedrooms</label>
+          <input type="number" id="bedrooms" min="0" value="2">
+        </div>
+        <div class="field">
+          <label>No. of bathrooms</label>
+          <input type="number" id="bathrooms" min="0" value="2">
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Tenure & Financials -->
+    <section class="section-card">
+      <h2><span class="num">3</span>Tenure &amp; Financial Terms</h2>
+      <div class="grid">
+        <div class="field"><label>Agreement start date</label><input type="date" id="startDate"></div>
+        <div class="field"><label>Tenure (months)</label><input type="number" id="tenureMonths" min="1" value="11"></div>
+        <div class="field"><label>Rent due date (day of month)</label><input type="number" id="rentDueDay" min="1" max="31" value="5"></div>
+        <div class="field"><label>Monthly rent amount</label><input type="text" id="monthlyRent" placeholder="e.g. 25,000"></div>
+        <div class="field"><label>Security deposit amount</label><input type="text" id="securityDeposit" placeholder="e.g. 75,000"></div>
+        <div class="field"><label>Holding / token amount paid</label><input type="text" id="holdingAmount" placeholder="e.g. 5,000"></div>
+        <div class="field"><label>Monthly maintenance amount</label><input type="text" id="maintenanceAmount" placeholder="e.g. 2,000"></div>
+        <div class="field"><label>Annual rent escalation (%)</label><input type="text" id="escalation" placeholder="e.g. 5%"></div>
+        <div class="field"><label>Move-in / move-out charges (one-time, borne by tenant)</label><input type="text" id="moveInOutCharges" placeholder="e.g. 1,500"></div>
+        <div class="field"><label>Tenant name change charges (per change, if applicable)</label><input type="text" id="nameChangeCharges" placeholder="e.g. 1,000"></div>
+      </div>
+    </section>
+
+    <!-- 4. End of Tenure & Termination -->
+    <section class="section-card">
+      <h2><span class="num">4</span>End of Tenure, Notice &amp; Early Termination</h2>
+      <div class="grid">
+        <div class="field"><label>Notice period for termination (days)</label><input type="number" id="noticePeriodDays" min="0" value="30"></div>
+        <div class="field"><label>Security deposit refund within (days of vacating)</label><input type="number" id="depositRefundDays" min="0" value="15"></div>
+        <div class="field"><label>Landlord may terminate after non-payment for (months)</label><input type="number" id="rentDefaultMonths" min="1" value="2"></div>
+      </div>
+      <div class="field">
+        <label>Additional end-of-tenure / termination terms (optional)</label>
+        <textarea id="terminationNotes" rows="2" placeholder="Any special conditions for early termination, lock-in period, or forfeiture of deposit"></textarea>
+      </div>
+    </section>
+
+    <!-- 5. Move-Out Clearance -->
+    <section class="section-card">
+      <h2><span class="num">5</span>Move-Out Clearance &amp; Dues</h2>
+      <p class="hint">Clearances the tenant must obtain/settle before the security deposit is refunded.</p>
+      <div class="checklist" id="moveOutClearanceList"></div>
+      <div class="field">
+        <label>Additional move-out clearance items (optional)</label>
+        <textarea id="moveOutClearanceCustom" rows="2" placeholder="Add any other clearance required specific to this property"></textarea>
+      </div>
+    </section>
+
+    <!-- 6. Utilities & Bills -->
+    <section class="section-card">
+      <h2><span class="num">6</span>Utilities &amp; Bills</h2>
+      <p class="hint">Specify whether each utility is included in the rent or is the tenant's own personal obligation (billed separately/directly to the tenant).</p>
+      <table class="inv-table">
+        <thead><tr><th class="inv-item-col">Utility</th><th class="inv-cond-col">Rent Inclusion</th><th class="inv-rm-col"></th></tr></thead>
+        <tbody id="utilitiesBody"></tbody>
+      </table>
+      <button type="button" class="btn secondary small" id="addUtilityRow">+ Add utility</button>
+      <div class="field" style="margin-top:10px;">
+        <label>Notes on utilities / billing (optional)</label>
+        <textarea id="utilitiesNotes" rows="2" placeholder="e.g. Electricity billed on sub-meter reading; tenant to open accounts in their own name where applicable."></textarea>
+      </div>
+    </section>
+
+    <!-- 7. Property Inventory -->
+    <section class="section-card">
+      <h2><span class="num">7</span>Property Inventory &amp; Fixtures</h2>
+      <p class="hint">List furniture, fittings and fixtures being handed over with the property. Edit quantities/condition or add your own items.</p>
+      <table class="inv-table">
+        <thead><tr>
+          <th class="inv-item-col">Item</th><th class="inv-qty-col">Quantity</th><th class="inv-cond-col">Condition</th><th class="inv-rm-col"></th>
+        </tr></thead>
+        <tbody id="inventoryBody"></tbody>
+      </table>
+      <button type="button" class="btn secondary small" id="addInventoryRow">+ Add item</button>
+    </section>
+
+    <!-- 8. Key Details -->
+    <section class="section-card">
+      <h2><span class="num">8</span>Key Details</h2>
+      <p class="hint">Keys and access items handed over to the tenant at move-in.</p>
+      <table class="inv-table">
+        <thead><tr><th class="inv-item-col">Key / Access Item</th><th class="inv-qty-col">Quantity</th><th class="inv-rm-col"></th></tr></thead>
+        <tbody id="keysBody"></tbody>
+      </table>
+      <button type="button" class="btn secondary small" id="addKeyRow">+ Add item</button>
+    </section>
+
+    <!-- 9. Maintenance -->
+    <section class="section-card">
+      <h2><span class="num">9</span>Maintenance Details</h2>
+      <div class="field">
+        <label>What does the maintenance amount cover / how is maintenance handled?</label>
+        <textarea id="maintenanceDetails" rows="3" placeholder="e.g. Covers common area upkeep, water supply, lift maintenance, security. Tenant to bear internal repairs under Rs.1,000; landlord bears repairs above this."></textarea>
+      </div>
+    </section>
+
+    <!-- 10. Viewing details -->
+    <section class="section-card">
+      <h2><span class="num">10</span>Property Viewing / Handover Details</h2>
+      <div class="grid">
+        <div class="field"><label>Viewing date</label><input type="date" id="viewingDate"></div>
+        <div class="field"><label>Viewing time</label><input type="time" id="viewingTime"></div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Notes (attendees, key handover, inspection remarks)</label>
+          <textarea id="viewingNotes" rows="2" placeholder="e.g. Property viewed and inspected jointly by tenant and landlord on this date; keys to be handed over at move-in."></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. House Inspection Rules -->
+    <section class="section-card">
+      <h2><span class="num">11</span>House Inspection Rules</h2>
+      <div class="grid">
+        <div class="field"><label>Advance notice for inspection (hours)</label><input type="number" id="inspectionNoticeHours" min="0" value="24"></div>
+        <div class="field">
+          <label>Inspection frequency</label>
+          <select id="inspectionFrequency">
+            <option>As needed, with prior notice</option>
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Twice a year</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Additional inspection notes (optional)</label>
+        <textarea id="inspectionNotes" rows="2" placeholder="e.g. Inspections to be conducted during daytime hours in the presence of the tenant."></textarea>
+      </div>
+    </section>
+
+    <!-- 12. Good Tenant Discount -->
+    <section class="section-card">
+      <h2><span class="num">12</span>Good Tenant Discount</h2>
+      <p class="hint">Optional incentive for consistently well-maintained inspections.</p>
+      <div class="grid">
+        <div class="field"><label>Consecutive Grade A inspections required</label><input type="number" id="gradeAStreak" min="1" value="3"></div>
+        <div class="field">
+          <label>Discount type</label>
+          <select id="discountType">
+            <option>Percentage off next month's rent</option>
+            <option>Fixed amount off next month's rent</option>
+          </select>
+        </div>
+        <div class="field"><label>Discount value</label><input type="text" id="discountValue" placeholder="e.g. 5% or 1,000"></div>
+      </div>
+      <div class="field">
+        <label>Additional notes (optional)</label>
+        <textarea id="discountNotes" rows="2" placeholder="Any conditions attached to the discount"></textarea>
+      </div>
+    </section>
+
+    <!-- 13. Guarantor -->
+    <section class="section-card">
+      <h2><span class="num">13</span>Guarantor Details</h2>
+      <p class="hint">Optional. Set to 0 if no guarantor is required.</p>
+      <div class="count-row">
+        <label for="guarantorCount">Number of guarantors</label>
+        <input type="number" id="guarantorCount" min="0" max="4" value="1">
+      </div>
+      <div id="guarantorsContainer"></div>
+    </section>
+
+    <!-- 11 / 12. Responsibilities -->
+    <section class="section-card">
+      <h2><span class="num">14</span>Tenant Responsibilities</h2>
+      <div class="checklist" id="tenantRespList"></div>
+      <div class="field">
+        <label>Additional tenant responsibilities (optional)</label>
+        <textarea id="tenantRespCustom" rows="2" placeholder="Add any other clauses specific to this agreement"></textarea>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <h2><span class="num">15</span>Landlord Responsibilities</h2>
+      <div class="checklist" id="landlordRespList"></div>
+      <div class="field">
+        <label>Additional landlord responsibilities (optional)</label>
+        <textarea id="landlordRespCustom" rows="2" placeholder="Add any other clauses specific to this agreement"></textarea>
+      </div>
+    </section>
+
+    <!-- 13. House Rules -->
+    <section class="section-card">
+      <h2><span class="num">16</span>House Rules</h2>
+      <div class="checklist" id="houseRulesList"></div>
+      <div class="field">
+        <label>Additional house rules (optional)</label>
+        <textarea id="houseRulesCustom" rows="2" placeholder="Add any other house rules specific to this property"></textarea>
+      </div>
+    </section>
+
+    <!-- 14. Legal, Insurance & Move-Out -->
+    <section class="section-card">
+      <h2><span class="num">17</span>Legal Obligations, Insurance &amp; Move-Out Guidance</h2>
+      <div class="grid">
+        <div class="field">
+          <label>Stamp duty / registration charges borne by</label>
+          <select id="stampDutyBy">
+            <option>Tenant</option>
+            <option>Landlord</option>
+            <option>Shared equally between Tenant and Landlord</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Legal compliance note</label>
+        <textarea id="legalNotes" rows="2">Both parties shall comply with all applicable central, state and local laws governing rental tenancies, including registration of this Agreement wherever mandated by law.</textarea>
+      </div>
+      <div class="checklist" id="insuranceList"></div>
+      <div class="field">
+        <label>Insurance notes (optional)</label>
+        <textarea id="insuranceNotes" rows="2" placeholder="Any specific insurance arrangement agreed between the parties"></textarea>
+      </div>
+      <div class="field">
+        <label>Post move-out guidance for tenant</label>
+        <textarea id="moveOutNotes" rows="3">Upon vacating the premises, the Tenant is advised to: (a) redirect or stop all postal and courier communication addressed to this property and refrain from using this address for future correspondence; (b) update the registered address on official records including mobile SIM registration, passport, voter ID and Aadhar card to the new residential address.</textarea>
+      </div>
+    </section>
+
+    <!-- 15. Disclosure -->
+    <section class="section-card">
+      <h2><span class="num">18</span>Disclosure &amp; Permitted Use</h2>
+      <p class="hint">This clause is included by default and can be edited if needed.</p>
+      <div class="field">
+        <textarea id="disclosureText" rows="3">This Agreement is executed for residential use of the property only and shall not be used to validate, support or conduct any commercial purpose or business activity at the premises without the Landlord's prior written consent. This document is provided as a template for convenience and does not constitute legal advice; the parties are advised to consult a qualified legal professional and ensure compliance with local rental laws before execution.</textarea>
+      </div>
+    </section>
+
+    <!-- 16. Custom Clauses -->
+    <section class="section-card">
+      <h2><span class="num">19</span>Additional Custom Clauses</h2>
+      <p class="hint">Add any extra terms specific to this agreement. They will appear as a separate "Additional Terms" section in the document.</p>
+      <div id="customClausesContainer"></div>
+      <button type="button" class="btn secondary small" id="addCustomClause">+ Add custom clause</button>
+    </section>
+
+    <!-- 17. Signatures -->
+    <section class="section-card">
+      <h2><span class="num">20</span>Signature Panel</h2>
+      <p class="hint">Sign using mouse, stylus or touch. This will appear on the final agreement.</p>
+      <div id="signaturesContainer"></div>
+    </section>
+
+    <div class="create-bar">
+      <button type="button" class="btn" id="createBtn">Generate Agreement Preview</button>
+    </div>
+
+  </main>
+
+  <section id="previewSection" hidden>
+    <div class="preview-toolbar">
+      <div class="title">Preview</div>
+      <div class="download-bar">
+        <button class="btn secondary" id="editBtn">✎ Edit details</button>
+        <button class="btn" id="downloadWordBtn">⬇ Download Word</button>
+        <button class="btn" id="downloadPdfBtn">⬇ Download PDF</button>
+      </div>
+    </div>
+    <div id="previewDoc"></div>
+  </section>
+
+</div>
+
+<script>
+/* ---------------- Templates & default data ---------------- */
+const defaultInventory = [
+  ["Bed","2","Good"],
+  ["Wardrobe","2","Good"],
+  ["Ceiling Fan","3","Good"],
+  ["Light Bulbs / Fixtures","6","Good"],
+  ["Mirror","2","Good"],
+  ["Sofa Set","1","Good"],
+  ["Dining Table & Chairs","1","Good"],
+  ["Kitchen Cabinets & Countertop","1","Good"],
+  ["Chimney / Exhaust Fan","1","Good"],
+  ["Geyser / Water Heater","2","Good"],
+  ["Air Conditioner","0","New"],
+  ["Curtains / Blinds","4","Good"],
+  ["Parking Space (Car/Bike)","1","Good"]
+];
+
+const tenantResp = [
+  "Pay rent on or before the agreed due date each month",
+  "Pay utility bills (electricity, water, gas, internet) on time",
+  "Maintain cleanliness and hygiene of the premises",
+  "Not sublet or assign the premises without written consent",
+  "Not make structural alterations without landlord's approval",
+  "Report any damages or maintenance issues promptly",
+  "Avoid activities that cause disturbance to neighbours",
+  "Not use the premises for illegal or commercial activities",
+  "Allow landlord/agent to inspect the property with prior notice",
+  "Return the property and inventory in the same condition as received (normal wear and tear excepted)",
+  "Vacate the premises on lease expiry or termination as agreed"
+];
+
+const landlordResp = [
+  "Hand over peaceful and vacant possession of the property",
+  "Ensure the property is habitable and complies with safety standards",
+  "Carry out major structural repairs not caused by tenant negligence",
+  "Ensure essential services (water, electricity) are functional at handover",
+  "Respond to and resolve maintenance complaints within a reasonable time",
+  "Refund the security deposit within the agreed period, after lawful deductions",
+  "Not enter the premises without prior notice except in genuine emergencies",
+  "Provide proper rent receipts / documentation",
+  "Ensure property tax and building compliance are up to date",
+  "Not disconnect essential utilities during the tenancy"
+];
+
+const houseRules = [
+  "No smoking inside the premises",
+  "No unauthorized alterations to electrical wiring or plumbing fixtures",
+  "Abide by the housing society / RWA rules, timings and norms",
+  "No employing domestic help / househelp without prior verification or society/police clearance",
+  "No keeping pets without prior written consent of the landlord",
+  "Inform security/watchman of visitors and guests as per society norms",
+  "No loud music or activities causing disturbance after 10 PM",
+  "No storage of hazardous, flammable or illegal material on the premises",
+  "Keep common areas (lobby, stairs, terrace, parking) clean and unobstructed"
+];
+
+const insuranceOptions = [
+  "Landlord's property insurance covers the building structure only, not tenant belongings",
+  "Tenant is recommended to obtain renter's / contents insurance for personal belongings",
+  "Landlord is recommended to maintain a valid property insurance policy through the tenancy"
+];
+
+const defaultUtilities = [
+  ["Electricity","Excluded - Tenant's own account"],
+  ["Water Supply","Excluded - Tenant's own account"],
+  ["Cooking Gas / LPG","Excluded - Tenant's own account"],
+  ["Internet / Cable / DTH","Excluded - Tenant's own account"],
+  ["Society Maintenance","Included in rent"]
+];
+const utilityInclusionOptions = ["Included in rent","Excluded - Tenant's own account"];
+
+const moveOutClearance = [
+  "Obtain a \"No Dues Certificate\" from the housing society / RWA before vacating",
+  "Clear all council / property tax dues up to the date of vacating",
+  "Clear and close/transfer the electricity bill account, if registered in the tenant's name",
+  "Clear and close/transfer the water bill account, if registered in the tenant's name",
+  "Clear any other utility or society dues outstanding in the tenant's name",
+  "Return all keys and access cards to the landlord"
+];
+
+const defaultKeys = [
+  ["Main Door Key","2"],
+  ["Society Gate Key / Access Card","1"],
+  ["Mailbox Key","1"],
+  ["Additional / Spare Key","0"]
+];
+
+/* ---------------- Person block templates ---------------- */
+function photoUploadHTML(uid){
+  return `<div class="field photo-field">
+    <label>Photo (optional)</label>
+    <div class="photo-row">
+      <img class="p-photo-preview" id="photo-${uid}" style="display:none;">
+      <label class="btn ghost small photo-upload-btn" for="file-${uid}">Upload photo</label>
+      <input type="file" accept="image/*" id="file-${uid}" class="p-photo-file" style="display:none;" onchange="handlePhotoUpload(this,'photo-${uid}')">
+      <button type="button" class="btn ghost small photo-remove-btn" style="display:none;" onclick="removePhoto(this,'photo-${uid}')">Remove</button>
+    </div>
+  </div>`;
+}
+function tenantBlock(i){
+  const uid = 'tenant-'+i;
+  return `<div class="person-block" data-tenant="${i}">
+    ${i>1?`<button type="button" class="remove-btn" onclick="removePerson(this,'tenant')">Remove</button>`:''}
+    <div class="block-title">Tenant ${i}</div>
+    <div class="grid">
+      <div class="field"><label>Full name</label><input type="text" class="p-name"></div>
+      <div class="field"><label>Phone number</label><input type="tel" class="p-phone"></div>
+      <div class="field"><label>Email ID</label><input type="email" class="p-email"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Previous address</label><input type="text" class="p-address"></div>
+      <div class="field" style="grid-column:1/-1;">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600;color:var(--ink-soft);font-size:12.5px;">
+          <input type="checkbox" class="p-primary" ${i===1?'checked':''} style="width:15px;height:15px;">
+          Primary tenant (responsible for rent &amp; financial obligations)
+        </label>
+      </div>
+      ${photoUploadHTML(uid)}
+    </div>
+  </div>`;
+}
+function landlordBlock(i){
+  const uid = 'landlord-'+i;
+  return `<div class="person-block" data-landlord="${i}">
+    ${i>1?`<button type="button" class="remove-btn" onclick="removePerson(this,'landlord')">Remove</button>`:''}
+    <div class="block-title">Landlord ${i}</div>
+    <div class="grid">
+      <div class="field"><label>Full name</label><input type="text" class="p-name"></div>
+      <div class="field"><label>Phone number</label><input type="tel" class="p-phone"></div>
+      <div class="field"><label>Email ID</label><input type="email" class="p-email"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Landlord's current address</label><input type="text" class="p-address"></div>
+      ${photoUploadHTML(uid)}
+    </div>
+  </div>`;
+}
+function guarantorBlock(i){
+  const uid = 'guarantor-'+i;
+  return `<div class="person-block" data-guarantor="${i}">
+    ${i>1?`<button type="button" class="remove-btn" onclick="removePerson(this,'guarantor')">Remove</button>`:''}
+    <div class="block-title">Guarantor ${i}</div>
+    <div class="grid">
+      <div class="field"><label>Full name</label><input type="text" class="p-name"></div>
+      <div class="field"><label>Phone number</label><input type="tel" class="p-phone"></div>
+      <div class="field"><label>Email ID</label><input type="email" class="p-email"></div>
+      <div class="field"><label>Relationship to tenant</label><input type="text" class="p-relation"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Address</label><input type="text" class="p-address"></div>
+      ${photoUploadHTML(uid)}
+    </div>
+  </div>`;
+}
+function handlePhotoUpload(input, imgId){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const img = document.getElementById(imgId);
+    img.src = e.target.result;
+    img.style.display = 'inline-block';
+    const block = input.closest('.photo-row');
+    block.querySelector('.photo-remove-btn').style.display = 'inline-flex';
+  };
+  reader.readAsDataURL(file);
+}
+function removePhoto(btn,imgId){
+  const img = document.getElementById(imgId);
+  img.src=''; img.style.display='none';
+  btn.style.display='none';
+  const row = btn.closest('.photo-row');
+  const fileInput = row.querySelector('.p-photo-file');
+  if(fileInput) fileInput.value='';
+}
+
+function renderGroup(containerId, count, tpl){
+  const el = document.getElementById(containerId);
+  let html='';
+  for(let i=1;i<=count;i++) html+=tpl(i);
+  el.innerHTML = html || `<p class="empty-note">None added.</p>`;
+}
+function removePerson(btn,type){
+  const countInput = document.getElementById(type+'Count');
+  countInput.value = Math.max(type==='guarantor'?0:1, parseInt(countInput.value)-1);
+  countInput.dispatchEvent(new Event('change'));
+}
+
+/* re-render on count change */
+document.getElementById('tenantCount').addEventListener('change', e=>{
+  renderGroup('tenantsContainer', Math.max(1,parseInt(e.target.value)||1), tenantBlock);
+  renderSignatures();
+});
+document.getElementById('landlordCount').addEventListener('change', e=>{
+  renderGroup('landlordsContainer', Math.max(1,parseInt(e.target.value)||1), landlordBlock);
+  renderSignatures();
+});
+document.getElementById('guarantorCount').addEventListener('change', e=>{
+  renderGroup('guarantorsContainer', Math.max(0,parseInt(e.target.value)||0), guarantorBlock);
+  renderSignatures();
+});
+
+/* ---------------- Inventory ---------------- */
+const conditions = ["New","Good","Fair","Worn","Damaged"];
+function inventoryRow(item="",qty="",cond="Good"){
+  const row = document.createElement('tr');
+  row.className='inventory-row';
+  row.innerHTML = `
+    <td><input type="text" class="inv-item" value="${item}" placeholder="Item name"></td>
+    <td><input type="number" class="inv-qty" min="0" value="${qty}"></td>
+    <td><select class="inv-cond">${conditions.map(c=>`<option ${c===cond?'selected':''}>${c}</option>`).join('')}</select></td>
+    <td class="inv-rm-col"><button type="button" class="btn ghost small" onclick="this.closest('tr').remove()">✕</button></td>`;
+  return row;
+}
+function initInventory(){
+  const body = document.getElementById('inventoryBody');
+  defaultInventory.forEach(([i,q,c])=>body.appendChild(inventoryRow(i,q,c)));
+}
+document.getElementById('addInventoryRow').addEventListener('click', ()=>{
+  document.getElementById('inventoryBody').appendChild(inventoryRow());
+});
+
+/* ---------------- Utilities ---------------- */
+function utilityRow(item="",inclusion=utilityInclusionOptions[1]){
+  const row = document.createElement('tr');
+  row.className='utility-row';
+  row.innerHTML = `
+    <td><input type="text" class="util-item" value="${item}" placeholder="Utility name"></td>
+    <td><select class="util-inclusion">${utilityInclusionOptions.map(o=>`<option ${o===inclusion?'selected':''}>${o}</option>`).join('')}</select></td>
+    <td class="inv-rm-col"><button type="button" class="btn ghost small" onclick="this.closest('tr').remove()">✕</button></td>`;
+  return row;
+}
+function initUtilities(){
+  const body = document.getElementById('utilitiesBody');
+  defaultUtilities.forEach(([i,inc])=>body.appendChild(utilityRow(i,inc)));
+}
+document.getElementById('addUtilityRow').addEventListener('click', ()=>{
+  document.getElementById('utilitiesBody').appendChild(utilityRow());
+});
+
+/* ---------------- Keys ---------------- */
+function keyRow(item="",qty=""){
+  const row = document.createElement('tr');
+  row.className='key-row';
+  row.innerHTML = `
+    <td><input type="text" class="key-item" value="${item}" placeholder="Key / access item"></td>
+    <td><input type="number" class="key-qty" min="0" value="${qty}"></td>
+    <td class="inv-rm-col"><button type="button" class="btn ghost small" onclick="this.closest('tr').remove()">✕</button></td>`;
+  return row;
+}
+function initKeys(){
+  const body = document.getElementById('keysBody');
+  defaultKeys.forEach(([i,q])=>body.appendChild(keyRow(i,q)));
+}
+document.getElementById('addKeyRow').addEventListener('click', ()=>{
+  document.getElementById('keysBody').appendChild(keyRow());
+});
+
+/* ---------------- Occupants (family / roommates) ---------------- */
+const occupantRelationOptions = ["Spouse","Child","Parent","Sibling","Roommate","Other"];
+function occupantRow(name="",relation=occupantRelationOptions[0],age=""){
+  const row = document.createElement('tr');
+  row.className='occupant-row';
+  row.innerHTML = `
+    <td><input type="text" class="occ-name" value="${name}" placeholder="Full name"></td>
+    <td><select class="occ-relation">${occupantRelationOptions.map(o=>`<option ${o===relation?'selected':''}>${o}</option>`).join('')}</select></td>
+    <td><input type="number" class="occ-age" min="0" value="${age}"></td>
+    <td class="inv-rm-col"><button type="button" class="btn ghost small" onclick="this.closest('tr').remove()">✕</button></td>`;
+  return row;
+}
+document.getElementById('addOccupantRow').addEventListener('click', ()=>{
+  document.getElementById('occupantsBody').appendChild(occupantRow());
+});
+document.getElementById('tenancyType').addEventListener('change', e=>{
+  const wrap = document.getElementById('occupantsWrap');
+  wrap.style.display = e.target.value==='individual' ? 'none' : 'block';
+});
+
+/* ---------------- Custom clauses ---------------- */
+let customClauseCount = 0;
+function addCustomClauseBlock(title="",body=""){
+  customClauseCount++;
+  const div = document.createElement('div');
+  div.className = 'person-block custom-clause-block';
+  div.innerHTML = `
+    <button type="button" class="remove-btn" onclick="this.closest('.custom-clause-block').remove()">Remove</button>
+    <div class="block-title">Custom Clause ${customClauseCount}</div>
+    <div class="field"><label>Clause title</label><input type="text" class="cc-title" value="${title}" placeholder="e.g. Parking Allocation"></div>
+    <div class="field"><label>Clause details</label><textarea class="cc-body" rows="2" placeholder="Details of this clause">${body}</textarea></div>`;
+  document.getElementById('customClausesContainer').appendChild(div);
+}
+document.getElementById('addCustomClause').addEventListener('click', ()=>addCustomClauseBlock());
+
+/* ---------------- Responsibilities checklists ---------------- */
+function initChecklist(containerId, items){
+  const el = document.getElementById(containerId);
+  el.innerHTML = items.map((t,idx)=>`<label><input type="checkbox" class="resp-check" value="${t.replace(/"/g,'&quot;')}" checked> ${t}</label>`).join('');
+}
+
+/* ---------------- Signature pads ---------------- */
+function sigBlockHTML(role,label,id){
+  return `<div class="sig-block" data-role="${role}" data-label="${label}">
+    <div class="block-title">${label}</div>
+    <canvas class="sig-pad" id="${id}"></canvas>
+    <div class="sig-controls">
+      <label style="margin:0;">Date: <input type="date" class="sig-date" style="width:150px;display:inline-block;"></label>
+      <button type="button" class="btn ghost small" onclick="clearPad('${id}')">Clear signature</button>
+    </div>
+  </div>`;
+}
+function renderSignatures(){
+  const tCount = Math.max(1,parseInt(document.getElementById('tenantCount').value)||1);
+  const lCount = Math.max(1,parseInt(document.getElementById('landlordCount').value)||1);
+  const gCount = Math.max(0,parseInt(document.getElementById('guarantorCount').value)||0);
+  let html='';
+  for(let i=1;i<=tCount;i++) html+=sigBlockHTML('tenant',`Tenant ${i} Signature`,`sig-tenant-${i}`);
+  for(let i=1;i<=lCount;i++) html+=sigBlockHTML('landlord',`Landlord ${i} Signature`,`sig-landlord-${i}`);
+  for(let i=1;i<=gCount;i++) html+=sigBlockHTML('guarantor',`Guarantor ${i} Signature`,`sig-guarantor-${i}`);
+  document.getElementById('signaturesContainer').innerHTML = html;
+  document.querySelectorAll('canvas.sig-pad').forEach(setupPad);
+}
+const padStore = {}; // id -> {ctx, drawing}
+function setupPad(canvas){
+  const ratio = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 300, cssH = canvas.clientHeight || 130;
+  canvas.width = cssW*ratio; canvas.height = cssH*ratio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ratio,ratio);
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2; ctx.lineCap='round';
+  let drawing=false, last=null;
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return {x:p.clientX-r.left, y:p.clientY-r.top};
+  }
+  function start(e){ drawing=true; last=pos(e); e.preventDefault(); }
+  function move(e){
+    if(!drawing) return;
+    const p = pos(e);
+    ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    last=p; e.preventDefault();
+  }
+  function end(){ drawing=false; }
+  canvas.addEventListener('mousedown',start);
+  canvas.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',end);
+  canvas.addEventListener('touchstart',start,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  canvas.addEventListener('touchend',end);
+  padStore[canvas.id]=canvas;
+}
+function clearPad(id){
+  const c = document.getElementById(id);
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+}
+
+/* ---------------- Init ---------------- */
+renderGroup('tenantsContainer',1,tenantBlock);
+renderGroup('landlordsContainer',1,landlordBlock);
+renderGroup('guarantorsContainer',1,guarantorBlock);
+initInventory();
+initKeys();
+initUtilities();
+initChecklist('tenantRespList', tenantResp);
+initChecklist('landlordRespList', landlordResp);
+initChecklist('houseRulesList', houseRules);
+initChecklist('insuranceList', insuranceOptions);
+initChecklist('moveOutClearanceList', moveOutClearance);
+renderSignatures();
+
+/* ---------------- Sample data (for quick testing) ---------------- */
+function setVal(id,val){ const el=document.getElementById(id); if(el){ el.value = val; } }
+function setCount(id,val){
+  const el = document.getElementById(id);
+  el.value = val;
+  el.dispatchEvent(new Event('change'));
+}
+function fillSampleData(){
+  // Tenancy type
+  document.getElementById('tenancyType').value = 'roommates';
+  document.getElementById('tenancyType').dispatchEvent(new Event('change'));
+
+  // Tenants
+  setCount('tenantCount', 2);
+  const tBlocks = document.querySelectorAll('.person-block[data-tenant]');
+  const sampleTenants = [
+    {name:'Aditi', phone:'', email:'aditi@example.com', address:'Lotus Enclave, Andheri West, Mumbai, MH 400058', primary:true},
+    {name:'Rohan', phone:'', email:'rohan@example.com', address:'Palm Residency, Powai, Mumbai, MH 400076', primary:false}
+  ];
+  tBlocks.forEach((b,i)=>{
+    if(!sampleTenants[i]) return;
+    b.querySelector('.p-name').value = sampleTenants[i].name;
+    b.querySelector('.p-phone').value = sampleTenants[i].phone;
+    b.querySelector('.p-email').value = sampleTenants[i].email;
+    b.querySelector('.p-address').value = sampleTenants[i].address;
+    const primaryBox = b.querySelector('.p-primary');
+    if(primaryBox) primaryBox.checked = sampleTenants[i].primary;
+  });
+
+  // Occupants (roommate example)
+  document.getElementById('occupantsBody').innerHTML = '';
+  document.getElementById('occupantsBody').appendChild(occupantRow('Karan','Roommate','27'));
+
+  // Landlord
+  setCount('landlordCount', 1);
+  const lBlocks = document.querySelectorAll('.person-block[data-landlord]');
+  if(lBlocks[0]){
+    lBlocks[0].querySelector('.p-name').value = 'Suresh';
+    lBlocks[0].querySelector('.p-phone').value = '';
+    lBlocks[0].querySelector('.p-email').value = 'suresh@example.com';
+    lBlocks[0].querySelector('.p-address').value = 'Sunrise Apartments, Bandra East, Mumbai, MH 400051';
+  }
+
+  // Property
+  setVal('propertyAddress','Silver Oak Towers, Near City Mall, Malad West, Mumbai, MH 400064');
+  document.getElementById('propertyType').value = 'Apartment / Flat';
+  setVal('bedrooms', 2);
+  setVal('bathrooms', 2);
+
+  // Tenure & financials
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth()+1, 1);
+  setVal('startDate', start.toISOString().slice(0,10));
+  setVal('tenureMonths', 11);
+  setVal('rentDueDay', 5);
+  setVal('monthlyRent', '25,000');
+  setVal('securityDeposit', '75,000');
+  setVal('holdingAmount', '5,000');
+  setVal('maintenanceAmount', '2,000');
+  setVal('escalation', '5%');
+  setVal('moveInOutCharges', '1,500');
+  setVal('nameChangeCharges', '1,000');
+
+  // Maintenance
+  setVal('maintenanceDetails','Maintenance amount covers common area upkeep, lift maintenance, security and water supply charges. Internal repairs under Rs. 1,000 are borne by the tenant; repairs above this amount are borne by the landlord.');
+
+  // End of tenure / termination
+  setVal('noticePeriodDays', 30);
+  setVal('depositRefundDays', 15);
+  setVal('rentDefaultMonths', 2);
+  setVal('terminationNotes','Any deposit forfeiture on early termination will be limited to unpaid dues and documented damages.');
+
+  // Move-out clearance
+  document.querySelectorAll('#moveOutClearanceList input').forEach(c=>c.checked=true);
+  setVal('moveOutClearanceCustom','');
+
+  // Utilities: leave default rows as-is, just add a note
+  setVal('utilitiesNotes','Electricity billed on sub-meter reading and payable directly by the tenant to the electricity board.');
+
+  // Key details: leave defaults as-is
+
+  // House inspection
+  setVal('inspectionNoticeHours', 24);
+  document.getElementById('inspectionFrequency').value = 'Quarterly';
+  setVal('inspectionNotes','Inspections to be conducted during daytime hours in the presence of the tenant wherever possible.');
+
+  // Good tenant discount
+  setVal('gradeAStreak', 3);
+  document.getElementById('discountType').value = 'Percentage off next month\'s rent';
+  setVal('discountValue', '5%');
+  setVal('discountNotes','Discount applies at the sole discretion of the Landlord and is not cumulative across inspection cycles.');
+
+  // Viewing
+  const viewDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()+3);
+  setVal('viewingDate', viewDate.toISOString().slice(0,10));
+  setVal('viewingTime', '11:30');
+  setVal('viewingNotes','Property viewed and inspected jointly by tenant and landlord. Keys to be handed over on the agreement start date after execution of this document.');
+
+  // Guarantor
+  setCount('guarantorCount', 1);
+  const gBlocks = document.querySelectorAll('.person-block[data-guarantor]');
+  if(gBlocks[0]){
+    gBlocks[0].querySelector('.p-name').value = 'Meena';
+    gBlocks[0].querySelector('.p-phone').value = '';
+    gBlocks[0].querySelector('.p-email').value = 'meena@example.com';
+    gBlocks[0].querySelector('.p-relation').value = 'Mother of Tenant (Aditi)';
+    gBlocks[0].querySelector('.p-address').value = 'Green Valley Society, Pune, MH 411045';
+  }
+
+  // Responsibilities: ensure all default checkboxes remain checked
+  document.querySelectorAll('#tenantRespList input, #landlordRespList input, #houseRulesList input, #insuranceList input').forEach(c=>c.checked=true);
+  document.getElementById('stampDutyBy').value = 'Tenant';
+
+  // Sample custom clause
+  document.getElementById('customClausesContainer').innerHTML = '';
+  customClauseCount = 0;
+  addCustomClauseBlock('Parking Allocation','One covered parking slot is allocated to the tenant for the duration of the tenancy at no additional charge.');
+
+  // Signatures: draw a sample scribble on each pad so downloads preview fully populated
+  setTimeout(()=>{
+    document.querySelectorAll('canvas.sig-pad').forEach(c=>{
+      const block = c.closest('.sig-block');
+      const label = block.querySelector('.block-title').textContent.replace(' Signature','');
+      drawSampleSignature(c.id, label);
+      const dateInput = block.querySelector('.sig-date');
+      if(dateInput) dateInput.value = start.toISOString().slice(0,10);
+    });
+  }, 50);
+}
+function drawSampleSignature(canvasId, text){
+  const c = document.getElementById(canvasId);
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  const ratio = window.devicePixelRatio || 1;
+  const w = c.width/ratio, h = c.height/ratio;
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.save();
+  ctx.font = `italic 26px "Segoe Script","Brush Script MT",cursive`;
+  ctx.fillStyle = '#16334f';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, w*0.12, h*0.55);
+  ctx.strokeStyle = '#16334f';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(w*0.12, h*0.72);
+  ctx.lineTo(w*0.75, h*0.68);
+  ctx.stroke();
+  ctx.restore();
+}
+document.getElementById('fillSampleBtn').addEventListener('click', fillSampleData);
+
+/* ---------------- Data collection ---------------- */
+function collectPeople(selector){
+  return [...document.querySelectorAll(selector)].map(b=>({
+    name: b.querySelector('.p-name')?.value.trim() || '',
+    phone: b.querySelector('.p-phone')?.value.trim() || '',
+    email: b.querySelector('.p-email')?.value.trim() || '',
+    address: b.querySelector('.p-address')?.value.trim() || '',
+    relation: b.querySelector('.p-relation') ? b.querySelector('.p-relation').value.trim() : '',
+    primary: b.querySelector('.p-primary') ? b.querySelector('.p-primary').checked : false,
+    photo: (()=>{ const img=b.querySelector('.p-photo-preview'); return (img && img.src && img.style.display!=='none') ? img.src : ''; })()
+  }));
+}
+function collectOccupants(){
+  return [...document.querySelectorAll('.occupant-row')].map(r=>({
+    name: r.querySelector('.occ-name').value.trim(),
+    relation: r.querySelector('.occ-relation').value,
+    age: r.querySelector('.occ-age').value
+  })).filter(o=>o.name);
+}
+function collectInventory(){
+  return [...document.querySelectorAll('.inventory-row')].map(r=>({
+    item: r.querySelector('.inv-item').value.trim(),
+    qty: r.querySelector('.inv-qty').value,
+    cond: r.querySelector('.inv-cond').value
+  })).filter(r=>r.item);
+}
+function collectUtilities(){
+  return [...document.querySelectorAll('.utility-row')].map(r=>({
+    item: r.querySelector('.util-item').value.trim(),
+    inclusion: r.querySelector('.util-inclusion').value
+  })).filter(r=>r.item);
+}
+function collectKeys(){
+  return [...document.querySelectorAll('.key-row')].map(r=>({
+    item: r.querySelector('.key-item').value.trim(),
+    qty: r.querySelector('.key-qty').value
+  })).filter(r=>r.item);
+}
+function collectCustomClauses(){
+  return [...document.querySelectorAll('.custom-clause-block')].map(b=>({
+    title: b.querySelector('.cc-title').value.trim(),
+    body: b.querySelector('.cc-body').value.trim()
+  })).filter(c=>c.title || c.body);
+}
+function collectChecked(containerId){
+  return [...document.querySelectorAll('#'+containerId+' input:checked')].map(c=>c.value);
+}
+function fmtDate(d){
+  if(!d) return '_____________';
+  const dt = new Date(d+'T00:00:00');
+  if(isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-US',{day:'2-digit',month:'long',year:'numeric'});
+}
+function sigImg(id){
+  const c = document.getElementById(id);
+  if(!c) return '';
+  // detect blank canvas
+  const blank = document.createElement('canvas');
+  blank.width=c.width; blank.height=c.height;
+  if(c.toDataURL()===blank.toDataURL()) return '';
+  return c.toDataURL('image/png');
+}
+
+/* ---------------- Build document ---------------- */
+function buildDocument(){
+  const tenants = collectPeople('.person-block[data-tenant]');
+  const landlords = collectPeople('.person-block[data-landlord]');
+  const guarantors = collectPeople('.person-block[data-guarantor]');
+  const occupants = collectOccupants();
+  const tenancyType = document.getElementById('tenancyType').value;
+  const inv = collectInventory();
+  const utilities = collectUtilities();
+  const keys = collectKeys();
+  const customClauses = collectCustomClauses();
+  const tResp = collectChecked('tenantRespList');
+  const lResp = collectChecked('landlordRespList');
+  const hRules = collectChecked('houseRulesList');
+  const insurance = collectChecked('insuranceList');
+  const moveOutItems = collectChecked('moveOutClearanceList');
+  const tRespCustom = document.getElementById('tenantRespCustom').value.trim();
+  const lRespCustom = document.getElementById('landlordRespCustom').value.trim();
+  const houseRulesCustom = document.getElementById('houseRulesCustom').value.trim();
+  const moveOutClearanceCustom = document.getElementById('moveOutClearanceCustom').value.trim();
+
+  const propertyAddress = document.getElementById('propertyAddress').value.trim() || '_____________';
+  const propertyType = document.getElementById('propertyType').value;
+  const bedrooms = document.getElementById('bedrooms').value;
+  const bathrooms = document.getElementById('bathrooms').value;
+  const startDate = document.getElementById('startDate').value;
+  const tenureMonths = document.getElementById('tenureMonths').value;
+  const rentDueDay = document.getElementById('rentDueDay').value;
+  const monthlyRent = document.getElementById('monthlyRent').value.trim() || '_____________';
+  const securityDeposit = document.getElementById('securityDeposit').value.trim() || '_____________';
+  const holdingAmount = document.getElementById('holdingAmount').value.trim() || '_____________';
+  const maintenanceAmount = document.getElementById('maintenanceAmount').value.trim() || '_____________';
+  const escalation = document.getElementById('escalation').value.trim();
+  const moveInOutCharges = document.getElementById('moveInOutCharges').value.trim();
+  const nameChangeCharges = document.getElementById('nameChangeCharges').value.trim();
+  const maintenanceDetails = document.getElementById('maintenanceDetails').value.trim();
+  const viewingDate = document.getElementById('viewingDate').value;
+  const viewingTime = document.getElementById('viewingTime').value;
+  const viewingNotes = document.getElementById('viewingNotes').value.trim();
+
+  const noticePeriodDays = document.getElementById('noticePeriodDays').value || '30';
+  const depositRefundDays = document.getElementById('depositRefundDays').value || '15';
+  const rentDefaultMonths = document.getElementById('rentDefaultMonths').value || '2';
+  const terminationNotes = document.getElementById('terminationNotes').value.trim();
+
+  const inspectionNoticeHours = document.getElementById('inspectionNoticeHours').value || '24';
+  const inspectionFrequency = document.getElementById('inspectionFrequency').value;
+  const inspectionNotes = document.getElementById('inspectionNotes').value.trim();
+
+  const gradeAStreak = document.getElementById('gradeAStreak').value || '3';
+  const discountType = document.getElementById('discountType').value;
+  const discountValue = document.getElementById('discountValue').value.trim();
+  const discountNotes = document.getElementById('discountNotes').value.trim();
+
+  const stampDutyBy = document.getElementById('stampDutyBy').value;
+  const legalNotes = document.getElementById('legalNotes').value.trim();
+  const insuranceNotes = document.getElementById('insuranceNotes').value.trim();
+  const moveOutNotes = document.getElementById('moveOutNotes').value.trim();
+  const disclosureText = document.getElementById('disclosureText').value.trim();
+
+  const tenantNames = tenants.map(t=>t.name||'Tenant').join(', ');
+  const landlordNames = landlords.map(l=>l.name||'Landlord').join(', ');
+  const primaryTenants = tenants.filter(t=>t.primary);
+  const primaryNames = (primaryTenants.length?primaryTenants:tenants).map(t=>t.name||'Tenant').join(', ');
+  const tenancyTypeLabel = {individual:'individual tenant(s) only', family:'the tenant(s) together with family members', roommates:'the tenant(s) together with roommates'}[tenancyType] || 'individual tenant(s) only';
+
+  const rentSchedule = buildRentSchedule(startDate, tenureMonths, monthlyRent, escalation, rentDueDay);
+  let n = 0;
+  const num = ()=>++n;
+  const photoTag = p => p.photo ? `<img src="${p.photo}" class="party-photo">` : '';
+
+  let html = `
+  <div class="cover-page">
+    <div class="cover-eyebrow">Rental / Lease Agreement</div>
+    <h2 class="cover-title">Rental Agreement</h2>
+    <p class="cover-between">between the Tenant(s)</p>
+    <p class="cover-party">${tenantNames || 'Tenant Name'}</p>
+    <p class="cover-and">and the Landlord(s)</p>
+    <p class="cover-party">${landlordNames || 'Landlord Name'}</p>
+    <p class="cover-for">for the rented property at</p>
+    <p class="cover-property">${propertyAddress}</p>
+    <p class="cover-date">Agreement Date: ${fmtDate(startDate)}</p>
+  </div>
+  <div class="page-break"></div>
+
+  <h2 class="doc-title">Rental / Lease Agreement</h2>
+  <p class="doc-sub">This agreement is made on ${fmtDate(startDate)} between the Landlord(s) and Tenant(s) named below, for the property described herein.</p>
+
+  <h3 class="clause">${num()}. Parties to the Agreement</h3>
+  <table><tr><th></th><th>Landlord(s)</th><th>Contact</th><th>Address</th></tr>
+  ${landlords.map(l=>`<tr><td class="photo-cell">${photoTag(l)}</td><td>${l.name||'-'}</td><td>${l.phone||'-'}${l.email? ' / '+l.email:''}</td><td>${l.address||'-'}</td></tr>`).join('')}
+  </table>
+  <table><tr><th></th><th>Tenant(s)</th><th>Role</th><th>Contact</th><th>Previous Address</th></tr>
+  ${tenants.map(t=>`<tr><td class="photo-cell">${photoTag(t)}</td><td>${t.name||'-'}</td><td>${t.primary?'Primary Tenant':'Co-Tenant'}</td><td>${t.phone||'-'}${t.email? ' / '+t.email:''}</td><td>${t.address||'-'}</td></tr>`).join('')}
+  </table>
+  <p>This tenancy is for <strong>${tenancyTypeLabel}</strong>.</p>
+  ${occupants.length?`<table><tr><th>Additional Occupant</th><th>Relationship</th><th>Age</th></tr>
+  ${occupants.map(o=>`<tr><td>${o.name}</td><td>${o.relation}</td><td>${o.age||'-'}</td></tr>`).join('')}
+  </table>`:''}
+  <p>The Primary Tenant(s) shall be responsible for payment of rent and all financial obligations under this Agreement: <strong>${primaryNames}</strong>.</p>
+
+  <h3 class="clause">${num()}. Property Details</h3>
+  <p><strong>Address:</strong> ${propertyAddress}</p>
+  <p><strong>Type:</strong> ${propertyType} &nbsp; | &nbsp; <strong>Bedrooms:</strong> ${bedrooms} &nbsp; | &nbsp; <strong>Bathrooms:</strong> ${bathrooms}</p>
+
+  <h3 class="clause">${num()}. Term of Tenancy</h3>
+  <p>The tenancy shall commence on <strong>${fmtDate(startDate)}</strong> for a period of <strong>${tenureMonths} month(s)</strong>. Rent is due on or before the <strong>${rentDueDay}${ordinal(rentDueDay)}</strong> of every month.${escalation?` Rent shall be subject to an annual escalation of <strong>${escalation}</strong>.`:''}</p>
+
+  <h3 class="clause">${num()}. End of Tenure, Notice &amp; Early Termination</h3>
+  <p>On expiry of the tenure, the Tenant shall vacate the premises and hand back possession along with the inventory listed in this Agreement in good condition, ordinary wear and tear excepted. The security deposit shall be refunded within <strong>${depositRefundDays} day(s)</strong> of vacating, after adjusting any dues, damages, or unpaid utility bills.</p>
+  <p>Either party may terminate this Agreement before expiry of the tenure by giving <strong>${noticePeriodDays} day(s)</strong> written notice. The Landlord may terminate this Agreement with immediate effect if the Tenant fails to pay rent for <strong>${rentDefaultMonths} consecutive month(s)</strong> or commits a material breach of this Agreement.${terminationNotes?` ${terminationNotes}`:''}</p>
+
+  <h3 class="clause">${num()}. Move-Out Clearance &amp; Dues</h3>
+  <p>Before the security deposit is refunded, the Tenant shall complete the following clearances:</p>
+  <ul>${moveOutItems.map(r=>`<li>${r}</li>`).join('')}${moveOutClearanceCustom?`<li>${moveOutClearanceCustom}</li>`:''}</ul>
+
+  <h3 class="clause">${num()}. Rent, Deposit &amp; Charges</h3>
+  <table><tr><th>Particulars</th><th>Amount</th></tr>
+    <tr><td>Monthly Rent</td><td>${monthlyRent}</td></tr>
+    <tr><td>Security Deposit (refundable)</td><td>${securityDeposit}</td></tr>
+    <tr><td>Holding / Token Amount Paid</td><td>${holdingAmount}</td></tr>
+    <tr><td>Monthly Maintenance Amount</td><td>${maintenanceAmount}</td></tr>
+    ${moveInOutCharges?`<tr><td>Move-in / Move-out Charges (one-time, borne by Tenant)</td><td>${moveInOutCharges}</td></tr>`:''}
+    ${nameChangeCharges?`<tr><td>Tenant Name Change Charges (per change)</td><td>${nameChangeCharges}</td></tr>`:''}
+  </table>
+  ${maintenanceDetails?`<p><strong>Maintenance details:</strong> ${maintenanceDetails}</p>`:''}
+  ${nameChangeCharges?`<p><strong>Tenant Name Change Charges:</strong> Any change, addition or substitution of the name(s) of the Tenant(s) registered under this Agreement during the tenancy shall be subject to a charge of ${nameChangeCharges} per change, payable by the Tenant before the change is processed and a revised Agreement or addendum is issued.</p>`:''}
+
+  ${rentSchedule.length?`<h3 class="clause">${num()}. Monthly Rent Schedule</h3>
+  <p>The following month-wise rent payment schedule applies for the tenure of this Agreement:</p>
+  <div class="rent-schedule-wrap"><table class="rent-schedule"><tr><th>#</th><th>Month</th><th>Due Date</th><th>Rent Amount</th></tr>
+  ${rentSchedule.map(r=>`<tr><td>${r.no}</td><td>${r.month}</td><td>${r.dueDate}</td><td>${r.amount}</td></tr>`).join('')}
+  </table></div>`:''}
+
+  <h3 class="clause">${num()}. Utilities &amp; Bills</h3>
+  <p>The following utilities are the Tenant's personal obligation unless marked as included in rent:</p>
+  <table><tr><th>Utility</th><th>Rent Inclusion</th></tr>
+  ${utilities.map(u=>`<tr><td>${u.item}</td><td>${u.inclusion}</td></tr>`).join('') || '<tr><td colspan="2">Not specified</td></tr>'}
+  </table>
+  ${document.getElementById('utilitiesNotes').value.trim()?`<p>${document.getElementById('utilitiesNotes').value.trim()}</p>`:''}
+
+  <h3 class="clause">${num()}. Property Inventory &amp; Fixtures</h3>
+  <table><tr><th>Item</th><th>Quantity</th><th>Condition</th></tr>
+  ${inv.map(r=>`<tr><td>${r.item}</td><td>${r.qty||'-'}</td><td>${r.cond}</td></tr>`).join('') || '<tr><td colspan="3">No inventory listed</td></tr>'}
+  </table>
+
+  <h3 class="clause">${num()}. Key Details</h3>
+  <table><tr><th>Key / Access Item</th><th>Quantity</th></tr>
+  ${keys.map(r=>`<tr><td>${r.item}</td><td>${r.qty||'-'}</td></tr>`).join('') || '<tr><td colspan="2">Not specified</td></tr>'}
+  </table>
+
+  <h3 class="clause">${num()}. Property Viewing / Handover</h3>
+  <p>The premises were viewed and inspected on <strong>${viewingDate?fmtDate(viewingDate):'_____________'}</strong>${viewingTime?` at <strong>${viewingTime}</strong>`:''}.${viewingNotes?` ${viewingNotes}`:''}</p>
+
+  <h3 class="clause">${num()}. House Inspection Rules</h3>
+  <p>The Landlord or an authorised representative may inspect the premises with at least <strong>${inspectionNoticeHours} hour(s)</strong> advance notice to the Tenant. Inspection frequency: <strong>${inspectionFrequency}</strong>.${inspectionNotes?` ${inspectionNotes}`:''}</p>
+
+  <h3 class="clause">${num()}. Good Tenant Discount</h3>
+  <p>If the Tenant achieves a Grade A rating in <strong>${gradeAStreak} consecutive</strong> house inspections conducted under the House Inspection Rules above, the Tenant shall be eligible for a <strong>${discountType}</strong> of <strong>${discountValue || 'an amount to be determined'}</strong>, at the Landlord's discretion.${discountNotes?` ${discountNotes}`:''}</p>
+
+  ${guarantors.length?`<h3 class="clause">${num()}. Guarantor(s)</h3>
+  <table><tr><th></th><th>Name</th><th>Contact</th><th>Relationship to Tenant</th><th>Address</th></tr>
+  ${guarantors.map(g=>`<tr><td class="photo-cell">${photoTag(g)}</td><td>${g.name||'-'}</td><td>${g.phone||'-'}${g.email? ' / '+g.email:''}</td><td>${g.relation||'-'}</td><td>${g.address||'-'}</td></tr>`).join('')}
+  </table>
+  <p>The Guarantor(s) named above jointly and severally guarantee the fulfilment of the Tenant's obligations under this Agreement, including timely payment of rent and any damages beyond normal wear and tear.</p>`:''}
+
+  <h3 class="clause">${num()}. Tenant Responsibilities</h3>
+  <ul>${tResp.map(r=>`<li>${r}</li>`).join('')}${tRespCustom?`<li>${tRespCustom}</li>`:''}</ul>
+
+  <h3 class="clause">${num()}. Landlord Responsibilities</h3>
+  <ul>${lResp.map(r=>`<li>${r}</li>`).join('')}${lRespCustom?`<li>${lRespCustom}</li>`:''}</ul>
+
+  <h3 class="clause">${num()}. House Rules</h3>
+  <ul>${hRules.map(r=>`<li>${r}</li>`).join('')}${houseRulesCustom?`<li>${houseRulesCustom}</li>`:''}</ul>
+
+  <h3 class="clause">${num()}. Legal Obligations, Insurance &amp; Move-Out Guidance</h3>
+  ${legalNotes?`<p>${legalNotes}</p>`:''}
+  <p>Stamp duty / registration charges, if applicable, shall be borne by: <strong>${stampDutyBy}</strong>.</p>
+  ${insurance.length?`<ul>${insurance.map(r=>`<li>${r}</li>`).join('')}</ul>`:''}
+  ${insuranceNotes?`<p>${insuranceNotes}</p>`:''}
+  ${moveOutNotes?`<p>${moveOutNotes}</p>`:''}
+
+  <h3 class="clause">${num()}. Disclosure &amp; Permitted Use</h3>
+  <p>${disclosureText}</p>
+
+  ${customClauses.length?customClauses.map(c=>`<h3 class="clause">${num()}. ${c.title||'Additional Term'}</h3><p>${c.body}</p>`).join(''):''}
+
+  <h3 class="clause">${num()}. General</h3>
+  <p>This Agreement represents the entire understanding between ${landlordNames || 'the Landlord'} and ${tenantNames || 'the Tenant'} regarding the tenancy of the above property, and supersedes all prior discussions. Any amendment must be made in writing and signed by all parties.</p>
+
+  <h3 class="clause">${num()}. Signatures</h3>
+  <div class="sig-grid">
+  ${tenants.map((t,i)=>sigCell(t.name,'Tenant',sigImg(`sig-tenant-${i+1}`),document.querySelectorAll('.sig-block[data-role="tenant"] .sig-date')[i]?.value)).join('')}
+  ${landlords.map((l,i)=>sigCell(l.name,'Landlord',sigImg(`sig-landlord-${i+1}`),document.querySelectorAll('.sig-block[data-role="landlord"] .sig-date')[i]?.value)).join('')}
+  ${guarantors.map((g,i)=>sigCell(g.name,'Guarantor',sigImg(`sig-guarantor-${i+1}`),document.querySelectorAll('.sig-block[data-role="guarantor"] .sig-date')[i]?.value)).join('')}
+  </div>
+  `;
+  return html;
+}
+
+/* Build a month-wise rent schedule from tenure/start date/monthly rent/escalation */
+function buildRentSchedule(startDateStr, tenureMonthsStr, monthlyRentStr, escalationStr, rentDueDayStr){
+  const tenureMonths = parseInt(tenureMonthsStr);
+  if(!startDateStr || !tenureMonths || tenureMonths<1) return [];
+  const baseNum = parseFloat((monthlyRentStr||'').replace(/[^0-9.]/g,''));
+  if(!baseNum || isNaN(baseNum)) return [];
+  const currencyMatch = (monthlyRentStr||'').match(/^[^\d]*/);
+  const currency = currencyMatch ? currencyMatch[0].trim() : '';
+  const escNum = parseFloat((escalationStr||'').replace(/[^0-9.]/g,'')) || 0;
+  const dueDay = parseInt(rentDueDayStr) || 1;
+  const start = new Date(startDateStr+'T00:00:00');
+  if(isNaN(start)) return [];
+  const rows = [];
+  for(let m=0;m<tenureMonths;m++){
+    const d = new Date(start.getFullYear(), start.getMonth()+m, 1);
+    const lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    const due = new Date(d.getFullYear(), d.getMonth(), Math.min(dueDay,lastDay));
+    const yearsElapsed = Math.floor(m/12);
+    const amount = baseNum * Math.pow(1+escNum/100, yearsElapsed);
+    rows.push({
+      no: m+1,
+      month: d.toLocaleDateString('en-US',{month:'long',year:'numeric'}),
+      dueDate: due.toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}),
+      amount: (currency?currency+' ':'') + Math.round(amount).toLocaleString('en-IN')
+    });
+  }
+  return rows;
+}
+function ordinal(n){
+  n=parseInt(n);
+  if([11,12,13].includes(n%100)) return 'th';
+  switch(n%10){case 1:return 'st';case 2:return 'nd';case 3:return 'rd';default:return 'th';}
+}
+function sigCell(name,role,img,date){
+  return `<div class="sig-cell">
+    ${img?`<img src="${img}">`:`<div style="height:70px;"></div>`}
+    <div class="name">${name||'_____________'}</div>
+    <div class="role">${role}${date?` &middot; ${fmtDate(date)}`:''}</div>
+  </div>`;
+}
+
+/* ---------------- Create / Preview ---------------- */
+document.getElementById('createBtn').addEventListener('click', ()=>{
+  const tName = document.querySelector('.person-block[data-tenant] .p-name')?.value.trim();
+  const lName = document.querySelector('.person-block[data-landlord] .p-name')?.value.trim();
+  if(!tName || !lName){
+    alert('Please enter at least the first tenant name and first landlord name before generating the agreement.');
+    return;
+  }
+  document.getElementById('previewDoc').innerHTML = buildDocument();
+  document.getElementById('previewSection').hidden = false;
+  document.getElementById('formView').hidden = true;
+  document.getElementById('previewSection').scrollIntoView({behavior:'smooth'});
+});
+document.getElementById('editBtn').addEventListener('click', ()=>{
+  document.getElementById('previewSection').hidden = true;
+  document.getElementById('formView').hidden = false;
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+/* ---------------- Downloads ---------------- */
+document.getElementById('downloadWordBtn').addEventListener('click', ()=>{
+  const content = document.getElementById('previewDoc').innerHTML;
+  const dateStr = fmtDate(document.getElementById('startDate').value);
+  const styles = `
+    @page Section1{size:8.5in 11.0in;margin:0.9in 0.8in 0.9in 0.8in;mso-header-margin:.4in;mso-footer-margin:.4in;mso-footer:f1;}
+    div.Section1{page:Section1;}
+    body{font-family:Georgia,'Times New Roman',serif;font-size:13pt;color:#1a1a1a;}
+    .cover-page{text-align:center;margin:60pt 0 0;}
+    .cover-eyebrow{font-family:Calibri,Arial,sans-serif;font-size:9pt;letter-spacing:2pt;color:#a9803f;text-transform:uppercase;margin-bottom:14pt;}
+    .cover-title{font-size:28pt;margin:0 0 20pt;}
+    .cover-between,.cover-and,.cover-for{font-family:Calibri,Arial,sans-serif;font-size:9.5pt;color:#666;text-transform:uppercase;letter-spacing:1pt;margin:8pt 0;}
+    .cover-party{font-size:16pt;font-weight:bold;margin:2pt 0;color:#152838;}
+    .cover-property{font-size:12.5pt;margin:4pt 0 18pt;}
+    .cover-date{font-size:10pt;color:#666;font-family:Calibri,Arial,sans-serif;margin-top:16pt;border-top:1px solid #cfc6ac;padding-top:10pt;}
+    .page-break{page-break-after:always;border:none;margin:0;height:0;}
+    h2.doc-title{text-align:center;font-size:20pt;margin-bottom:2pt;}
+    .doc-sub{text-align:center;font-size:10pt;color:#555;margin-bottom:20pt;}
+    h3.clause{font-size:13pt;margin-top:18pt;border-bottom:1px solid #999;padding-bottom:3pt;}
+    table{width:100%;border-collapse:collapse;margin:8pt 0;}
+    table th, table td{border:1px solid #999;padding:5pt 7pt;font-size:10.5pt;text-align:left;}
+    table th{background:#f1e9d3;}
+    table.rent-schedule th{background:#e9dfc2;}
+    .party-photo{width:30pt;height:30pt;object-fit:cover;}
+    .photo-cell{width:38pt;}
+    .sig-grid{width:100%;margin-top:14pt;}
+    .sig-cell{display:inline-block;width:44%;vertical-align:top;border-top:1px solid #1a1a1a;padding-top:6pt;margin:10pt 2%;}
+    .sig-cell img{max-height:60px;}
+    .name{font-weight:bold;}
+    .role{font-size:9.5pt;color:#555;}
+    p.MsoFooter{font-family:Calibri,Arial,sans-serif;font-size:8.5pt;color:#666;text-align:center;margin:0;}
+  `;
+  const htmlDoc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="utf-8"><title>Rental Agreement</title><style>${styles}</style></head>
+  <body>
+  <div class="Section1">${content}</div>
+  <div style="mso-element:footer" id="f1">
+    <p class="MsoFooter">Agreement Date: ${dateStr}&nbsp;&nbsp;|&nbsp;&nbsp;Page <span style="mso-field-code:PAGE"></span> of <span style="mso-field-code:NUMPAGES"></span></p>
+  </div>
+  </body></html>`;
+  const blob = new Blob(['\ufeff', htmlDoc], {type:'application/msword'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'Rental_Agreement.doc';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+});
+
+document.getElementById('downloadPdfBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('downloadPdfBtn');
+  const originalLabel = btn.textContent;
+  btn.textContent = '⏳ Preparing PDF...';
+  btn.disabled = true;
+  try{
+    const original = document.getElementById('previewDoc');
+    const clone = original.cloneNode(true);
+    clone.classList.add('pdf-export');
+    clone.style.width = '760px';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-10000px';
+    wrapper.style.top = '0';
+    wrapper.style.background = '#ffffff';
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      windowWidth: clone.scrollWidth
+    });
+    document.body.removeChild(wrapper);
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = 210, pageHeight = 297;
+    const marginSide = 10, marginTop = 10, marginBottom = 16;
+    const usableWidth = pageWidth - marginSide * 2;
+    const usableHeight = pageHeight - marginTop - marginBottom;
+
+    const pxPerMm = canvas.width / usableWidth;
+    const pageHeightPx = Math.floor(usableHeight * pxPerMm);
+    const totalPages = Math.max(1, Math.ceil(canvas.height / pageHeightPx));
+
+    const dateStr = fmtDate(document.getElementById('startDate').value);
+
+    for(let p=0; p<totalPages; p++){
+      if(p>0) pdf.addPage();
+      const sourceY = p * pageHeightPx;
+      const sliceHeightPx = Math.min(pageHeightPx, canvas.height - sourceY);
+
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = sliceHeightPx;
+      const ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(canvas, 0, sourceY, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+
+      const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+      const sliceHeightMm = sliceHeightPx / pxPerMm;
+      pdf.addImage(imgData, 'JPEG', marginSide, marginTop, usableWidth, sliceHeightMm);
+
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(120);
+      pdf.text(`Agreement Date: ${dateStr}`, marginSide, pageHeight - 8);
+      pdf.text(`Page ${p+1} of ${totalPages}`, pageWidth - marginSide, pageHeight - 8, {align:'right'});
+    }
+
+    pdf.save('Rental_Agreement.pdf');
+  } catch(err){
+    console.error(err);
+    alert('Something went wrong generating the PDF. Please try again.');
+  } finally {
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

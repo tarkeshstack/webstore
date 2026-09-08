@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KYC — Know Your Constitution</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#FFFFFF;
+    --card:#FFFFFF;
+    --ink:#20262B;
+    --ink-soft:#6B7278;
+    --saffron:#E8791F;
+    --green:#166A45;
+    --green-dark:#0F4C32;
+    --line:#E4E4E4;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%; margin:0;}
+  body{
+    background:var(--bg);
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+  }
+  #app{
+    display:flex; flex-direction:column;
+    height:100vh; height:100dvh;
+  }
+
+  /* ---------- Landing (search-bar-first) ---------- */
+  #landing{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px 20px; gap:18px; text-align:center;
+  }
+  #landing .mark{font-size:2.4rem; line-height:1;}
+  #landing h1{font-family:'Poppins',sans-serif; font-weight:600; font-size:1.35rem; margin:0; color:var(--green-dark);}
+  #landing p.tag{font-size:0.85rem; color:var(--ink-soft); margin:0; max-width:280px;}
+
+  .search-shell{
+    width:100%; max-width:420px;
+    display:flex; align-items:center; gap:8px;
+    background:#fff; border:1.5px solid var(--line); border-radius:26px;
+    padding:6px 6px 6px 18px;
+    box-shadow:0 2px 10px rgba(22,106,69,0.08);
+  }
+  .search-shell input{
+    flex:1; border:none; outline:none; font-size:1rem; font-family:'Inter',sans-serif;
+    background:transparent; color:var(--ink); padding:8px 0;
+  }
+  .search-shell button{
+    width:42px;height:42px;border-radius:50%; border:none; flex:0 0 auto;
+    background:var(--green); color:#fff; font-size:1.05rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .search-shell button:active{background:var(--green-dark);}
+
+  .chips-landing{
+    display:flex; flex-wrap:wrap; justify-content:center; gap:7px; max-width:420px;
+  }
+  .chip{
+    font-size:0.78rem; padding:7px 13px; border-radius:16px;
+    background:#fff; border:1px solid var(--line); color:var(--ink-soft);
+    cursor:pointer; white-space:nowrap; transition:all .15s;
+  }
+  .chip:active{background:var(--saffron); color:#fff; border-color:var(--saffron);}
+
+  /* ---------- Chat view ---------- */
+  #chatView{
+    display:none; flex-direction:column; flex:1; min-height:0;
+  }
+  #chatView.active{display:flex;}
+  #landing.hidden{display:none;}
+
+  header{
+    padding:11px 14px;
+    background:linear-gradient(120deg, #166A45 0%, #0F4C32 100%);
+    color:#fff;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 2px 8px rgba(15,76,50,0.2);
+    flex:0 0 auto;
+    position:relative;
+  }
+  header::after{
+    content:""; position:absolute; left:0; right:0; bottom:-2px; height:2px;
+    background:linear-gradient(90deg, #E8791F 0 33%, #fff 33% 66%, #166A45 66% 100%);
+    opacity:0.85;
+  }
+  .badge{
+    width:30px;height:30px;border-radius:50%;
+    background:#fff; display:flex;align-items:center;justify-content:center;
+    font-size:0.95rem; flex:0 0 auto;
+  }
+  header h2{font-family:'Poppins',sans-serif; font-weight:600; font-size:0.92rem; margin:0;}
+
+  #feed{
+    flex:1; min-height:0; overflow-y:auto;
+    padding:12px 12px 8px;
+    display:flex; flex-direction:column; gap:9px;
+  }
+  .row{display:flex;}
+  .row.user{justify-content:flex-end;}
+  .row.bot{justify-content:flex-start;}
+
+  .bubble{
+    max-width:85%; padding:10px 14px; border-radius:15px;
+    font-size:0.92rem; line-height:1.5;
+  }
+  .bubble.user{
+    background:var(--green); color:#fff;
+    border-bottom-right-radius:4px;
+  }
+  .bubble.bot{
+    background:var(--card); color:var(--ink);
+    border:1px solid var(--line);
+    border-bottom-left-radius:4px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.05);
+  }
+  .bubble.bot .lead{margin:0 0 5px; font-weight:500;}
+  .bubble.bot ul{margin:5px 0 2px; padding-left:18px;}
+  .bubble.bot li{margin-bottom:6px;}
+  .ref{
+    color:var(--saffron); font-weight:600; font-size:0.85em;
+    white-space:nowrap; text-decoration:none; border-bottom:1px dashed var(--saffron);
+  }
+  .ref:hover{color:#c4630f; border-bottom-style:solid;}
+  .src-note{display:block; margin-top:7px; font-size:0.7rem; color:var(--ink-soft);}
+
+  .chips-chat{
+    display:flex; gap:6px; overflow-x:auto; padding:0 12px 8px; flex:0 0 auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .inputbar{
+    display:flex; gap:10px; padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    background:var(--bg); border-top:1px solid var(--line); flex:0 0 auto;
+  }
+  #q2{
+    flex:1; border:1.5px solid var(--line); border-radius:26px;
+    padding:15px 20px; font-size:1.02rem; font-family:'Inter',sans-serif;
+    background:#fff; color:var(--ink); min-width:0;
+  }
+  #q2:focus{outline:none; border-color:var(--green);}
+  #askBtn2{
+    width:50px;height:50px; border-radius:50%; border:none;
+    background:var(--green); color:#fff; font-size:1.2rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  #askBtn2:active{background:var(--green-dark);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="landing">
+    <div class="mark">🇮🇳</div>
+    <h1>KYC</h1>
+    <p class="tag">Ask anything about the Constitution of India — plain answers, with the article number. Also works in हिंदी · தமிழ் · ಕನ್ನಡ · বাংলা · ଓଡ଼ିଆ.</p>
+    <div class="search-shell">
+      <input id="q1" type="text" placeholder="Ask a question…" autocomplete="off"/>
+      <button id="askBtn1" aria-label="Ask">➤</button>
+    </div>
+    <div class="chips-landing" id="chipsLanding"></div>
+  </div>
+
+  <div id="chatView">
+    <header>
+      <div class="badge">🇮🇳</div>
+      <h2>KYC — Know Your Constitution</h2>
+    </header>
+    <div id="feed"></div>
+    <div class="chips-chat" id="chipsChat"></div>
+    <div class="inputbar">
+      <input id="q2" type="text" placeholder="Ask another question…" autocomplete="off"/>
+      <button id="askBtn2" aria-label="Send">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ARTICLES = [{"num": "Preamble", "part": "Preamble", "title": "The Preamble", "tags": "preamble sovereign socialist secular democratic republic justice liberty equality fraternity what kind of country type of nation constitution mean nation kind of state motto ideals meaning of preamble what does preamble say full text of preamble objectives of the constitution ideals of the constitution when was preamble amended 42nd amendment", "plain": "Here's the full Preamble, word for word:\n\"WE, THE PEOPLE OF INDIA, having solemnly resolved to constitute India into a SOVEREIGN SOCIALIST SECULAR DEMOCRATIC REPUBLIC and to secure to all its citizens: JUSTICE, social, economic and political; LIBERTY of thought, expression, belief, faith and worship; EQUALITY of status and of opportunity; and to promote among them all FRATERNITY assuring the dignity of the individual and the unity and integrity of the Nation; IN OUR CONSTITUENT ASSEMBLY this twenty-sixth day of November, 1949, do HEREBY ADOPT, ENACT AND GIVE TO OURSELVES THIS CONSTITUTION.\" (The words \"SOCIALIST\" and \"SECULAR\" were added later, by the 42nd Amendment in 1976 — they weren't in the original 1950 text.)"}, {"num": "1", "part": "Part I", "title": "Name and territory of the Union", "tags": "name india bharat union of states states territory called country name federation states union federal or unitary india a union of states quasi federal", "plain": "India is officially called both 'India' and 'Bharat', and it's a union of states that can't break away on their own."}, {"num": "2", "part": "Part I", "title": "Admission or establishment of new states", "tags": "new states admit parliament", "plain": "Parliament can add new states to India whenever it wants, on whatever terms it decides."}, {"num": "3", "part": "Part I", "title": "Formation of new states, alteration of boundaries", "tags": "new state boundary change state name reorganise reorganize states", "plain": "Parliament can carve out new states, redraw state borders, or rename a state — that's why India's state map has changed over the years."}, {"num": "5", "part": "Part II", "title": "Citizenship at commencement", "tags": "citizenship citizen 1950 domicile", "plain": "This decided who automatically became an Indian citizen when the Constitution kicked in, on 26 January 1950."}, {"num": "9", "part": "Part II", "title": "No dual citizenship", "tags": "citizenship foreign country dual citizenship lose citizenship", "plain": "If you willingly take another country's citizenship, you automatically stop being an Indian citizen — India doesn't allow holding two passports at once."}, {"num": "11", "part": "Part II", "title": "Parliament to regulate citizenship by law", "tags": "citizenship act parliament regulate", "plain": "Parliament makes the actual rules for who can become or stop being a citizen (that's the Citizenship Act)."}, {"num": "12", "part": "Part III", "title": "Definition of 'the State'", "tags": "state definition who is bound by fundamental rights government local authorities who is the state under article 12", "plain": "This just defines who your rights protect you from — basically any government body, from the central government down to local authorities."}, {"num": "13", "part": "Part III", "title": "Laws inconsistent with fundamental rights are void", "tags": "void law inconsistent fundamental rights supremacy article 13 doctrine of judicial review", "plain": "If any law takes away your basic rights, that law simply doesn't count — courts can strike it down."}, {"num": "14", "part": "Part III", "title": "Equality before law", "tags": "equality equal protection discrimination right to equality equal treatment fair discriminate treat differently everyone equal", "plain": "Everyone is equal in the eyes of the law — the government can't treat you differently without a fair reason."}, {"num": "15", "part": "Part III", "title": "Prohibition of discrimination", "tags": "discrimination religion race caste sex place of birth reservation women children rights for women sex discrimination gender bias caste discrimination special provision affirmative action reservation for women", "plain": "The government can't discriminate against you because of your religion, caste, sex, or where you were born — and it's allowed to make special rules to help women, children, and disadvantaged groups catch up."}, {"num": "16", "part": "Part III", "title": "Equality of opportunity in public employment", "tags": "employment government job reservation equal opportunity sarkari naukri government post recruitment quota obc sc st", "plain": "Everyone gets a fair shot at government jobs, and reserved quotas are allowed for groups that have historically been left out."}, {"num": "17", "part": "Part III", "title": "Abolition of Untouchability", "tags": "untouchability abolished caste discrimination caste discrimination social evil harijan", "plain": "Untouchability is completely banned — treating someone as 'untouchable' is a punishable crime."}, {"num": "18", "part": "Part III", "title": "Abolition of titles", "tags": "titles awards bharat ratna military academic", "plain": "The government can't hand out royal-style titles, and citizens can't accept titles from foreign countries either (military/academic honours are fine)."}, {"num": "19", "part": "Part III", "title": "Protection of six freedoms", "tags": "freedom of speech expression assembly association movement residence profession trade business right to freedom protest rally demonstration free press choose job open business start company", "plain": "You're free to speak your mind, gather peacefully, form groups, travel anywhere in India, live wherever you want, and do any job or business — though the government can put reasonable limits on these for things like public order or safety."}, {"num": "20", "part": "Part III", "title": "Protection in respect of conviction for offences", "tags": "double jeopardy self incrimination ex post facto conviction retrospective punishment same crime twice punished retrospective law backdated law testify against myself", "plain": "You can't be punished for something that wasn't a crime when you did it, you can't be tried twice for the same offence, and you can't be forced to testify against yourself."}, {"num": "21", "part": "Part III", "title": "Protection of life and personal liberty", "tags": "right to life personal liberty privacy dignity due process livelihood privacy surveillance environment pollution clean air healthy life dignity livelihood earn a living speedy trial fair trial", "plain": "You have a basic right to live with dignity and freedom — courts have used this to also protect privacy, a clean environment, and the right to earn a living."}, {"num": "21A", "part": "Part III", "title": "Right to Education", "tags": "right to education free compulsory education children rite school school admission free education mid day meal rte act", "plain": "Every child aged 6 to 14 has the right to free schooling, and the government must provide it."}, {"num": "22", "part": "Part III", "title": "Protection against arrest and detention", "tags": "arrest detention rights arrested person lawyer preventive detention police why was i arrested lawyer access 24 hours magistrate custody rights of accused", "plain": "If you're arrested, you must be told why, allowed to see a lawyer, and produced before a magistrate within 24 hours."}, {"num": "23", "part": "Part III", "title": "Prohibition of traffic in human beings and forced labour", "tags": "trafficking forced labour bonded labour begar exploitation slavery modern slavery bonded labour begar human trafficking", "plain": "Human trafficking and forcing people to work without pay (like bonded labour) are illegal."}, {"num": "24", "part": "Part III", "title": "Prohibition of child labour", "tags": "child labour factory mine hazardous employment children child worker underage employment hazardous job kids working", "plain": "Kids under 14 can't legally be made to work in factories, mines, or any dangerous job."}, {"num": "25", "part": "Part III", "title": "Freedom of conscience and religion", "tags": "religion freedom of religion practice profess propagate worship conversion religious practice conscience belief atheist", "plain": "You're free to believe in and practise any religion you want, and to share your faith with others, as long as it doesn't disturb public order."}, {"num": "26", "part": "Part III", "title": "Freedom to manage religious affairs", "tags": "religious institutions manage own affairs property religious denomination", "plain": "Religious groups can run their own institutions, manage their own religious matters, and own property for that purpose."}, {"num": "27", "part": "Part III", "title": "Freedom from taxes for promotion of a religion", "tags": "tax religion no tax for religion", "plain": "Your tax money can't be specifically used to fund or promote one particular religion."}, {"num": "28", "part": "Part III", "title": "Freedom from religious instruction in certain institutions", "tags": "religious instruction schools education institutions state funded", "plain": "Schools fully funded by the government can't teach a particular religion, and students can't be forced to attend religious classes elsewhere without consent."}, {"num": "29", "part": "Part III", "title": "Protection of interests of minorities", "tags": "minority culture language script minority rights education admission mother tongue regional language culture preserve minority community", "plain": "Any community with its own language or culture has the right to preserve it, and can't be refused admission to government schools because of religion or language."}, {"num": "30", "part": "Part III", "title": "Right of minorities to establish educational institutions", "tags": "minority institutions establish administer schools colleges", "plain": "Religious and linguistic minorities can set up and run their own schools and colleges, and the government can't unfairly deny them funding."}, {"num": "32", "part": "Part III", "title": "Right to Constitutional Remedies", "tags": "writ habeas corpus mandamus prohibition certiorari quo warranto supreme court enforce fundamental rights heart and soul go to court pil public interest litigation writ petition move court fundamental rights violated", "plain": "If any of your basic rights are violated, you can go straight to the Supreme Court to get it fixed — this is often called the 'heart' of the whole Constitution."}, {"num": "226", "part": "Part V", "title": "Power of High Courts to issue writs", "tags": "high court writ jurisdiction", "plain": "You can also go to your state's High Court, not just the Supreme Court, to get your rights enforced."}, {"num": "36-51", "part": "Part IV", "title": "Directive Principles of State Policy (overview)", "tags": "directive principles dpsp not enforceable welfare state guidelines list of directive principles important directive principles part 4", "plain": "These are goals the government is supposed to work toward for a fairer society — but you can't sue the government in court just for not following them."}, {"num": "39", "part": "Part IV", "title": "Certain principles of policy", "tags": "equal pay for equal work resources concentration of wealth livelihood rights for women wealth inequality resources distribution living wage equal pay men women", "plain": "The government should try to make sure everyone can earn a living, that men and women get equal pay for equal work, and that wealth doesn't pile up in too few hands."}, {"num": "39A", "part": "Part IV", "title": "Equal justice and free legal aid", "tags": "legal aid free lawyer justice poor", "plain": "The government should provide free legal help so poor people aren't denied justice just because they can't afford a lawyer."}, {"num": "40", "part": "Part IV", "title": "Organisation of village panchayats", "tags": "panchayat village self government local", "plain": "Villages should have their own local self-governing councils (panchayats)."}, {"num": "41", "part": "Part IV", "title": "Right to work, education, and public assistance", "tags": "right to work unemployment old age sickness disablement public assistance", "plain": "The government should try to help people who are unemployed, elderly, sick, or disabled, as far as it can afford to."}, {"num": "42", "part": "Part IV", "title": "Just and humane conditions of work and maternity relief", "tags": "maternity leave pregnant women work conditions humane rights for women maternity benefit working hours work hours overtime maternity leave working conditions humane treatment at work labour welfare", "plain": "The government should ensure decent working conditions and maternity benefits for women at work."}, {"num": "44", "part": "Part IV", "title": "Uniform Civil Code", "tags": "uniform civil code ucc personal laws marriage divorce inheritance same law for all religions personal law marriage divorce succession", "plain": "The idea is that one day India could have the same family law (marriage, divorce, inheritance) for everyone, regardless of religion — but this hasn't been made into a national law yet."}, {"num": "45", "part": "Part IV", "title": "Early childhood care and education", "tags": "early childhood education below 6 years anganwadi", "plain": "The government should try to provide care and education for kids younger than 6."}, {"num": "48A", "part": "Part IV", "title": "Protection of environment, forests, and wildlife", "tags": "environment forest wildlife protect improve climate", "plain": "The government is supposed to protect and improve forests, wildlife, and the environment."}, {"num": "50", "part": "Part IV", "title": "Separation of judiciary from the executive", "tags": "separation of powers judiciary executive independence", "plain": "Courts should be kept independent from the government's day-to-day administration."}, {"num": "51", "part": "Part IV", "title": "Promotion of international peace and security", "tags": "international peace treaty foreign policy", "plain": "India should try to promote world peace and respect international law."}, {"num": "51A", "part": "Part IVA", "title": "Fundamental Duties", "tags": "fundamental duties citizens duties constitution flag national anthem environment respect duties of citizens flag code national song scientific temper composite culture list of fundamental duties how many fundamental duties are there duties of a citizen 11 duties", "plain": "As a citizen you're expected to respect the Constitution, the flag and anthem, protect the environment, and generally act in the country's interest — these are duties, not rights that can be enforced against you."}, {"num": "52", "part": "Part V", "title": "The President of India", "tags": "president office head of state", "plain": "India's President is the ceremonial head of state."}, {"num": "53", "part": "Part V", "title": "Executive power of the Union", "tags": "executive power president vested exercised", "plain": "Officially, executive power belongs to the President, but in practice the President acts on the advice of the elected government."}, {"num": "54", "part": "Part V", "title": "Election of President", "tags": "president election electoral college mps mlas", "plain": "The President isn't directly voted for by the public — they're elected by Members of Parliament and state legislators."}, {"num": "61", "part": "Part V", "title": "Impeachment of the President", "tags": "president impeachment removal violation of constitution", "plain": "The President can be removed for violating the Constitution, but it needs a two-thirds vote in both houses of Parliament — it's rare and difficult."}, {"num": "63", "part": "Part V", "title": "The Vice-President of India", "tags": "vice president office chairman rajya sabha", "plain": "India also has a Vice-President, who also chairs the Rajya Sabha (the upper house of Parliament)."}, {"num": "74", "part": "Part V", "title": "Council of Ministers to aid and advise the President", "tags": "council of ministers prime minister cabinet advice president", "plain": "The real decision-making power sits with the Prime Minister and Cabinet, who officially 'advise' the President — and the President has to go along with it."}, {"num": "75", "part": "Part V", "title": "Other provisions on Ministers", "tags": "prime minister appointment ministers council of ministers collective responsibility", "plain": "The Prime Minister is appointed by the President and picks the other ministers; the whole government is answerable to the Lok Sabha (the house of directly elected MPs)."}, {"num": "76", "part": "Part V", "title": "Attorney General for India", "tags": "attorney general legal adviser government of india", "plain": "The Attorney General is the government's top lawyer."}, {"num": "79", "part": "Part V", "title": "Constitution of Parliament", "tags": "parliament president lok sabha rajya sabha composition", "plain": "India's Parliament has two houses — the Lok Sabha and the Rajya Sabha — plus the President."}, {"num": "80", "part": "Part V", "title": "Composition of the Council of States (Rajya Sabha)", "tags": "rajya sabha members nominated 12 states upper house", "plain": "The Rajya Sabha (upper house) is mostly made up of members chosen by state assemblies, plus 12 experts nominated by the President."}, {"num": "81", "part": "Part V", "title": "Composition of the House of the People (Lok Sabha)", "tags": "lok sabha members elected constituencies lower house", "plain": "The Lok Sabha (lower house) is made up of MPs directly elected by the public from constituencies across India."}, {"num": "83", "part": "Part V", "title": "Duration of Houses of Parliament", "tags": "lok sabha term five years rajya sabha permanent house dissolution", "plain": "The Lok Sabha's term is 5 years unless it's dissolved early; the Rajya Sabha never fully dissolves — a third of its members retire every two years."}, {"num": "85", "part": "Part V", "title": "Sessions, prorogation and dissolution", "tags": "parliament session summon prorogue dissolve president", "plain": "Parliament must meet at least once every 6 months, and the President is the one who calls sessions or dissolves the Lok Sabha."}, {"num": "105", "part": "Part V", "title": "Powers, privileges and immunities of Parliament and members", "tags": "parliamentary privilege freedom of speech in parliament immunity", "plain": "MPs can speak freely inside Parliament without being sued or prosecuted for what they say there."}, {"num": "108", "part": "Part V", "title": "Joint sitting of both Houses", "tags": "joint sitting lok sabha rajya sabha deadlock bill", "plain": "If the two houses of Parliament can't agree on a bill, the President can call a joint sitting to break the deadlock."}, {"num": "110", "part": "Part V", "title": "Definition of 'Money Bills'", "tags": "money bill definition taxation borrowing consolidated fund budget", "plain": "Bills purely about taxes or government spending are 'Money Bills', and only the Lok Sabha (not the Rajya Sabha) really controls those."}, {"num": "112", "part": "Part V", "title": "Annual Financial Statement (the Budget)", "tags": "budget annual financial statement union budget consolidated fund", "plain": "Every year the government has to present its full budget — income and spending plans — to Parliament."}, {"num": "123", "part": "Part V", "title": "President's power to promulgate Ordinances", "tags": "ordinance president parliament not in session emergency law", "plain": "When Parliament isn't in session, the President can issue an emergency law (an Ordinance) — but Parliament has to approve it within 6 weeks of reconvening, or it expires."}, {"num": "124", "part": "Part V", "title": "Establishment of the Supreme Court", "tags": "supreme court chief justice judges establishment appointment", "plain": "This sets up the Supreme Court of India — the top court, headed by the Chief Justice of India."}, {"num": "126", "part": "Part V", "title": "Acting Chief Justice", "tags": "acting chief justice supreme court vacancy", "plain": "If there's a vacancy, the President can appoint someone as acting Chief Justice."}, {"num": "129", "part": "Part V", "title": "Supreme Court as a court of record", "tags": "court of record supreme court contempt", "plain": "The Supreme Court can punish people for contempt of court — for disrespecting or disobeying it."}, {"num": "131", "part": "Part V", "title": "Original jurisdiction of the Supreme Court", "tags": "original jurisdiction disputes between states union states", "plain": "If two states, or a state and the central government, have a legal dispute, the Supreme Court hears it directly."}, {"num": "136", "part": "Part V", "title": "Special leave to appeal by the Supreme Court", "tags": "special leave petition slp appeal supreme court", "plain": "The Supreme Court can choose to hear an appeal against almost any court or tribunal's decision in India, even if there's no automatic right to appeal."}, {"num": "137", "part": "Part V", "title": "Review of judgments by the Supreme Court", "tags": "review petition supreme court own judgment", "plain": "The Supreme Court can be asked to reconsider its own past rulings."}, {"num": "141", "part": "Part V", "title": "Supreme Court's law binding on all courts", "tags": "binding precedent law declared supreme court", "plain": "Once the Supreme Court decides how the law works, every other court in India has to follow that."}, {"num": "142", "part": "Part V", "title": "Enforcement of Supreme Court decrees; complete justice", "tags": "complete justice supreme court decree enforcement", "plain": "The Supreme Court can pass basically any order it thinks is needed to deliver full justice in a case."}, {"num": "143", "part": "Part V", "title": "Presidential Reference to the Supreme Court", "tags": "presidential reference advisory opinion supreme court", "plain": "The President can ask the Supreme Court for its legal opinion on an important question."}, {"num": "148", "part": "Part V", "title": "Comptroller and Auditor-General of India", "tags": "cag comptroller auditor general audit accounts", "plain": "The CAG is an independent official who audits how the government spends public money."}, {"num": "153", "part": "Part VI", "title": "Governors of States", "tags": "governor state head appointment", "plain": "Each state has a Governor, appointed by the President, who's the state's ceremonial head."}, {"num": "163", "part": "Part VI", "title": "Council of Ministers to aid and advise the Governor", "tags": "state council of ministers chief minister governor advice", "plain": "Just like at the centre, real power at the state level sits with the Chief Minister and their cabinet, who advise the Governor."}, {"num": "170", "part": "Part VI", "title": "Composition of State Legislative Assemblies", "tags": "state assembly vidhan sabha mla composition", "plain": "Each state has its own elected assembly (like a mini-Parliament), made up of MLAs directly voted in by the public."}, {"num": "213", "part": "Part VI", "title": "Governor's power to promulgate Ordinances", "tags": "governor ordinance state legislature not in session", "plain": "A state Governor can also issue emergency laws when the state assembly isn't in session, similar to the President's power."}, {"num": "214", "part": "Part VI", "title": "High Courts for States", "tags": "high court state establishment", "plain": "Every state has its own High Court."}, {"num": "243", "part": "Part IX", "title": "Panchayats", "tags": "panchayati raj gram panchayat village local self government", "plain": "Villages elect their own local governments (panchayats) every 5 years, with guaranteed seats for women and disadvantaged groups."}, {"num": "243P", "part": "Part IXA", "title": "Municipalities", "tags": "municipality nagar palika urban local government", "plain": "Towns and cities have their own elected local bodies (municipalities/corporations), similar to village panchayats."}, {"num": "244", "part": "Part X", "title": "Administration of Scheduled and Tribal Areas", "tags": "scheduled areas tribal areas fifth schedule sixth schedule", "plain": "Certain tribal-majority areas (especially in the northeast) get special rules to protect their land, culture, and self-rule."}, {"num": "245", "part": "Part XI", "title": "Extent of laws made by Parliament and state legislatures", "tags": "legislative power parliament state law territorial extent", "plain": "This just sets out where Parliament's laws apply (all of India) versus a state's laws (just that state)."}, {"num": "246", "part": "Part XI", "title": "Subject matter of laws (Union, State, Concurrent Lists)", "tags": "union list state list concurrent list seventh schedule division of powers who makes which laws", "plain": "Some topics (like defence) only the central government can make laws on, some (like police) only states can, and some (like education) both can — that's how power is divided."}, {"num": "249", "part": "Part XI", "title": "Parliament's power to legislate on a State List matter in national interest", "tags": "rajya sabha resolution national interest state list parliament", "plain": "In special cases, Parliament can step in and make laws on a state subject if the Rajya Sabha agrees it's in the national interest."}, {"num": "256", "part": "Part XI", "title": "Obligation of states and the Union", "tags": "state comply union law executive power directions", "plain": "States are required to follow and enforce laws passed by Parliament."}, {"num": "263", "part": "Part XI", "title": "Inter-State Council", "tags": "inter state council coordination disputes", "plain": "There's a council where the centre and states can meet to sort out shared issues or disputes."}, {"num": "265", "part": "Part XII", "title": "No tax without authority of law", "tags": "tax law authority taxation", "plain": "The government can't collect any tax unless a proper law allows it."}, {"num": "266", "part": "Part XII", "title": "Consolidated Funds and Public Accounts", "tags": "consolidated fund public account contingency fund", "plain": "All government money (taxes, borrowings) goes into one official account that Parliament controls."}, {"num": "280", "part": "Part XII", "title": "Finance Commission", "tags": "finance commission tax devolution states union money sharing", "plain": "Every five years, a commission decides how tax money gets shared out between the central government and the states."}, {"num": "300A", "part": "Part XII", "title": "Right to Property", "tags": "right to property legal right compensation deprivation own property land land acquisition compensation seize property government take land", "plain": "You have a legal right to your property — the government can't take it away except through proper legal process. It used to be a fundamental right but was downgraded to a regular legal right in 1978."}, {"num": "301", "part": "Part XIII", "title": "Freedom of trade, commerce and intercourse", "tags": "free trade commerce intercourse throughout india business across states interstate trade check post toll free movement of goods", "plain": "Goods, businesses, and people can move and trade freely across state lines within India."}, {"num": "312", "part": "Part XIV", "title": "All-India Services", "tags": "ias ips all india services civil service", "plain": "This is the basis for services like the IAS and IPS — officers who work for both the central and state governments."}, {"num": "315", "part": "Part XIV", "title": "Public Service Commissions", "tags": "upsc union public service commission state public service commission", "plain": "The UPSC (and similar state commissions) conducts exams and interviews to recruit people into government jobs."}, {"num": "320", "part": "Part XIV", "title": "Functions of Public Service Commissions", "tags": "upsc functions recruitment exams advice", "plain": "These commissions run recruitment exams and advise on promotions and discipline in government service."}, {"num": "324", "part": "Part XV", "title": "Election Commission of India", "tags": "election commission eci elections superintendence direction control eci model code of conduct voter id evm free and fair election", "plain": "The Election Commission is the independent body that runs all elections in India, from local to national."}, {"num": "326", "part": "Part XV", "title": "Adult suffrage", "tags": "adult suffrage vote right to vote 18 years universal voting age 18 years old voter id eligibility to vote universal adult franchise", "plain": "Every citizen 18 or older can vote — one person, one vote, regardless of caste, religion, sex, or wealth."}, {"num": "343", "part": "Part XVII", "title": "Official language of the Union", "tags": "hindi official language english devanagari national language national language hindi english bilingual national language of india is hindi the national language", "plain": "Hindi (in Devanagari script) is the official language of the central government, and English is still used alongside it."}, {"num": "345", "part": "Part XVII", "title": "Official language of a state", "tags": "state official language", "plain": "Each state can choose its own official language(s) for state government work."}, {"num": "352", "part": "Part XVIII", "title": "Proclamation of National Emergency", "tags": "national emergency war external aggression armed rebellion president proclamation war emergency powers fundamental rights suspended", "plain": "If India faces war, external attack, or an internal armed rebellion, the President can declare a National Emergency, which expands central government power — this needs Parliament's approval quickly."}, {"num": "356", "part": "Part XVIII", "title": "President's Rule (failure of constitutional machinery in a state)", "tags": "president's rule state emergency governor's report constitutional machinery governor rule state government dismissed president's rule imposed", "plain": "If a state government can't function properly, the President can take over that state's administration directly — this is called 'President's Rule'."}, {"num": "360", "part": "Part XVIII", "title": "Financial Emergency", "tags": "financial emergency president economic instability", "plain": "If India's finances or credit are seriously at risk, the President can declare a Financial Emergency, though this has never actually happened."}, {"num": "368", "part": "Part XX", "title": "Power of Parliament to amend the Constitution", "tags": "amendment procedure amend constitution basic structure change constitutional amendment process basic structure doctrine kesavananda bharati how to amend the constitution types of majority required for amendment simple majority special majority", "plain": "Parliament can amend the Constitution, but depending on what's being changed, it needs anywhere from a simple majority to a two-thirds majority plus approval from half the states. Courts have also said Parliament can't destroy the Constitution's 'basic structure' — its core identity."}, {"num": "370", "part": "Part XXI", "title": "Special provisions for Jammu and Kashmir (historical)", "tags": "jammu kashmir special status article 370 abrogation autonomy", "plain": "This used to give Jammu & Kashmir a special autonomous status with its own rules. It was effectively cancelled in August 2019, and J&K was reorganised into Union Territories."}, {"num": "395", "part": "Part XXII", "title": "Repeals", "tags": "repeal government of india act 1935 indian independence act", "plain": "This just formally cancelled the old British-era laws (like the Government of India Act, 1935) once the new Constitution took over."}, {"num": "Schedule 1", "part": "Schedules", "title": "Names of States and Union Territories", "tags": "first schedule states union territories list", "plain": "This is simply the official list of all Indian states and Union Territories."}, {"num": "Schedule 7", "part": "Schedules", "title": "Union List, State List and Concurrent List", "tags": "seventh schedule union list state list concurrent list subjects", "plain": "This is the detailed list of exactly which topics the centre, states, or both can make laws on."}, {"num": "Schedule 8", "part": "Schedules", "title": "Languages recognised by the Constitution", "tags": "eighth schedule languages recognised 22 languages", "plain": "This lists the 22 languages officially recognised by the Constitution, like Hindi, Tamil, Bengali, Punjabi, and more."}, {"num": "Schedule 9", "part": "Schedules", "title": "Validation of certain Acts and Regulations", "tags": "ninth schedule laws protected from judicial review land reform", "plain": "This is a special list of (mostly land-reform) laws that were meant to be shielded from court challenges — though courts can still review them if they break the Constitution's basic structure."}, {"num": "Schedule 10", "part": "Schedules", "title": "Anti-Defection Law", "tags": "tenth schedule anti defection disqualification mla mp party switching parties", "plain": "This is the 'anti-defection' rule — if an MP or MLA switches parties or votes against their party's line, they can be disqualified."}, {"num": "GK-1", "part": "General Facts", "title": "Who wrote / drafted the Constitution", "tags": "who wrote the constitution drafting committee chairman father of the constitution architect ambedkar drafted by author", "plain": "Dr. B.R. Ambedkar chaired the Drafting Committee and is called the 'Father of the Indian Constitution'. The whole document was later hand-written (calligraphed) by Prem Behari Narain Raizada, and the Constituent Assembly (299 members, led by Dr. Rajendra Prasad) debated and approved it."}, {"num": "GK-2", "part": "General Facts", "title": "When was the Constitution adopted / enforced", "tags": "when was the constitution adopted enforced came into force date republic day constitution day samvidhan divas 26 november 1949 26 january 1950", "plain": "The Constituent Assembly adopted the Constitution on 26 November 1949 (now marked as Constitution Day / Samvidhan Divas). It came into force on 26 January 1950, which is celebrated every year as Republic Day."}, {"num": "GK-3", "part": "General Facts", "title": "How many Articles, Parts and Schedules", "tags": "how many articles parts schedules total number of articles longest constitution in the world length", "plain": "It started out with 395 Articles, 22 Parts, and 8 Schedules in 1950. After many amendments it now has around 470 Articles (some numbers were repealed and others added with letters like 21A), 25 Parts, and 12 Schedules — making it the longest written constitution in the world."}, {"num": "GK-4", "part": "General Facts", "title": "Fundamental Rights vs Directive Principles", "tags": "difference between fundamental rights and directive principles enforceable court", "plain": "Fundamental Rights (Part III, Articles 12-35) are legally enforceable — you can go to court if they're violated. Directive Principles (Part IV, Articles 36-51) are just goals for the government to work toward — you can't sue over them, but they still guide policy-making."}, {"num": "GK-5", "part": "General Facts", "title": "Basic Structure Doctrine", "tags": "basic structure doctrine kesavananda bharati case parliament cannot change core features", "plain": "In the 1973 Kesavananda Bharati case, the Supreme Court ruled that Parliament can amend the Constitution but can never destroy its 'basic structure' — core features like democracy, secularism, and judicial independence are permanently protected, no matter what."}, {"num": "GK-6", "part": "General Facts", "title": "Sources of the Indian Constitution", "tags": "borrowed from which countries sources of the constitution influenced by inspired by", "plain": "The Indian Constitution borrowed ideas from many countries: the parliamentary system from Britain, Fundamental Rights from the USA, Directive Principles from Ireland, and the federal structure with a strong centre from Canada, among others."}, {"num": "GK-7", "part": "General Facts", "title": "National Anthem — Jana Gana Mana", "tags": "national anthem jana gana mana lyrics full text composer rabindranath tagore when adopted anthem", "plain": "India's national anthem is \"Jana Gana Mana\", written and composed by Rabindranath Tagore. It was adopted by the Constituent Assembly on 24 January 1950, the same day as the National Song. I can't reproduce the full lyrics here, but you can find the official verse on the Ministry of Culture's website (knowindia.gov.in) or India.gov.in."}, {"num": "GK-8", "part": "General Facts", "title": "National Song — Vande Mataram", "tags": "national song vande mataram lyrics full text composer bankim chandra chatterjee when adopted", "plain": "India's national song is \"Vande Mataram\", written by Bankim Chandra Chatterjee, originally part of his novel Anandamath. It was given equal status to the national anthem by the Constituent Assembly on 24 January 1950. I can't reproduce the full lyrics here, but the official text is available via the Ministry of Culture."}, {"num": "GK-9", "part": "General Facts", "title": "National symbols overview", "tags": "national symbols flag emblem animal bird flower tree fruit tiger peacock lotus banyan mango tricolour", "plain": "A few key national symbols (these are government decisions, not Constitution Articles): the National Flag is the tricolour (Tiranga) with the Ashoka Chakra, adopted 22 July 1947; the State Emblem is the Lion Capital of Ashoka, adopted 26 January 1950; the national animal is the Bengal tiger; the national bird is the peacock; and the national flower is the lotus."}]
+;
+
+const LANG_DATA = {"hi": {"placeholder": "अपना सवाल लिखें…", "greeting": "नमस्ते! भारत के संविधान के बारे में हिंदी में कुछ भी पूछें।", "notFound": "मुझे इसका सही उत्तर नहीं मिला। कृपया प्रस्तावना, महिलाओं के अधिकार, शिक्षा, गिरफ्तारी या आपातकाल जैसे विषयों पर पूछें।", "topics": [{"keys": ["प्रस्तावना"], "lead": "यह रही संविधान की प्रस्तावना, पूरी:", "body": "\"हम, भारत के लोग, भारत को एक सम्पूर्ण प्रभुत्व-संपन्न समाजवादी पंथनिरपेक्ष लोकतंत्रात्मक गणराज्य बनाने के लिए, तथा उसके समस्त नागरिकों को सामाजिक, आर्थिक और राजनैतिक न्याय; विचार, अभिव्यक्ति, विश्वास, धर्म और उपासना की स्वतंत्रता; प्रतिष्ठा और अवसर की समता प्राप्त कराने के लिए, तथा उन सब में व्यक्ति की गरिमा और राष्ट्र की एकता और अखंडता सुनिश्चित करने वाली बंधुता बढ़ाने के लिए दृढ़संकल्प होकर अपनी इस संविधान सभा में आज तारीख 26 नवम्बर, 1949 ई. को एतद्द्वारा इस संविधान को अंगीकृत, अधिनियमित और आत्मार्पित करते हैं।\" (\"समाजवादी\" और \"पंथनिरपेक्ष\" शब्द बाद में 42वें संशोधन (1976) में जोड़े गए थे।)"}, {"keys": ["किसने लिखा", "संविधान कब बना", "कब अपनाया", "कब लागू"], "lead": "संविधान किसने और कब बनाया:", "body": "डॉ. बी.आर. अंबेडकर मसौदा समिति (Drafting Committee) के अध्यक्ष थे और उन्हें 'भारतीय संविधान का जनक' कहा जाता है। संविधान 26 नवंबर 1949 को अपनाया गया और 26 जनवरी 1950 को लागू हुआ (गणतंत्र दिवस)।"}, {"keys": ["कितने अनुच्छेद", "कितने भाग", "कितनी अनुसूचियां"], "lead": "संविधान का आकार:", "body": "शुरुआत में 395 अनुच्छेद, 22 भाग और 8 अनुसूचियां थीं। अब लगभग 470 अनुच्छेद, 25 भाग और 12 अनुसूचियां हैं — यह दुनिया का सबसे लंबा लिखित संविधान है।"}, {"keys": ["महिला", "स्त्री"], "lead": "महिलाओं के अधिकार:", "body": "• भेदभाव नहीं किया जा सकता (अनुच्छेद 15) • समान काम के लिए समान वेतन (अनुच्छेद 39) • काम पर मातृत्व सुविधा (अनुच्छेद 42) • संपत्ति का अधिकार (अनुच्छेद 300A) • नागरिकों का कर्तव्य है कि वे महिलाओं की गरिमा के खिलाफ प्रथाओं को त्यागें (अनुच्छेद 51A)"}, {"keys": ["गिरफ्तार", "पुलिस"], "lead": "गिरफ्तारी के दौरान आपके अधिकार:", "body": "गिरफ्तारी का कारण बताया जाना चाहिए, वकील से मिलने का अधिकार है, और 24 घंटे के भीतर मजिस्ट्रेट के सामने पेश किया जाना चाहिए (अनुच्छेद 22)।"}, {"keys": ["शिक्षा", "पढ़ाई", "स्कूल"], "lead": "शिक्षा का अधिकार:", "body": "6 से 14 वर्ष के हर बच्चे को मुफ्त और अनिवार्य शिक्षा का अधिकार है (अनुच्छेद 21A)।"}, {"keys": ["आपातकाल"], "lead": "आपातकाल तीन प्रकार के होते हैं:", "body": "राष्ट्रीय आपातकाल — युद्ध या बगावत की स्थिति में (अनुच्छेद 352); राष्ट्रपति शासन — जब राज्य सरकार ठीक से काम न करे (अनुच्छेद 356); वित्तीय आपातकाल — जब देश की वित्तीय स्थिरता खतरे में हो (अनुच्छेद 360, आज तक कभी लागू नहीं हुआ)।"}, {"keys": ["राष्ट्रगान", "राष्ट्रगीत", "जन गण मन", "वंदे मातरम"], "lead": "राष्ट्रगान और राष्ट्रगीत:", "body": "राष्ट्रगान 'जन गण मन' रवींद्रनाथ टैगोर ने लिखा और संगीतबद्ध किया। राष्ट्रगीत 'वंदे मातरम्' बंकिम चंद्र चट्टोपाध्याय ने लिखा। दोनों को 24 जनवरी 1950 को अपनाया गया। कॉपीराइट के कारण मैं पूरे बोल यहां नहीं दे सकता — आधिकारिक पाठ संस्कृति मंत्रालय की वेबसाइट पर उपलब्ध है।"}, {"keys": ["मौलिक कर्तव्य", "कर्तव्य"], "lead": "मौलिक कर्तव्य:", "body": "अनुच्छेद 51A में नागरिकों के 11 कर्तव्य दिए गए हैं — जैसे संविधान का सम्मान करना, तिरंगे व राष्ट्रगान का सम्मान करना, और पर्यावरण की रक्षा करना। ये 42वें संशोधन (1976) में जोड़े गए थे।"}, {"keys": ["मतदान", "वोट", "चुनाव"], "lead": "मतदान और चुनाव:", "body": "18 वर्ष या उससे अधिक उम्र का हर नागरिक मतदान कर सकता है (अनुच्छेद 326)। सभी चुनाव भारत के चुनाव आयोग द्वारा कराए जाते हैं (अनुच्छेद 324)।"}]}, "bn": {"placeholder": "আপনার প্রশ্ন লিখুন…", "greeting": "নমস্কার! ভারতের সংবিধান সম্পর্কে বাংলায় যেকোনো প্রশ্ন জিজ্ঞাসা করুন।", "notFound": "এই বিষয়ে আমি নিশ্চিত উত্তর খুঁজে পাইনি। প্রস্তাবনা, নারীর অধিকার, শিক্ষা, গ্রেপ্তার বা জরুরি অবস্থা নিয়ে জিজ্ঞাসা করে দেখুন।", "topics": [{"keys": ["প্রস্তাবনা"], "lead": "এখানে সংবিধানের প্রস্তাবনা (Preamble) দেওয়া হলো:", "body": "\"আমরা, ভারতের জনগণ, ভারতকে একটি সার্বভৌম সমাজতান্ত্রিক ধর্মনিরপেক্ষ গণতান্ত্রিক প্রজাতন্ত্র হিসেবে গঠন করার এবং এর সকল নাগরিকের জন্য সামাজিক, অর্থনৈতিক ও রাজনৈতিক ন্যায়বিচার; চিন্তা, মত প্রকাশ, বিশ্বাস, ধর্ম ও উপাসনার স্বাধীনতা; মর্যাদা ও সুযোগের সমতা নিশ্চিত করার এবং ব্যক্তির মর্যাদা ও জাতির ঐক্য বজায় রেখে সকলের মধ্যে ভ্রাতৃত্ব গড়ে তোলার দৃঢ় সংকল্প নিয়ে, ১৯৪৯ সালের ২৬শে নভেম্বর আমাদের এই গণপরিষদে এই সংবিধান গ্রহণ, প্রণয়ন ও আত্মসমর্পণ করছি।\""}, {"keys": ["কে লিখেছেন", "কবে তৈরি", "কবে গৃহীত", "কবে কার্যকর"], "lead": "সংবিধান কে লিখেছেন, কবে তৈরি হয়েছে:", "body": "ডঃ বি. আর. আম্বেদকর ছিলেন খসড়া কমিটির (Drafting Committee) সভাপতি, তাঁকে 'ভারতীয় সংবিধানের জনক' বলা হয়। সংবিধান ২৬ নভেম্বর ১৯৪৯ সালে গৃহীত হয় এবং ২৬ জানুয়ারি ১৯৫০ সালে কার্যকর হয় (প্রজাতন্ত্র দিবস)।"}, {"keys": ["কতগুলি অনুচ্ছেদ", "কয়টি অনুচ্ছেদ", "কয়টি তফসিল"], "lead": "সংবিধানের আকার:", "body": "শুরুতে ছিল ৩৯৫টি অনুচ্ছেদ, ২২টি ভাগ ও ৮টি তফসিল। এখন প্রায় ৪৭০টি অনুচ্ছেদ, ২৫টি ভাগ ও ১২টি তফসিল আছে — এটি বিশ্বের দীর্ঘতম লিখিত সংবিধান।"}, {"keys": ["নারী", "মহিলা"], "lead": "নারীদের অধিকার:", "body": "• বৈষম্য করা যাবে না (অনুচ্ছেদ ১৫) • সমান কাজের জন্য সমান বেতন (অনুচ্ছেদ ৩৯) • কর্মক্ষেত্রে মাতৃত্বকালীন সুবিধা (অনুচ্ছেদ ৪২) • সম্পত্তির অধিকার (অনুচ্ছেদ ৩০০ক) • নাগরিকদের কর্তব্য নারীর মর্যাদাহানিকর প্রথা ত্যাগ করা (অনুচ্ছেদ ৫১ক)"}, {"keys": ["গ্রেপ্তার", "পুলিশ"], "lead": "গ্রেপ্তারের সময় আপনার অধিকার:", "body": "গ্রেপ্তারের কারণ জানানো আবশ্যক, আইনজীবীর সাথে দেখা করার অধিকার আছে, এবং ২৪ ঘণ্টার মধ্যে ম্যাজিস্ট্রেটের সামনে হাজির করতে হবে (অনুচ্ছেদ ২২)।"}, {"keys": ["শিক্ষা", "স্কুল"], "lead": "শিক্ষার অধিকার:", "body": "৬ থেকে ১৪ বছর বয়সী প্রতিটি শিশুর বিনামূল্যে ও বাধ্যতামূলক শিক্ষার অধিকার আছে (অনুচ্ছেদ ২১ক)।"}, {"keys": ["জরুরি অবস্থা"], "lead": "তিন ধরনের জরুরি অবস্থা:", "body": "জাতীয় জরুরি অবস্থা — যুদ্ধ বা বিদ্রোহের সময় (অনুচ্ছেদ ৩৫২); রাষ্ট্রপতি শাসন — রাজ্য সরকার ঠিকমতো কাজ না করলে (অনুচ্ছেদ ৩৫৬); আর্থিক জরুরি অবস্থা — দেশের আর্থিক স্থিতিশীলতা হুমকির মুখে পড়লে (অনুচ্ছেদ ৩৬০, আজ পর্যন্ত কখনও প্রয়োগ হয়নি)।"}, {"keys": ["জাতীয় সংগীত", "জাতীয় গান", "জন গণ মন", "বন্দে মাতরম"], "lead": "জাতীয় সংগীত ও জাতীয় গান:", "body": "জাতীয় সংগীত 'জন গণ মন' রচনা ও সুরারোপ করেছেন রবীন্দ্রনাথ ঠাকুর। জাতীয় গান 'বন্দে মাতরম্' লিখেছেন বঙ্কিমচন্দ্র চট্টোপাধ্যায়। দুটোই ২৪ জানুয়ারি ১৯৫০ সালে গৃহীত হয়। কপিরাইটের কারণে পুরো গানের কথা এখানে দিতে পারছি না — সরকারি সংস্কৃতি মন্ত্রণালয়ের ওয়েবসাইটে সঠিক পাঠ পাবেন।"}, {"keys": ["মৌলিক কর্তব্য", "কর্তব্য"], "lead": "মৌলিক কর্তব্য:", "body": "অনুচ্ছেদ ৫১ক-তে নাগরিকদের ১১টি কর্তব্যের কথা বলা হয়েছে — যেমন সংবিধানকে সম্মান করা, জাতীয় পতাকা ও সংগীতকে সম্মান করা, এবং পরিবেশ রক্ষা করা। এগুলো ৪২তম সংশোধনীতে (১৯৭৬) যুক্ত হয়েছিল।"}, {"keys": ["ভোট", "নির্বাচন"], "lead": "ভোট ও নির্বাচন:", "body": "১৮ বছর বা তার বেশি বয়সী প্রতিটি নাগরিক ভোট দিতে পারেন (অনুচ্ছেদ ৩২৬)। সমস্ত নির্বাচন ভারতের নির্বাচন কমিশন পরিচালনা করে (অনুচ্ছেদ ৩২৪)।"}]}, "or": {"placeholder": "ଆପଣଙ୍କର ପ୍ରଶ୍ନ ଲେଖନ୍ତୁ…", "greeting": "ନମସ୍କାର! ଭାରତର ସମ୍ବିଧାନ ବିଷୟରେ ଓଡ଼ିଆରେ ପ୍ରଶ୍ନ ପଚାରନ୍ତୁ।", "notFound": "ମୁଁ ଏହାର ସଠିକ୍ ଉତ୍ତର ପାଇଲି ନାହିଁ। ପ୍ରସ୍ତାବନା, ମହିଳାଙ୍କ ଅଧିକାର, ଶିକ୍ଷା, ଗିରଫ କିମ୍ବା ଜରୁରୀକାଳୀନ ଅବସ୍ଥା ବିଷୟରେ ପଚାରନ୍ତୁ।", "topics": [{"keys": ["ପ୍ରସ୍ତାବନା"], "lead": "ଏଠାରେ ସମ୍ବିଧାନର ପ୍ରସ୍ତାବନା (Preamble) ଅଛି:", "body": "\"ଆମେ, ଭାରତର ଜନତା, ଭାରତକୁ ଏକ ସାର୍ବଭୌମ ସମାଜବାଦୀ ଧର୍ମନିରପେକ୍ଷ ଗଣତାନ୍ତ୍ରିକ ଗଣରାଜ୍ୟ ଭାବରେ ଗଠନ କରିବାକୁ ଏବଂ ଏହାର ସମସ୍ତ ନାଗରିକଙ୍କ ପାଇଁ ସାମାଜିକ, ଆର୍ଥିକ ଓ ରାଜନୈତିକ ନ୍ୟାୟ; ଚିନ୍ତା, ଅଭିବ୍ୟକ୍ତି, ବିଶ୍ୱାସ, ଧର୍ମ ଓ ଉପାସନାର ସ୍ୱାଧୀନତା; ମର୍ଯ୍ୟାଦା ଓ ସୁଯୋଗର ସମାନତା ସୁନିଶ୍ଚିତ କରିବାକୁ, ଏବଂ ବ୍ୟକ୍ତିର ମର୍ଯ୍ୟାଦା ଓ ଦେଶର ଏକତା ବଜାୟ ରଖି ସମସ୍ତଙ୍କ ମଧ୍ୟରେ ଭ୍ରାତୃତ୍ୱ ବୃଦ୍ଧି କରିବାକୁ ଦୃଢ଼ ସଂକଳ୍ପ ହୋଇ, ୧୯୪୯ ମସିହା ନଭେମ୍ବର ୨୬ ତାରିଖରେ ଆମର ଏହି ଗଣ ପରିଷଦରେ ଏହି ସମ୍ବିଧାନକୁ ଗ୍ରହଣ, ପ୍ରଣୟନ ଓ ଆତ୍ମସମର୍ପଣ କରୁଅଛୁ।\""}, {"keys": ["କିଏ ଲେଖିଥିଲେ", "କେବେ ପ୍ରସ୍ତୁତ", "କେବେ ଗ୍ରହଣ", "କେବେ ଲାଗୁ"], "lead": "ସମ୍ବିଧାନ କିଏ ଲେଖିଥିଲେ, କେବେ ପ୍ରସ୍ତୁତ ହେଲା:", "body": "ଡକ୍ଟର ବି.ଆର. ଆମ୍ବେଦକର ଡ୍ରାଫ୍ଟିଂ କମିଟିର ଅଧ୍ୟକ୍ଷ ଥିଲେ ଏବଂ ତାଙ୍କୁ 'ଭାରତୀୟ ସମ୍ବିଧାନର ପିତା' କୁହାଯାଏ। ସମ୍ବିଧାନ ୨୬ ନଭେମ୍ବର ୧୯୪୯ରେ ଗ୍ରହଣ ହେଲା ଏବଂ ୨୬ ଜାନୁଆରୀ ୧୯୫୦ରେ ଲାଗୁ ହେଲା (ଗଣତନ୍ତ୍ର ଦିବସ)।"}, {"keys": ["କେତେ ଧାରା", "କେତେ ଭାଗ", "କେତେ ଅନୁସୂଚୀ"], "lead": "ସମ୍ବିଧାନର ଆକାର:", "body": "ପ୍ରାରମ୍ଭରେ ୩୯୫ଟି ଧାରା, ୨୨ଟି ଭାଗ ଓ ୮ଟି ଅନୁସୂଚୀ ଥିଲା। ବର୍ତ୍ତମାନ ପାଖାପାଖି ୪୭୦ଟି ଧାରା, ୨୫ଟି ଭାଗ ଓ ୧୨ଟି ଅନୁସୂଚୀ ଅଛି — ଏହା ବିଶ୍ୱର ସବୁଠାରୁ ବଡ଼ ଲିଖିତ ସମ୍ବିଧାନ।"}, {"keys": ["ମହିଳା", "ସ୍ତ୍ରୀ"], "lead": "ମହିଳାଙ୍କ ଅଧିକାର:", "body": "• ଭେଦଭାବ କରାଯାଇପାରିବ ନାହିଁ (ଧାରା ୧୫) • ସମାନ କାର୍ଯ୍ୟ ପାଇଁ ସମାନ ମଜୁରି (ଧାରା ୩୯) • କାର୍ଯ୍ୟସ୍ଥଳରେ ମାତୃତ୍ୱ ସୁବିଧା (ଧାରା ୪୨) • ସମ୍ପତ୍ତିର ଅଧିକାର (ଧାରା ୩୦୦କ) • ମହିଳାଙ୍କ ମର୍ଯ୍ୟାଦା ବିରୁଦ୍ଧ ପ୍ରଥା ତ୍ୟାଗ କରିବା ନାଗରିକଙ୍କ କର୍ତ୍ତବ୍ୟ (ଧାରା ୫୧କ)"}, {"keys": ["ଗିରଫ", "ପୋଲିସ"], "lead": "ଗିରଫ ସମୟରେ ଆପଣଙ୍କ ଅଧିକାର:", "body": "ଗିରଫର କାରଣ ଜଣାଇବା ଆବଶ୍ୟକ, ଓକିଲଙ୍କ ସହ ଭେଟିବାର ଅଧିକାର ଅଛି, ଏବଂ ୨୪ ଘଣ୍ଟା ମଧ୍ୟରେ ମାଜିଷ୍ଟ୍ରେଟଙ୍କ ସମ୍ମୁଖରେ ହାଜର କରାଯିବା ଆବଶ୍ୟକ (ଧାରା ୨୨)।"}, {"keys": ["ଶିକ୍ଷା", "ସ୍କୁଲ"], "lead": "ଶିକ୍ଷାର ଅଧିକାର:", "body": "୬ରୁ ୧୪ ବର୍ଷ ବୟସର ପ୍ରତ୍ୟେକ ପିଲାର ମାଗଣା ଏବଂ ବାଧ୍ୟତାମୂଳକ ଶିକ୍ଷାର ଅଧିକାର ଅଛି (ଧାରା ୨୧କ)।"}, {"keys": ["ଜରୁରୀକାଳୀନ"], "lead": "ତିନି ପ୍ରକାର ଜରୁରୀକାଳୀନ ଅବସ୍ଥା:", "body": "ଜାତୀୟ ଜରୁରୀକାଳୀନ ଅବସ୍ଥା — ଯୁଦ୍ଧ କିମ୍ବା ବିଦ୍ରୋହ ସମୟରେ (ଧାରା ୩୫୨); ରାଷ୍ଟ୍ରପତି ଶାସନ — ରାଜ୍ୟ ସରକାର ଠିକ୍ ଭାବେ କାର୍ଯ୍ୟ ନକଲେ (ଧାରା ୩୫୬); ଆର୍ଥିକ ଜରୁରୀକାଳୀନ ଅବସ୍ଥା — ଦେଶର ଆର୍ଥିକ ସ୍ଥିରତା ବିପଦରେ ପଡ଼ିଲେ (ଧାରା ୩୬୦, ଆଜି ପର୍ଯ୍ୟନ୍ତ କେବେ ପ୍ରୟୋଗ ହୋଇନାହିଁ)।"}, {"keys": ["ଜାତୀୟ ସଙ୍ଗୀତ", "ଜାତୀୟ ଗୀତ", "ଜନ ଗଣ ମନ", "ବନ୍ଦେ ମାତରମ"], "lead": "ଜାତୀୟ ସଙ୍ଗୀତ ଓ ଜାତୀୟ ଗୀତ:", "body": "ଜାତୀୟ ସଙ୍ଗୀତ 'ଜନ ଗଣ ମନ' ରବୀନ୍ଦ୍ରନାଥ ଠାକୁର ଲେଖିଥିଲେ ଏବଂ ସୁର ଦେଇଥିଲେ। ଜାତୀୟ ଗୀତ 'ବନ୍ଦେ ମାତରମ୍' ବଙ୍କିମ ଚନ୍ଦ୍ର ଚଟ୍ଟୋପାଧ୍ୟାୟ ଲେଖିଥିଲେ। ଦୁଇଟି ୨୪ ଜାନୁଆରୀ ୧୯୫୦ରେ ଗ୍ରହଣ ହେଲା। କପିରାଇଟ୍ ଯୋଗୁଁ ମୁଁ ସମ୍ପୂର୍ଣ୍ଣ ଗୀତ ଏଠାରେ ଦେଇପାରିବି ନାହିଁ — ସଂସ୍କୃତି ମନ୍ତ୍ରଣାଳୟଙ୍କ ୱେବସାଇଟ୍‌ରେ ସଠିକ୍ ପାଠ ମିଳିବ।"}, {"keys": ["ମୌଳିକ କର୍ତ୍ତବ୍ୟ", "କର୍ତ୍ତବ୍ୟ"], "lead": "ମୌଳିକ କର୍ତ୍ତବ୍ୟ:", "body": "ଧାରା ୫୧କରେ ନାଗରିକଙ୍କ ୧୧ଟି କର୍ତ୍ତବ୍ୟ ଦିଆଯାଇଛି — ଯେପରି ସମ୍ବିଧାନକୁ ସମ୍ମାନ କରିବା, ଜାତୀୟ ପତାକା ଓ ସଙ୍ଗୀତକୁ ସମ୍ମାନ କରିବା, ଏବଂ ପରିବେଶ ରକ୍ଷା କରିବା। ଏହା ୪୨ତମ ସଂଶୋଧନ (୧୯୭୬)ରେ ଯୋଡ଼ାଯାଇଥିଲା।"}, {"keys": ["ଭୋଟ", "ନିର୍ବାଚନ"], "lead": "ଭୋଟ ଓ ନିର୍ବାଚନ:", "body": "୧୮ବର୍ଷ କିମ୍ବା ତହିଁରୁ ଅଧିକ ବୟସର ପ୍ରତ୍ୟେକ ନାଗରିକ ଭୋଟ ଦେଇପାରିବେ (ଧାରା ୩୨୬)। ସମସ୍ତ ନିର୍ବାଚନ ଭାରତ ନିର୍ବାଚନ ଆୟୋଗ ଦ୍ୱାରା ପରିଚାଳିତ ହୁଏ (ଧାରା ୩୨୪)।"}]}, "ta": {"placeholder": "உங்கள் கேள்வியை தட்டச்சு செய்யவும்…", "greeting": "வணக்கம்! இந்திய அரசியலமைப்பு பற்றி தமிழில் எதுவும் கேளுங்கள்.", "notFound": "இதற்கு துல்லியமான பதில் கிடைக்கவில்லை. முகவுரை, பெண்கள் உரிமைகள், கல்வி, கைது, அவசரகாலம் போன்ற தலைப்புகளில் கேளுங்கள்.", "topics": [{"keys": ["முகவுரை"], "lead": "இதோ அரசியலமைப்பின் முகவுரை (Preamble):", "body": "\"நாம், இந்திய மக்கள், இந்தியாவை ஒரு இறையாண்மை கொண்ட சமதர்ம சமய நடுநிலைமை கொண்ட ஜனநாயக குடியரசாக அமைக்கவும், அதன் அனைத்து குடிமக்களுக்கும் சமூக, பொருளாதார, அரசியல் நீதி; சிந்தனை, கருத்து வெளியீடு, நம்பிக்கை, மத நம்பிக்கை, வழிபாட்டு சுதந்திரம்; அந்தஸ்து மற்றும் வாய்ப்பில் சமத்துவம் ஆகியவற்றை உறுதி செய்யவும்; தனிநபர் மரியாதையையும் தேசத்தின் ஒற்றுமையையும் உறுதி செய்யும் சகோதரத்துவத்தை அனைவரிடையேயும் வளர்க்கவும் உறுதி பூண்டு, 1949ஆம் ஆண்டு நவம்பர் 26ஆம் தேதி நமது இந்த அரசியல் நிர்ணய சபையில் இந்த அரசியலமைப்பை ஏற்று, இயற்றி, நமக்கே அளித்துக் கொள்கிறோம்.\""}, {"keys": ["யார் எழுதினார்", "எப்போது உருவானது", "எப்போது ஏற்று", "எப்போது அமலு"], "lead": "அரசியலமைப்பை யார் எழுதினார்கள், எப்போது உருவானது:", "body": "டாக்டர் பி.ஆர். அம்பேத்கர் வரைவுக் குழுவின் (Drafting Committee) தலைவராக இருந்தார், அவரை 'இந்திய அரசியலமைப்பின் தந்தை' என்று அழைக்கிறார்கள். அரசியலமைப்பு 1949 நவம்பர் 26 அன்று ஏற்றுக்கொள்ளப்பட்டு, 1950 ஜனவரி 26 அன்று அமலுக்கு வந்தது (குடியரசு தினம்)."}, {"keys": ["எத்தனை சரத்து", "எத்தனை பகுதிகள்", "எத்தனை அட்டவணை"], "lead": "அரசியலமைப்பின் அளவு:", "body": "தொடக்கத்தில் 395 சரத்துகள், 22 பகுதிகள், 8 அட்டவணைகள் இருந்தன. இப்போது சுமார் 470 சரத்துகள், 25 பகுதிகள், 12 அட்டவணைகள் உள்ளன — இது உலகின் மிக நீளமான எழுதப்பட்ட அரசியலமைப்பு."}, {"keys": ["பெண்", "பெண்கள்"], "lead": "பெண்களுக்கான உரிமைகள்:", "body": "• பாகுபாடு காட்டக்கூடாது (சரத்து 15) • சம வேலைக்கு சம ஊதியம் (சரத்து 39) • வேலையிடத்தில் மகப்பேறு சலுகை (சரத்து 42) • சொத்துரிமை (சரத்து 300A) • பெண்களின் கண்ணியத்திற்கு எதிரான வழக்கங்களை கைவிடுவது குடிமக்களின் கடமை (சரத்து 51A)"}, {"keys": ["கைது", "போலீஸ்"], "lead": "கைது செய்யப்படும்போது உங்கள் உரிமைகள்:", "body": "கைது செய்யப்படும் காரணத்தை தெரிவிக்க வேண்டும், வழக்கறிஞரை சந்திக்கும் உரிமை உள்ளது, மேலும் 24 மணி நேரத்திற்குள் நீதிபதி முன் ஆஜர்படுத்த வேண்டும் (சரத்து 22)."}, {"keys": ["கல்வி", "பள்ளி"], "lead": "கல்வி உரிமை:", "body": "6 முதல் 14 வயது வரையிலான ஒவ்வொரு குழந்தைக்கும் இலவச மற்றும் கட்டாய கல்விக்கான உரிமை உள்ளது (சரத்து 21A)."}, {"keys": ["அவசரகாலம்"], "lead": "மூன்று வகையான அவசரகாலங்கள்:", "body": "தேசிய அவசரகாலம் — போர் அல்லது கிளர்ச்சி நேரத்தில் (சரத்து 352); குடியரசுத் தலைவர் ஆட்சி — மாநில அரசு சரியாக செயல்படாதபோது (சரத்து 356); நிதி அவசரகாலம் — நாட்டின் நிதி ஸ்திரத்தன்மை ஆபத்தில் இருக்கும்போது (சரத்து 360, இதுவரை ஒருபோதும் பயன்படுத்தப்படவில்லை)."}, {"keys": ["தேசிய கீதம்", "தேசிய பாடல்", "ஜன கண மன", "வந்தே மாதரம்"], "lead": "தேசிய கீதம் மற்றும் தேசிய பாடல்:", "body": "தேசிய கீதம் 'ஜன கண மன' ரவீந்திரநாத் தாகூரால் எழுதப்பட்டு இசையமைக்கப்பட்டது. தேசிய பாடல் 'வந்தே மாதரம்' பங்கிம் சந்திர சட்டோபாத்யாயவால் எழுதப்பட்டது. இரண்டும் 1950 ஜனவரி 24 அன்று ஏற்கப்பட்டன. பதிப்புரிமை காரணமாக முழு பாடல் வரிகளை இங்கு தர முடியாது — கலாச்சார அமைச்சகத்தின் இணையதளத்தில் அதிகாரப்பூர்வ உரையைப் பெறலாம்."}, {"keys": ["அடிப்படை கடமைகள்", "கடமை"], "lead": "அடிப்படை கடமைகள்:", "body": "சரத்து 51A-ல் குடிமக்களின் 11 கடமைகள் கூறப்பட்டுள்ளன — அரசியலமைப்பை மதிப்பது, தேசிய கொடி மற்றும் கீதத்தை மதிப்பது, சுற்றுச்சூழலைப் பாதுகாப்பது போன்றவை. இவை 42வது திருத்தத்தில் (1976) சேர்க்கப்பட்டன."}, {"keys": ["வாக்கு", "தேர்தல்"], "lead": "வாக்களித்தல் மற்றும் தேர்தல்:", "body": "18 வயது அல்லது அதற்கு மேற்பட்ட ஒவ்வொரு குடிமகனும் வாக்களிக்கலாம் (சரத்து 326). அனைத்து தேர்தல்களும் இந்திய தேர்தல் ஆணையத்தால் நடத்தப்படுகின்றன (சரத்து 324)."}]}, "kn": {"placeholder": "ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಟೈಪ್ ಮಾಡಿ…", "greeting": "ನಮಸ್ಕಾರ! ಭಾರತದ ಸಂವಿಧಾನದ ಬಗ್ಗೆ ಕನ್ನಡದಲ್ಲಿ ಏನಾದರೂ ಕೇಳಿ.", "notFound": "ಇದಕ್ಕೆ ನಿಖರವಾದ ಉತ್ತರ ಸಿಗಲಿಲ್ಲ. ಪೀಠಿಕೆ, ಮಹಿಳೆಯರ ಹಕ್ಕುಗಳು, ಶಿಕ್ಷಣ, ಬಂಧನ ಅಥವಾ ತುರ್ತು ಪರಿಸ್ಥಿತಿಯಂತಹ ವಿಷಯಗಳ ಬಗ್ಗೆ ಕೇಳಿ.", "topics": [{"keys": ["ಪೀಠಿಕೆ"], "lead": "ಇಲ್ಲಿದೆ ಸಂವಿಧಾನದ ಪೀಠಿಕೆ (Preamble):", "body": "\"ನಾವು, ಭಾರತದ ಜನರು, ಭಾರತವನ್ನು ಒಂದು ಸಾರ್ವಭೌಮ ಸಮಾಜವಾದಿ ಜಾತ್ಯತೀತ ಪ್ರಜಾಸತ್ತಾತ್ಮಕ ಗಣರಾಜ್ಯವಾಗಿ ರೂಪಿಸಲು ಮತ್ತು ಅದರ ಎಲ್ಲಾ ಪ್ರಜೆಗಳಿಗೆ ಸಾಮಾಜಿಕ, ಆರ್ಥಿಕ ಮತ್ತು ರಾಜಕೀಯ ನ್ಯಾಯ; ಆಲೋಚನೆ, ಅಭಿವ್ಯಕ್ತಿ, ನಂಬಿಕೆ, ಧರ್ಮ ಮತ್ತು ಆರಾಧನೆಯ ಸ್ವಾತಂತ್ರ್ಯ; ಸ್ಥಾನಮಾನ ಮತ್ತು ಅವಕಾಶದ ಸಮಾನತೆಯನ್ನು ಖಚಿತಪಡಿಸಲು ಮತ್ತು ವ್ಯಕ್ತಿಯ ಘನತೆ ಹಾಗೂ ರಾಷ್ಟ್ರದ ಏಕತೆಯನ್ನು ಕಾಪಾಡುವ ಸಹೋದರತ್ವವನ್ನು ಎಲ್ಲರಲ್ಲಿ ಬೆಳೆಸಲು ದೃಢ ಸಂಕಲ್ಪ ಮಾಡಿ, 1949ರ ನವೆಂಬರ್ 26ರಂದು ನಮ್ಮ ಈ ಸಂವಿಧಾನ ರಚನಾ ಸಭೆಯಲ್ಲಿ ಈ ಸಂವಿಧಾನವನ್ನು ಅಂಗೀಕರಿಸಿ, ಜಾರಿಗೊಳಿಸಿ, ನಮಗೇ ಅರ್ಪಿಸಿಕೊಳ್ಳುತ್ತೇವೆ.\""}, {"keys": ["ಯಾರು ಬರೆದರು", "ಯಾವಾಗ ರೂಪುಗೊಂಡಿತು", "ಯಾವಾಗ ಅಂಗೀಕರಿಸ", "ಯಾವಾಗ ಜಾರಿಗೆ"], "lead": "ಸಂವಿಧಾನವನ್ನು ಯಾರು ಬರೆದರು, ಯಾವಾಗ ರೂಪುಗೊಂಡಿತು:", "body": "ಡಾ. ಬಿ.ಆರ್. ಅಂಬೇಡ್ಕರ್ ಅವರು ಕರಡು ಸಮಿತಿಯ (Drafting Committee) ಅಧ್ಯಕ್ಷರಾಗಿದ್ದರು ಮತ್ತು ಅವರನ್ನು 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಪಿತಾಮಹ' ಎಂದು ಕರೆಯಲಾಗುತ್ತದೆ. ಸಂವಿಧಾನವು 1949ರ ನವೆಂಬರ್ 26ರಂದು ಅಂಗೀಕರಿಸಲ್ಪಟ್ಟು 1950ರ ಜನವರಿ 26ರಂದು ಜಾರಿಗೆ ಬಂದಿತು (ಗಣರಾಜ್ಯೋತ್ಸವ)."}, {"keys": ["ಎಷ್ಟು ವಿಧಿಗಳು", "ಎಷ್ಟು ಭಾಗಗಳು", "ಎಷ್ಟು ಅನುಸೂಚಿ"], "lead": "ಸಂವಿಧಾನದ ಗಾತ್ರ:", "body": "ಆರಂಭದಲ್ಲಿ 395 ವಿಧಿಗಳು, 22 ಭಾಗಗಳು ಮತ್ತು 8 ಅನುಸೂಚಿಗಳಿದ್ದವು. ಈಗ ಸುಮಾರು 470 ವಿಧಿಗಳು, 25 ಭಾಗಗಳು ಮತ್ತು 12 ಅನುಸೂಚಿಗಳಿವೆ — ಇದು ವಿಶ್ವದ ಅತಿ ಉದ್ದದ ಲಿಖಿತ ಸಂವಿಧಾನ."}, {"keys": ["ಮಹಿಳೆ", "ಮಹಿಳೆಯರ"], "lead": "ಮಹಿಳೆಯರ ಹಕ್ಕುಗಳು:", "body": "• ತಾರತಮ್ಯ ಮಾಡುವಂತಿಲ್ಲ (ವಿಧಿ 15) • ಸಮಾನ ಕೆಲಸಕ್ಕೆ ಸಮಾನ ವೇತನ (ವಿಧಿ 39) • ಕೆಲಸದ ಸ್ಥಳದಲ್ಲಿ ಹೆರಿಗೆ ಸೌಲಭ್ಯ (ವಿಧಿ 42) • ಆಸ್ತಿಯ ಹಕ್ಕು (ವಿಧಿ 300A) • ಮಹಿಳೆಯರ ಘನತೆಗೆ ವಿರುದ್ಧವಾದ ಆಚರಣೆಗಳನ್ನು ತ್ಯಜಿಸುವುದು ಪ್ರಜೆಗಳ ಕರ್ತವ್ಯ (ವಿಧಿ 51A)"}, {"keys": ["ಬಂಧನ", "ಪೊಲೀಸ್"], "lead": "ಬಂಧನದ ಸಮಯದಲ್ಲಿ ನಿಮ್ಮ ಹಕ್ಕುಗಳು:", "body": "ಬಂಧನದ ಕಾರಣವನ್ನು ತಿಳಿಸಬೇಕು, ವಕೀಲರನ್ನು ಭೇಟಿಯಾಗುವ ಹಕ್ಕಿದೆ, ಮತ್ತು 24 ಗಂಟೆಗಳ ಒಳಗೆ ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ ಮುಂದೆ ಹಾಜರುಪಡಿಸಬೇಕು (ವಿಧಿ 22)."}, {"keys": ["ಶಿಕ್ಷಣ", "ಶಾಲೆ"], "lead": "ಶಿಕ್ಷಣದ ಹಕ್ಕು:", "body": "6 ರಿಂದ 14 ವರ್ಷದ ಪ್ರತಿ ಮಗುವಿಗೂ ಉಚಿತ ಮತ್ತು ಕಡ್ಡಾಯ ಶಿಕ್ಷಣದ ಹಕ್ಕಿದೆ (ವಿಧಿ 21A)."}, {"keys": ["ತುರ್ತು ಪರಿಸ್ಥಿತಿ"], "lead": "ಮೂರು ರೀತಿಯ ತುರ್ತು ಪರಿಸ್ಥಿತಿಗಳು:", "body": "ರಾಷ್ಟ್ರೀಯ ತುರ್ತು ಪರಿಸ್ಥಿತಿ — ಯುದ್ಧ ಅಥವಾ ದಂಗೆಯ ಸಮಯದಲ್ಲಿ (ವಿಧಿ 352); ರಾಷ್ಟ್ರಪತಿ ಆಳ್ವಿಕೆ — ರಾಜ್ಯ ಸರ್ಕಾರ ಸರಿಯಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸದಿದ್ದಾಗ (ವಿಧಿ 356); ಆರ್ಥಿಕ ತುರ್ತು ಪರಿಸ್ಥಿತಿ — ದೇಶದ ಆರ್ಥಿಕ ಸ್ಥಿರತೆ ಅಪಾಯದಲ್ಲಿದ್ದಾಗ (ವಿಧಿ 360, ಇಲ್ಲಿಯವರೆಗೆ ಎಂದಿಗೂ ಬಳಸಿಲ್ಲ)."}, {"keys": ["ರಾಷ್ಟ್ರಗೀತೆ", "ರಾಷ್ಟ್ರೀಯ ಗೀತೆ", "ಜನ ಗಣ ಮನ", "ವಂದೇ ಮಾತರಂ"], "lead": "ರಾಷ್ಟ್ರಗೀತೆ ಮತ್ತು ರಾಷ್ಟ್ರೀಯ ಗೀತೆ:", "body": "ರಾಷ್ಟ್ರಗೀತೆ 'ಜನ ಗಣ ಮನ'ವನ್ನು ರವೀಂದ್ರನಾಥ ಟಾಗೋರ್ ಬರೆದು ಸಂಗೀತ ಸಂಯೋಜಿಸಿದರು. ರಾಷ್ಟ್ರೀಯ ಗೀತೆ 'ವಂದೇ ಮಾತರಂ' ಅನ್ನು ಬಂಕಿಮ್ ಚಂದ್ರ ಚಟ್ಟೋಪಾಧ್ಯಾಯ ಬರೆದರು. ಎರಡನ್ನೂ 1950ರ ಜನವರಿ 24ರಂದು ಅಂಗೀಕರಿಸಲಾಯಿತು. ಕೃತಿಸ್ವಾಮ್ಯದ ಕಾರಣ ಪೂರ್ಣ ಸಾಹಿತ್ಯವನ್ನು ಇಲ್ಲಿ ನೀಡಲಾಗುವುದಿಲ್ಲ — ಸಂಸ್ಕೃತಿ ಸಚಿವಾಲಯದ ವೆಬ್‌ಸೈಟ್‌ನಲ್ಲಿ ಅಧಿಕೃತ ಪಠ್ಯ ಸಿಗುತ್ತದೆ."}, {"keys": ["ಮೂಲಭೂತ ಕರ್ತವ್ಯ", "ಕರ್ತವ್ಯ"], "lead": "ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳು:", "body": "ವಿಧಿ 51Aದಲ್ಲಿ ಪ್ರಜೆಗಳ 11 ಕರ್ತವ್ಯಗಳನ್ನು ಹೇಳಲಾಗಿದೆ — ಸಂವಿಧಾನವನ್ನು ಗೌರವಿಸುವುದು, ರಾಷ್ಟ್ರಧ್ವಜ ಮತ್ತು ಗೀತೆಯನ್ನು ಗೌರವಿಸುವುದು, ಪರಿಸರವನ್ನು ರಕ್ಷಿಸುವುದು ಮುಂತಾದವು. ಇವುಗಳನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯಲ್ಲಿ (1976) ಸೇರಿಸಲಾಯಿತು."}, {"keys": ["ಮತದಾನ", "ಚುನಾವಣೆ"], "lead": "ಮತದಾನ ಮತ್ತು ಚುನಾವಣೆ:", "body": "18 ವರ್ಷ ಅಥವಾ ಅದಕ್ಕಿಂತ ಹೆಚ್ಚಿನ ವಯಸ್ಸಿನ ಪ್ರತಿಯೊಬ್ಬ ಪ್ರಜೆಯೂ ಮತ ಚಲಾಯಿಸಬಹುದು (ವಿಧಿ 326). ಎಲ್ಲಾ ಚುನಾವಣೆಗಳನ್ನು ಭಾರತ ಚುನಾವಣಾ ಆಯೋಗ ನಡೆಸುತ್ತದೆ (ವಿಧಿ 324)."}]}};
+
+function detectLang(text){
+  if(/[\u0900-\u097F]/.test(text)) return 'hi';
+  if(/[\u0980-\u09FF]/.test(text)) return 'bn';
+  if(/[\u0B00-\u0B7F]/.test(text)) return 'or';
+  if(/[\u0B80-\u0BFF]/.test(text)) return 'ta';
+  if(/[\u0C80-\u0CFF]/.test(text)) return 'kn';
+  return 'en';
+}
+
+function composeAnswerLang(lang, text){
+  const data = LANG_DATA[lang];
+  let best=null, bestHits=0;
+  for(const t of data.topics){
+    let hits=0;
+    for(const k of t.keys){ if(text.includes(k)) hits++; }
+    if(hits>bestHits){ bestHits=hits; best=t; }
+  }
+  if(best) return { lead: best.lead, body: best.body };
+  return { lead: null, body: data.notFound };
+}
+
+function addBotBubbleLang(ans){
+  const feed = document.getElementById('feed');
+  const row = document.createElement('div'); row.className='row bot';
+  const b = document.createElement('div'); b.className='bubble bot';
+  const bodyHtml = ans.body.replace(/\n/g, "<br>");
+  if(ans.lead){
+    b.innerHTML = `<p class="lead">${ans.lead}</p><p>${bodyHtml}</p>`;
+  } else {
+    b.innerHTML = `<p class="lead">${bodyHtml}</p>`;
+  }
+  row.appendChild(b); feed.appendChild(row);
+  scrollFeed();
+}
+
+function articleLink(num){
+  const q = encodeURIComponent("Constitution of India " + num + " full text");
+  return "https://www.google.com/search?q=" + q;
+}
+
+function refLabel(num){
+  if(num === "Preamble") return "Preamble — full text";
+  if(num.startsWith("GK-")) return "read more";
+  if(num.startsWith("Schedule")) return num;
+  return "Article " + num + " — read more";
+}
+
+const TOPICS = [
+  { keys:["preamble"],
+    lead:"The Preamble is the introduction to the Constitution — here's what it says:",
+    nums:["Preamble"] },
+  { keys:["who wrote","who drafted","father of the constitution","architect of the constitution","who is the author"],
+    lead:"On who made the Constitution:",
+    nums:["GK-1"] },
+  { keys:["when was the constitution","when did the constitution","adopted on","came into force","enforced on","republic day","constitution day","samvidhan divas"],
+    lead:"On the key dates:",
+    nums:["GK-2"] },
+  { keys:["how many articles","how many parts","how many schedules","total articles","longest constitution"],
+    lead:"On the size of the Constitution:",
+    nums:["GK-3"] },
+  { keys:["difference between fundamental rights and directive","fundamental rights vs directive","directive principles"],
+    lead:"Here's the difference:",
+    nums:["GK-4"] },
+  { keys:["basic structure"],
+    lead:"On the basic structure doctrine:",
+    nums:["GK-5"] },
+  { keys:["borrowed from","sources of the constitution","inspired by which country"],
+    lead:"On where the ideas came from:",
+    nums:["GK-6"] },
+  { keys:["fundamental duties"],
+    lead:"On Fundamental Duties:",
+    nums:["51A"] },
+  { keys:["national anthem","jana gana mana"],
+    lead:"On the National Anthem:",
+    nums:["GK-7"] },
+  { keys:["national song","vande mataram"],
+    lead:"On the National Song:",
+    nums:["GK-8"] },
+  { keys:["national flag","national emblem","national animal","national bird","national flower","national symbol","tiranga","ashoka chakra"],
+    lead:"On national symbols:",
+    nums:["GK-9"] },
+  { keys:["women","woman","girl","females","ladies"],
+    lead:"Here's what the Constitution says about women's rights:",
+    nums:["15","16","39","42","300A","51A"] },
+  { keys:["children","child rights","kids","minor"],
+    lead:"Here's what it says about children's rights:",
+    nums:["21A","24","39","45"] },
+  { keys:["arrest","police custody","detained","detention"],
+    lead:"If you're arrested, here's what protects you:",
+    nums:["22","20","21"] },
+  { keys:["religion","worship","faith","temple","mosque","church","conversion"],
+    lead:"On religion, here's the deal:",
+    nums:["25","26","27","28"] },
+  { keys:["working hours","work hours","overtime","hours of work"],
+    lead:"On working hours specifically, the Constitution doesn't fix exact hour limits (that's set by ordinary labour laws like the Factories Act) — but it does lay down a broader principle:",
+    nums:["42"] },
+  { keys:["minimum wage","equal pay","gender pay"],
+    lead:"On pay and wages:",
+    nums:["39","42"] },
+  { keys:["child labour","child labor","kids working"],
+    lead:"On child labour:",
+    nums:["24"] },
+  { keys:["forced labour","bonded labour","begar","trafficking"],
+    lead:"On forced labour and trafficking:",
+    nums:["23"] },
+  { keys:["government job","sarkari naukri","public employment","civil service"],
+    lead:"On government jobs:",
+    nums:["16","315","320"] },
+  { keys:["property","land","inherit","inheritance","own a house"],
+    lead:"On owning property:",
+    nums:["300A"] },
+  { keys:["education","school","study","college","admission"],
+    lead:"On education:",
+    nums:["21A","28","29","30","45"] },
+  { keys:["vote","voting","election","elect"],
+    lead:"On voting and elections:",
+    nums:["326","324"] },
+  { keys:["speech","expression","press","media","protest","demonstration"],
+    lead:"On free speech and protest:",
+    nums:["19"] },
+  { keys:["emergency"],
+    lead:"On emergencies, there are three kinds:",
+    nums:["352","356","360"] },
+  { keys:["amend","amendment","change the constitution"],
+    lead:"On changing the Constitution itself:",
+    nums:["368"] },
+  { keys:["caste","untouchability","dalit","reservation","quota"],
+    lead:"On caste and reservation:",
+    nums:["15","16","17"] },
+  { keys:["minority","minorities"],
+    lead:"On minority rights:",
+    nums:["29","30"] },
+  { keys:["president"],
+    lead:"On the President:",
+    nums:["52","53","54","61"] },
+  { keys:["parliament","lok sabha","rajya sabha","mp "],
+    lead:"On Parliament:",
+    nums:["79","80","81","83"] },
+  { keys:["court","judge","judiciary","supreme court","high court"],
+    lead:"On the courts:",
+    nums:["124","131","136","141","226","32"] },
+  { keys:["privacy","surveillance"],
+    lead:"On privacy:",
+    nums:["21"] },
+  { keys:["environment","pollution","forest","wildlife","climate"],
+    lead:"On the environment:",
+    nums:["48A","21"] },
+];
+
+const OUT_OF_SCOPE = [
+  { keys:["helmet","seatbelt","seat belt","traffic fine","speeding","traffic signal","traffic challan","driving licence","driving license","parking fine","rto"],
+    text:"Specific traffic rules and fines (like a helmet fine) aren't written in the Constitution — they come from ordinary laws like the Motor Vehicles Act, made by Parliament or state governments." },
+  { keys:["income tax slab","gst rate","tax rate","tax percentage"],
+    text:"Exact tax rates and slabs aren't in the Constitution. The Constitution just says the government can only tax you if a proper law allows it (Article 265) — the actual rates come from tax laws passed each year." },
+  { keys:["exam pattern","cutoff marks","syllabus","admission cutoff"],
+    text:"Exam patterns and cutoffs aren't constitutional matters — those are set by the exam-conducting body or educational institution, not the Constitution." },
+  { keys:["phone bill","electricity bill","water bill","mobile recharge"],
+    text:"That's a matter of ordinary consumer/utility regulation, not something the Constitution covers directly." },
+];
+
+const STOP = new Set(['what','is','are','the','a','an','of','to','in','can','do','does','my','me','i','am','how','why','who','when','where','on','for','and','or','it','be','was','were','has','have','if','so','with','by','about','right','rights','india','indian','constitution','article','articles','government','tell','give','me','please']);
+
+function tokenize(s){
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w && !STOP.has(w));
+}
+function findByNum(num){ return ARTICLES.find(a=>a.num===num); }
+function matchFromList(qLower, list){
+  let best=null, bestHits=0;
+  for(const t of list){
+    let hits=0;
+    for(const k of t.keys){ if(qLower.includes(k)) hits++; }
+    if(hits>bestHits){ bestHits=hits; best=t; }
+  }
+  return bestHits>0 ? best : null;
+}
+function scoreArticle(qTokens, entry){
+  const tags=entry.tags.toLowerCase(), title=entry.title.toLowerCase(), plain=entry.plain.toLowerCase();
+  let s=0;
+  for(const t of qTokens){
+    if(tags.includes(t)) s+=3;
+    if(title.includes(t)) s+=2;
+    if(plain.includes(t)) s+=1;
+  }
+  return s;
+}
+function genericMatches(query){
+  const qLower = query.toLowerCase();
+  const artNumMatch = qLower.match(/article\s*(\d+[a-z]?)/i);
+  const qTokens = tokenize(query);
+  const scored = ARTICLES.map(a=>({a,s:scoreArticle(qTokens,a)})).filter(x=>x.s>0).sort((x,y)=>y.s-x.s);
+  const MIN_SCORE = 3;
+  let results = scored.filter(x=>x.s>=MIN_SCORE).map(x=>x.a);
+  if(artNumMatch){
+    const direct = findByNum(artNumMatch[1].toUpperCase()) || findByNum(artNumMatch[1]);
+    if(direct){ results = [direct, ...results.filter(r=>r!==direct)]; }
+  }
+  return results.slice(0,4);
+}
+function composeAnswer(query){
+  const qLower = query.toLowerCase();
+  const oos = matchFromList(qLower, OUT_OF_SCOPE);
+  if(oos){ return { lead:null, points:[], plainText: oos.text }; }
+  const topic = matchFromList(qLower, TOPICS);
+  if(topic){
+    const arts = topic.nums.map(findByNum).filter(Boolean);
+    return { lead: topic.lead, points: arts };
+  }
+  const matches = genericMatches(query);
+  if(matches.length===0){ return { lead: null, points: [] }; }
+  return { lead: "Here's what I found:", points: matches };
+}
+
+function scrollFeed(){ const feed = document.getElementById('feed'); feed.scrollTop = feed.scrollHeight; }
+
+function addUserBubble(text){
+  const feed = document.getElementById('feed');
+  const row = document.createElement('div'); row.className='row user';
+  const b = document.createElement('div'); b.className='bubble user'; b.textContent=text;
+  row.appendChild(b); feed.appendChild(row);
+}
+
+function addBotBubble(answer){
+  const feed = document.getElementById('feed');
+  const row = document.createElement('div'); row.className='row bot';
+  const b = document.createElement('div'); b.className='bubble bot';
+
+  if(answer.plainText){
+    b.innerHTML = `<p class="lead">${answer.plainText}</p>`;
+  } else if(!answer.lead || answer.points.length===0){
+    b.innerHTML = `<p class="lead">I'm not confident I've got a good match for that. Try asking about arrest, women's rights, education, religion, elections, emergency, or a specific Article number.</p>`;
+  } else {
+    let html = `<p class="lead">${answer.lead}</p><ul>`;
+    for(const a of answer.points){
+      const bodyText = a.plain.replace(/\n/g, "<br>");
+      html += `<li>${bodyText} <a class="ref" href="${articleLink(a.num)}" target="_blank" rel="noopener">(${refLabel(a.num)})</a></li>`;
+    }
+    html += `</ul>`;
+    b.innerHTML = html;
+  }
+  row.appendChild(b); feed.appendChild(row);
+  scrollFeed();
+}
+
+let started = false;
+function enterChat(){
+  if(started) return;
+  started = true;
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('chatView').classList.add('active');
+}
+
+function ask(text){
+  text = text.trim();
+  if(!text) return;
+  enterChat();
+  addUserBubble(text);
+  const lang = detectLang(text);
+  if(lang === 'en'){
+    const answer = composeAnswer(text);
+    setTimeout(()=>addBotBubble(answer), 130);
+  } else {
+    const answer = composeAnswerLang(lang, text);
+    setTimeout(()=>addBotBubbleLang(answer), 130);
+  }
+}
+
+document.getElementById('askBtn1').addEventListener('click', ()=>{
+  const v = document.getElementById('q1').value;
+  document.getElementById('q1').value='';
+  ask(v);
+});
+document.getElementById('q1').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ document.getElementById('askBtn1').click(); }
+});
+
+document.getElementById('askBtn2').addEventListener('click', ()=>{
+  const input = document.getElementById('q2');
+  ask(input.value);
+  input.value='';
+  input.focus();
+});
+document.getElementById('q2').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ document.getElementById('askBtn2').click(); }
+});
+
+const SAMPLE_QS = ["What is the Preamble?","Rights for women","Can police arrest me without reason?","How many articles?"];
+document.getElementById('chipsLanding').innerHTML = "";
+document.getElementById('chipsChat').innerHTML = "";
+SAMPLE_QS.forEach(q=>{
+  const c1 = document.createElement('div'); c1.className='chip'; c1.textContent=q;
+  c1.addEventListener('click', ()=>ask(q));
+  document.getElementById('chipsLanding').appendChild(c1);
+
+  const c2 = document.createElement('div'); c2.className='chip'; c2.textContent=q;
+  c2.addEventListener('click', ()=>ask(q));
+  document.getElementById('chipsChat').appendChild(c2);
+});
+</script>
+</body>
+</html>

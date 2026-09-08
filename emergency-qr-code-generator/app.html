@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emergency QR Generator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--r:#D92B2B;--rd:#A01E1E;--rl:#FDECEA;--ink:#111318;--mid:#4A4F5C;--muted:#8A909E;--bdr:#E2E5EC;--surf:#F8F9FB}
+body{font-family:'Inter',sans-serif;background:var(--surf);color:var(--ink);min-height:100vh;padding:24px 14px}
+.hdr{text-align:center;margin-bottom:28px}
+.badge{display:inline-flex;align-items:center;gap:5px;background:var(--rl);color:var(--r);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:10px}
+.hdr h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,38px);font-weight:700;letter-spacing:-.02em}
+.hdr h1 span{color:var(--r)}
+.hdr p{color:var(--mid);font-size:13px;margin-top:6px}
+.card{background:#fff;border:1px solid var(--bdr);border-radius:16px;padding:24px;max-width:460px;margin:0 auto 20px;box-shadow:0 2px 16px rgba(0,0,0,.06)}
+.card h2{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;background:var(--r)}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+label{font-size:11px;font-weight:700;color:var(--mid);letter-spacing:.06em;text-transform:uppercase}
+.row{display:flex;gap:7px}
+select,input{font-family:'Inter',sans-serif;font-size:15px;color:var(--ink);background:var(--surf);border:1.5px solid var(--bdr);border-radius:9px;padding:10px 12px;outline:none;width:100%;transition:border-color .15s}
+select{width:auto;flex-shrink:0}
+input:focus,select:focus{border-color:var(--r);background:#fff}
+.hint{font-size:11px;color:var(--muted);margin-top:2px}
+.seg{display:flex;gap:4px;background:var(--surf);border-radius:9px;padding:4px}
+.seg-btn{flex:1;padding:8px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--mid);background:transparent;cursor:pointer;transition:.15s}
+.seg-btn.on{background:#fff;color:var(--r);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.divhr{border:none;border-top:1px solid var(--bdr);margin:18px 0}
+.btn-gen{width:100%;margin-top:18px;background:var(--r);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s}
+.btn-gen:hover{background:var(--rd)}
+#preview{display:none;max-width:460px;margin:0 auto}
+.tabs{display:flex;gap:7px;margin-bottom:16px}
+.tab{flex:1;padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--mid);cursor:pointer;transition:.15s}
+.tab.on{border-color:var(--r);color:var(--r);background:var(--rl)}
+.wrap{background:#fff;border-radius:16px;padding:22px;border:1px solid var(--bdr)}
+#sign{width:100%;max-width:340px;margin:0 auto;border:3px solid var(--r);border-radius:13px;overflow:hidden;font-family:'Space Grotesk',sans-serif;background:#fff}
+.sh{background:var(--r);padding:14px 16px;text-align:center}
+.sh .sl{font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(255,255,255,.7);text-transform:uppercase;margin-bottom:2px}
+.sh h2{color:#fff;font-size:18px;font-weight:700}
+.sb{padding:14px}
+.qb{text-align:center;padding:14px;border:2px dashed var(--bdr);border-radius:10px;margin-bottom:11px;background:#fafafa}
+.ql{font-size:9px;color:var(--muted);font-family:'Inter',sans-serif;margin-top:6px;letter-spacing:.05em;text-transform:uppercase}
+.sacts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px}
+.sab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 5px;border-radius:8px;font-size:10px;font-weight:600;font-family:'Inter',sans-serif;color:#fff;min-height:52px;text-align:center}
+.sab .i{font-size:16px}
+.c1{background:linear-gradient(135deg,#25D366,#128C7E)}
+.c2{background:linear-gradient(135deg,#34B7F1,#075E54)}
+.c3{background:linear-gradient(135deg,#555,#222)}
+.c4{background:linear-gradient(135deg,#F6A623,#D97706)}
+.sf{background:var(--surf);padding:8px;text-align:center;font-size:9px;color:var(--muted);font-family:'Inter',sans-serif;border-top:1px solid var(--bdr)}
+.acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.ba{flex:1;min-width:110px;padding:10px 14px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--bdr);background:#fff;color:var(--ink);transition:.15s}
+.ba:hover{background:var(--surf)}
+.ba.p{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ba.g{background:#25D366;color:#fff;border-color:#25D366}
+#lprev{display:none}
+.lpp{background:#fff;border-radius:16px;overflow:hidden;border:1px solid var(--bdr);max-width:340px;margin:0 auto}
+.lh{background:var(--r);padding:20px 16px;text-align:center;color:#fff}
+.pulse{width:50px;height:50px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 9px;animation:pu 2s infinite}
+@keyframes pu{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.3)}50%{box-shadow:0 0 0 12px rgba(255,255,255,0)}}
+.lh h2{font-size:18px;font-weight:700}.lh p{font-size:11px;opacity:.8;margin-top:2px}
+.lb{padding:16px}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.lcb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:16px 7px;border-radius:12px;text-decoration:none;color:#fff;font-size:13px;font-weight:600}
+.lcb .ico{font-size:23px}
+.ltb{display:flex;align-items:center;gap:10px;background:var(--surf);color:var(--ink);border-radius:10px;padding:12px 13px;text-decoration:none;font-weight:600;font-size:13px;border:1.5px solid var(--bdr);margin-bottom:10px}
+.lft{background:var(--ink);color:rgba(255,255,255,.4);text-align:center;padding:10px;font-size:10px}
+@media print{
+  body{background:#fff;padding:0}
+  .card,.tabs,.acts,.hdr,#lprev{display:none!important}
+  #preview{display:block!important;max-width:100%}
+  .wrap{border:none;padding:0}
+  #dview{display:block!important}
+  #sign{max-width:100%;border-radius:0;page-break-inside:avoid}
+  #qr-img{display:block!important;width:220px!important;height:220px!important;image-rendering:pixelated;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="badge">&#x26A1; Emergency System</div>
+  <h1>Door <span>QR Contact</span></h1>
+  <p>Scan &#x2192; WhatsApp opens instantly &#x2022; Location shared via WhatsApp &#x2022; Spam-protected</p>
+</header>
+
+<div class="card">
+  <h2><span class="dot"></span> WhatsApp Contact</h2>
+  <div class="fg">
+    <label>WhatsApp via</label>
+    <div class="seg">
+      <button class="seg-btn on" onclick="switchWA('phone')" id="seg-phone">&#x1F4DE; Phone Number</button>
+      <button class="seg-btn"    onclick="switchWA('user')"  id="seg-user">&#x1F464; Username</button>
+    </div>
+  </div>
+  <div class="fg" id="wa-phone-wrap">
+    <label>WhatsApp Phone Number</label>
+    <div class="row">
+      <select id="wa-cc">
+        <option value="1">&#x1F1FA;&#x1F1F8; +1</option><option value="44">&#x1F1EC;&#x1F1E7; +44</option>
+        <option value="91" selected>&#x1F1EE;&#x1F1F3; +91</option><option value="61">&#x1F1E6;&#x1F1FA; +61</option>
+        <option value="971">&#x1F1E6;&#x1F1EA; +971</option><option value="65">&#x1F1F8;&#x1F1EC; +65</option>
+        <option value="49">&#x1F1E9;&#x1F1EA; +49</option><option value="33">&#x1F1EB;&#x1F1F7; +33</option>
+        <option value="81">&#x1F1EF;&#x1F1F5; +81</option><option value="55">&#x1F1E7;&#x1F1F7; +55</option>
+        <option value="27">&#x1F1FF;&#x1F1E6; +27</option><option value="234">&#x1F1F3;&#x1F1EC; +234</option>
+      </select>
+      <input type="tel" id="wa-phone" placeholder="9876543210">
+    </div>
+    <span class="hint">Local number only &#x2014; don't include country code</span>
+  </div>
+  <div class="fg" id="wa-user-wrap" style="display:none">
+    <label>WhatsApp Username</label>
+    <input type="text" id="wa-user" placeholder="john.doe  (no @)">
+    <span class="hint">WhatsApp Settings &#x2192; Profile &#x2192; Username</span>
+  </div>
+  <div class="divhr"></div>
+  <h2 style="margin-bottom:16px"><span class="dot" style="background:#4A4F5C"></span> Direct Call Number</h2>
+  <div class="fg">
+    <label>Phone for Direct Call</label>
+    <div class="row">
+      <select id="call-cc">
+        <option value="1">&#x1F1FA;&#x1F1F8; +1</option><option value="44">&#x1F1EC;&#x1F1E7; +44</option>
+        <option value="91" selected>&#x1F1EE;&#x1F1F3; +91</option><option value="61">&#x1F1E6;&#x1F1FA; +61</option>
+        <option value="971">&#x1F1E6;&#x1F1EA; +971</option><option value="65">&#x1F1F8;&#x1F1EC; +65</option>
+        <option value="49">&#x1F1E9;&#x1F1EA; +49</option><option value="33">&#x1F1EB;&#x1F1F7; +33</option>
+        <option value="81">&#x1F1EF;&#x1F1F5; +81</option><option value="55">&#x1F1E7;&#x1F1F7; +55</option>
+        <option value="27">&#x1F1FF;&#x1F1E6; +27</option><option value="234">&#x1F1F3;&#x1F1EC; +234</option>
+      </select>
+      <input type="tel" id="call-ph" placeholder="9876543210">
+    </div>
+    <span class="hint">Can be same or different from WhatsApp</span>
+  </div>
+  <button class="btn-gen" onclick="gen()">&#x26A1; Generate QR Code</button>
+</div>
+
+<div id="preview">
+  <div class="tabs">
+    <button class="tab on" onclick="showTab('d')" id="td">&#x1F6AA; Door Sign</button>
+    <button class="tab"    onclick="showTab('l')" id="tl">&#x1F4F1; Landing Page</button>
+  </div>
+  <div id="dview">
+    <div class="wrap">
+      <div id="sign">
+        <div class="sh"><div class="sl">&#x26A0; Emergency Contact</div><h2>Scan to Call</h2></div>
+        <div class="sb">
+          <div class="qb">
+            <canvas id="qr-canvas" style="display:none"></canvas>
+            <img id="qr-img" alt="QR Code" style="display:block;margin:0 auto;max-width:200px;width:100%;height:auto">
+            <div class="ql">&#x1F4F7; Scan with any camera &#x2022; Opens WhatsApp instantly</div>
+          </div>
+          <div class="sacts">
+            <div class="sab c1"><span class="i">&#x1F4DE;</span>WA Voice</div>
+            <div class="sab c2"><span class="i">&#x1F4F9;</span>WA Video</div>
+            <div class="sab c3"><span class="i">&#x260E;&#xFE0F;</span>Direct Call</div>
+            <div class="sab c4"><span class="i">&#x1F4CD;</span>WA Location</div>
+          </div>
+        </div>
+        <div class="sf">Scan &#x2022; Call instantly &#x2022; Share WA location &#x2022; Spam-protected</div>
+      </div>
+      <div class="acts">
+        <button class="ba" onclick="window.print()">&#x1F5A8;&#xFE0F; Print</button>
+        <button class="ba g" onclick="downloadLP()">&#x2B07;&#xFE0F; Save Landing Page</button>
+        <button class="ba p" onclick="testLP()">&#x1F441;&#xFE0F; Preview</button>
+      </div>
+    </div>
+  </div>
+  <div id="lprev">
+    <div class="wrap">
+      <p style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:13px">Landing page preview</p>
+      <div class="lpp">
+        <div class="lh"><div class="pulse">&#x1F6A8;</div><h2>Emergency Contact</h2><p>Tap to call immediately</p></div>
+        <div class="lb">
+          <div class="lgrid">
+            <a class="lcb" style="background:linear-gradient(145deg,#25D366,#128C7E)" href="#"><span class="ico">&#x1F4DE;</span>WhatsApp Voice</a>
+            <a class="lcb" style="background:linear-gradient(145deg,#34B7F1,#075E54)" href="#"><span class="ico">&#x1F4F9;</span>WhatsApp Video</a>
+          </div>
+          <a class="ltb" href="#"><span style="font-size:18px">&#x260E;&#xFE0F;</span>&nbsp;<span id="ltxt">Direct Call</span></a>
+        </div>
+        <div class="lft">Opens instantly &#x2022; Share location via WhatsApp &#x2022; Spam-protected</div>
+      </div>
+      <div class="acts">
+        <button class="ba g" onclick="downloadLP()">&#x2B07;&#xFE0F; Save Landing Page</button>
+        <button class="ba p" onclick="testLP()">&#x1F441;&#xFE0F; Preview</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* QR LIBRARY — Kazuhiko Arase MIT */
+var QRMode={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8};
+var QRErrorCorrectLevel={L:1,M:0,Q:3,H:2};
+var QRMath={glog:function(n){if(n<1)throw new Error("glog");return QRMath.LOG_TABLE[n];},gexp:function(n){while(n<0)n+=255;while(n>=256)n-=255;return QRMath.EXP_TABLE[n];},EXP_TABLE:new Array(256),LOG_TABLE:new Array(256)};
+(function(){for(var i=0;i<8;i++)QRMath.EXP_TABLE[i]=1<<i;for(var i=8;i<256;i++)QRMath.EXP_TABLE[i]=QRMath.EXP_TABLE[i-4]^QRMath.EXP_TABLE[i-5]^QRMath.EXP_TABLE[i-6]^QRMath.EXP_TABLE[i-8];for(var i=0;i<255;i++)QRMath.LOG_TABLE[QRMath.EXP_TABLE[i]]=i;})();
+function QRPolynomial(num,shift){var o=0;while(o<num.length&&num[o]===0)o++;this.num=new Array(num.length-o+shift);for(var i=0;i<num.length-o;i++)this.num[i]=num[i+o];}
+QRPolynomial.prototype.get=function(i){return this.num[i];};
+QRPolynomial.prototype.getLength=function(){return this.num.length;};
+QRPolynomial.prototype.multiply=function(e){var n=new Array(this.getLength()+e.getLength()-1);for(var i=0;i<n.length;i++)n[i]=0;for(var i=0;i<this.getLength();i++)for(var j=0;j<e.getLength();j++)n[i+j]^=QRMath.gexp(QRMath.glog(this.get(i))+QRMath.glog(e.get(j)));return new QRPolynomial(n,0);};
+QRPolynomial.prototype.mod=function(e){if(this.getLength()-e.getLength()<0)return this;var r=QRMath.glog(this.get(0))-QRMath.glog(e.get(0)),n=new Array(this.getLength());for(var i=0;i<this.getLength();i++)n[i]=this.get(i);for(var i=0;i<e.getLength();i++)n[i]^=QRMath.gexp(QRMath.glog(e.get(i))+r);return new QRPolynomial(n,0).mod(e);};
+var QRUtil={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,86],[6,34,64,90]],G15:(1<<10)|(1<<8)|(1<<5)|(1<<4)|(1<<2)|(1<<1)|(1<<0),G18:(1<<12)|(1<<11)|(1<<10)|(1<<9)|(1<<8)|(1<<5)|(1<<2)|(1<<0),G15_MASK:(1<<14)|(1<<12)|(1<<10)|(1<<4)|(1<<1),getBCHTypeInfo:function(d){var v=d<<10;while(QRUtil.getBCHDigit(v)-QRUtil.getBCHDigit(QRUtil.G15)>=0)v^=(QRUtil.G15<<(QRUtil.getBCHDigit(v)-QRUtil.getBCHDigit(QRUtil.G15)));return((d<<10)|v)^QRUtil.G15_MASK;},getBCHTypeNumber:function(d){var v=d<<12;while(QRUtil.getBCHDigit(v)-QRUtil.getBCHDigit(QRUtil.G18)>=0)v^=(QRUtil.G18<<(QRUtil.getBCHDigit(v)-QRUtil.getBCHDigit(QRUtil.G18)));return(d<<12)|v;},getBCHDigit:function(d){var n=0;while(d!==0){n++;d>>>=1;}return n;},getPatternPosition:function(v){return QRUtil.PATTERN_POSITION_TABLE[v-1];},getMaskFunction:function(mp){switch(mp){case 0:return function(i,j){return(i+j)%2===0;};case 1:return function(i){return i%2===0;};case 2:return function(i,j){return j%3===0;};case 3:return function(i,j){return(i+j)%3===0;};case 4:return function(i,j){return(Math.floor(i/2)+Math.floor(j/3))%2===0;};case 5:return function(i,j){return(i*j)%2+(i*j)%3===0;};case 6:return function(i,j){return((i*j)%2+(i*j)%3)%2===0;};case 7:return function(i,j){return((i*j)%3+(i+j)%2)%2===0;};default:throw new Error("mask");}},getErrorCorrectPolynomial:function(n){var a=new QRPolynomial([1],0);for(var i=0;i<n;i++)a=a.multiply(new QRPolynomial([1,QRMath.gexp(i)],0));return a;},getLengthInBits:function(mode,type){if(type<10)return mode===4?8:9;else if(type<27)return mode===4?16:11;else return mode===4?16:13;},getLostPoint:function(qr){var mc=qr.getModuleCount(),lp=0;for(var r=0;r<mc;r++)for(var c=0;c<mc;c++){var sc=0,dk=qr.isDark(r,c);for(var rr=-1;rr<=1;rr++){if(r+rr<0||mc<=r+rr)continue;for(var cc=-1;cc<=1;cc++){if(c+cc<0||mc<=c+cc||rr===0&&cc===0)continue;if(dk===qr.isDark(r+rr,c+cc))sc++;}}if(sc>5)lp+=(3+sc-5);}for(var r=0;r<mc-1;r++)for(var c=0;c<mc-1;c++){var n=0;if(qr.isDark(r,c))n++;if(qr.isDark(r+1,c))n++;if(qr.isDark(r,c+1))n++;if(qr.isDark(r+1,c+1))n++;if(n===0||n===4)lp+=3;}for(var r=0;r<mc;r++)for(var c=0;c<mc-6;c++)if(qr.isDark(r,c)&&!qr.isDark(r,c+1)&&qr.isDark(r,c+2)&&qr.isDark(r,c+3)&&qr.isDark(r,c+4)&&!qr.isDark(r,c+5)&&qr.isDark(r,c+6))lp+=40;for(var c=0;c<mc;c++)for(var r=0;r<mc-6;r++)if(qr.isDark(r,c)&&!qr.isDark(r+1,c)&&qr.isDark(r+2,c)&&qr.isDark(r+3,c)&&qr.isDark(r+4,c)&&!qr.isDark(r+5,c)&&qr.isDark(r+6,c))lp+=40;var dk=0;for(var c=0;c<mc;c++)for(var r=0;r<mc;r++)if(qr.isDark(r,c))dk++;lp+=Math.abs(100*dk/mc/mc-50)/5*10;return lp;}};
+function QRRSBlock(tc,dc){this.totalCount=tc;this.dataCount=dc;}
+QRRSBlock.RS_BLOCK_TABLE=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13]];
+QRRSBlock.getRSBlocks=function(tn,ecl){var idx=(tn-1)*4+(ecl===QRErrorCorrectLevel.L?0:ecl===QRErrorCorrectLevel.M?1:ecl===QRErrorCorrectLevel.Q?2:3);var t=QRRSBlock.RS_BLOCK_TABLE[idx];if(!t)throw new Error("rs");var l=Math.floor(t.length/3),list=[];for(var i=0;i<l;i++)for(var j=0;j<t[i*3];j++)list.push(new QRRSBlock(t[i*3+1],t[i*3+2]));return list;};
+function QRBitBuffer(){this.buffer=[];this.length=0;}
+QRBitBuffer.prototype.get=function(i){return((this.buffer[Math.floor(i/8)]>>>(7-i%8))&1)===1;};
+QRBitBuffer.prototype.put=function(num,len){for(var i=0;i<len;i++)this.putBit(((num>>>(len-i-1))&1)===1);};
+QRBitBuffer.prototype.getLengthInBits=function(){return this.length;};
+QRBitBuffer.prototype.putBit=function(bit){var bi=Math.floor(this.length/8);if(this.buffer.length<=bi)this.buffer.push(0);if(bit)this.buffer[bi]|=(0x80>>>(this.length%8));this.length++;};
+function QR8bitByte(data){this.mode=QRMode.MODE_8BIT_BYTE;this.parsedData=[];for(var i=0;i<data.length;i++){var c=data.charCodeAt(i);if(c>0x800){this.parsedData.push(0xE0|((c&0xF000)>>>12),0x80|((c&0xFC0)>>>6),0x80|(c&0x3F));}else if(c>0x80){this.parsedData.push(0xC0|((c&0x7C0)>>>6),0x80|(c&0x3F));}else{this.parsedData.push(c);}}if(this.parsedData.length!==data.length)this.parsedData.unshift(239,187,191);}
+QR8bitByte.prototype.getLength=function(){return this.parsedData.length;};
+QR8bitByte.prototype.write=function(buf){for(var i=0;i<this.parsedData.length;i++)buf.put(this.parsedData[i],8);};
+function QRCodeModel(tn,ecl){this.typeNumber=tn;this.errorCorrectLevel=ecl;this.modules=null;this.moduleCount=0;this.dataCache=null;this.dataList=[];}
+QRCodeModel.PAD0=0xEC;QRCodeModel.PAD1=0x11;
+QRCodeModel.prototype.addData=function(d){this.dataList.push(new QR8bitByte(d));this.dataCache=null;};
+QRCodeModel.prototype.isDark=function(r,c){if(r<0||this.moduleCount<=r||c<0||this.moduleCount<=c)throw new Error(r+","+c);return this.modules[r][c];};
+QRCodeModel.prototype.getModuleCount=function(){return this.moduleCount;};
+QRCodeModel.prototype.make=function(){this.makeImpl(false,this.getBestMaskPattern());};
+QRCodeModel.prototype.getBestMaskPattern=function(){var min=0,pat=0;for(var i=0;i<8;i++){this.makeImpl(true,i);var lp=QRUtil.getLostPoint(this);if(i===0||min>lp){min=lp;pat=i;}}return pat;};
+QRCodeModel.prototype.makeImpl=function(test,mp){this.moduleCount=this.typeNumber*4+17;this.modules=[];for(var r=0;r<this.moduleCount;r++){this.modules[r]=[];for(var c=0;c<this.moduleCount;c++)this.modules[r][c]=null;}this.setupPositionProbePattern(0,0);this.setupPositionProbePattern(this.moduleCount-7,0);this.setupPositionProbePattern(0,this.moduleCount-7);this.setupPositionAdjustPattern();this.setupTimingPattern();this.setupTypeInfo(test,mp);if(this.typeNumber>=7)this.setupTypeNumber(test);if(this.dataCache===null)this.dataCache=QRCodeModel.createData(this.typeNumber,this.errorCorrectLevel,this.dataList);this.mapData(this.dataCache,mp);};
+QRCodeModel.prototype.setupPositionProbePattern=function(r,c){for(var dr=-1;dr<=7;dr++){if(r+dr<=-1||this.moduleCount<=r+dr)continue;for(var dc=-1;dc<=7;dc++){if(c+dc<=-1||this.moduleCount<=c+dc)continue;this.modules[r+dr][c+dc]=((0<=dr&&dr<=6&&(dc===0||dc===6))||(0<=dc&&dc<=6&&(dr===0||dr===6))||(2<=dr&&dr<=4&&2<=dc&&dc<=4));}}};
+QRCodeModel.prototype.setupTimingPattern=function(){for(var r=8;r<this.moduleCount-8;r++){if(this.modules[r][6]!==null)continue;this.modules[r][6]=(r%2===0);}for(var c=8;c<this.moduleCount-8;c++){if(this.modules[6][c]!==null)continue;this.modules[6][c]=(c%2===0);}};
+QRCodeModel.prototype.setupPositionAdjustPattern=function(){var pos=QRUtil.getPatternPosition(this.typeNumber);for(var i=0;i<pos.length;i++)for(var j=0;j<pos.length;j++){var r=pos[i],c=pos[j];if(this.modules[r][c]!==null)continue;for(var dr=-2;dr<=2;dr++)for(var dc=-2;dc<=2;dc++)this.modules[r+dr][c+dc]=(dr===-2||dr===2||dc===-2||dc===2||(dr===0&&dc===0));}};
+QRCodeModel.prototype.setupTypeNumber=function(test){var bits=QRUtil.getBCHTypeNumber(this.typeNumber);for(var i=0;i<18;i++){var mod=(!test&&((bits>>i)&1)===1);this.modules[Math.floor(i/3)][i%3+this.moduleCount-8-3]=mod;}for(var i=0;i<18;i++){var mod=(!test&&((bits>>i)&1)===1);this.modules[i%3+this.moduleCount-8-3][Math.floor(i/3)]=mod;}};
+QRCodeModel.prototype.setupTypeInfo=function(test,mp){var bits=QRUtil.getBCHTypeInfo((this.errorCorrectLevel<<3)|mp);for(var i=0;i<15;i++){var mod=(!test&&((bits>>i)&1)===1);if(i<6)this.modules[i][8]=mod;else if(i<8)this.modules[i+1][8]=mod;else this.modules[this.moduleCount-15+i][8]=mod;}for(var i=0;i<15;i++){var mod=(!test&&((bits>>i)&1)===1);if(i<8)this.modules[8][this.moduleCount-i-1]=mod;else if(i<9)this.modules[8][15-i-1+1]=mod;else this.modules[8][15-i-1]=mod;}this.modules[this.moduleCount-8][8]=!test;};
+QRCodeModel.prototype.mapData=function(data,mp){var inc=-1,row=this.moduleCount-1,bi=7,byteIdx=0,mf=QRUtil.getMaskFunction(mp);for(var col=this.moduleCount-1;col>0;col-=2){if(col===6)col--;while(true){for(var c=0;c<2;c++){if(this.modules[row][col-c]===null){var dark=false;if(byteIdx<data.length)dark=(((data[byteIdx]>>>bi)&1)===1);if(mf(row,col-c))dark=!dark;this.modules[row][col-c]=dark;bi--;if(bi===-1){byteIdx++;bi=7;}}}row+=inc;if(row<0||this.moduleCount<=row){row-=inc;inc=-inc;break;}}}};
+QRCodeModel.createData=function(tn,ecl,dl){var rsb=QRRSBlock.getRSBlocks(tn,ecl),buf=new QRBitBuffer();for(var i=0;i<dl.length;i++){var d=dl[i];buf.put(d.mode,4);buf.put(d.getLength(),QRUtil.getLengthInBits(d.mode,tn));d.write(buf);}var tdc=0;for(var i=0;i<rsb.length;i++)tdc+=rsb[i].dataCount;if(buf.getLengthInBits()>tdc*8)throw new Error("overflow");if(buf.getLengthInBits()+4<=tdc*8)buf.put(0,4);while(buf.getLengthInBits()%8!==0)buf.putBit(false);while(buf.getLengthInBits()<tdc*8){buf.put(QRCodeModel.PAD0,8);if(buf.getLengthInBits()<tdc*8)buf.put(QRCodeModel.PAD1,8);}return QRCodeModel.createBytes(buf,rsb);};
+QRCodeModel.createBytes=function(buf,rsb){var offset=0,mdc=0,mec=0,dcd=[],ecd=[];for(var r=0;r<rsb.length;r++){var dc=rsb[r].dataCount,ec=rsb[r].totalCount-dc;mdc=Math.max(mdc,dc);mec=Math.max(mec,ec);dcd[r]=[];for(var i=0;i<dc;i++)dcd[r][i]=0xff&buf.buffer[i+offset];offset+=dc;var rp=QRUtil.getErrorCorrectPolynomial(ec),raw=new QRPolynomial(dcd[r],rp.getLength()-1),mod=raw.mod(rp);ecd[r]=[];for(var i=0;i<rp.getLength()-1;i++){var mi=i+mod.getLength()-ecd[r].length;ecd[r][i]=(mi>=0)?mod.get(mi):0;}}var tot=0;for(var r=0;r<rsb.length;r++)tot+=rsb[r].totalCount;var data=new Array(tot),idx=0;for(var i=0;i<mdc;i++)for(var r=0;r<rsb.length;r++)if(i<dcd[r].length)data[idx++]=dcd[r][i];for(var i=0;i<mec;i++)for(var r=0;r<rsb.length;r++)if(i<ecd[r].length)data[idx++]=ecd[r][i];return data;};
+function makeQR(text){var tn=1,qr=null;while(tn<=40){try{qr=new QRCodeModel(tn,QRErrorCorrectLevel.M);qr.addData(text);qr.make();break;}catch(e){tn++;qr=null;}}if(!qr)throw new Error("Too long");return qr;}
+function drawQR(text){
+  var qr=makeQR(text);
+  var mc=qr.getModuleCount();
+  var quiet=4;
+  // Render at high resolution: each module = 10px, then display scaled down via CSS
+  // This ensures the PNG is sharp and cameras can decode it reliably
+  var cell=10;
+  var sz=(mc+quiet*2)*cell;
+  var cv=document.getElementById('qr-canvas');
+  cv.width=sz; cv.height=sz;
+  var ctx=cv.getContext('2d');
+  // White background
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,sz,sz);
+  // Black modules — no anti-aliasing tricks, pure integer pixels
+  ctx.fillStyle='#000000';
+  for(var r=0;r<mc;r++){
+    for(var c=0;c<mc;c++){
+      if(qr.isDark(r,c)){
+        ctx.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell);
+      }
+    }
+  }
+  // Export to PNG and show in img tag
+  var png=cv.toDataURL('image/png');
+  var img=document.getElementById('qr-img');
+  img.src=png;
+  img.style.imageRendering='pixelated';
+  img.style.width='200px';
+  img.style.height='200px';
+}
+
+/* APP */
+var WA_TYPE='phone',STATE={};
+function switchWA(t){WA_TYPE=t;document.getElementById('wa-phone-wrap').style.display=t==='phone'?'':'none';document.getElementById('wa-user-wrap').style.display=t==='user'?'':'none';document.getElementById('seg-phone').className='seg-btn'+(t==='phone'?' on':'');document.getElementById('seg-user').className='seg-btn'+(t==='user'?' on':'');}
+function cleanPhone(cc,raw){var d=raw.replace(/\D/g,'');if(d.indexOf(cc)===0&&d.length>cc.length+5)d=d.slice(cc.length);return d;}
+
+function gen(){
+  var waBase;
+  if(WA_TYPE==='phone'){
+    var waCc=document.getElementById('wa-cc').value;
+    var waPh=cleanPhone(waCc,document.getElementById('wa-phone').value);
+    if(!waPh){alert('Enter your WhatsApp phone number.');return;}
+    waBase='https://wa.me/'+waCc+waPh;
+  }else{
+    var waUser=document.getElementById('wa-user').value.trim().replace(/^@/,'').replace(/\s/g,'');
+    if(!waUser){alert('Enter your WhatsApp username.');return;}
+    waBase='https://wa.me/'+waUser;
+  }
+  var callCc=document.getElementById('call-cc').value;
+  var callPh=cleanPhone(callCc,document.getElementById('call-ph').value);
+  if(!callPh){alert('Enter the direct call phone number.');return;}
+  var callE164='+'+callCc+callPh;
+  STATE={waBase:waBase,callE164:callE164};
+  try{drawQR(waBase);}catch(e){alert('QR error: '+e.message);return;}
+  document.getElementById('ltxt').textContent='Direct Call  '+callE164;
+  document.getElementById('preview').style.display='block';
+  document.getElementById('preview').scrollIntoView({behavior:'smooth'});
+}
+
+function buildLP(waBase,callE164){
+  /* Location approach — works 100% without HTTPS:
+     The wa.me?text= pre-fills a message in WhatsApp.
+     We instruct the caller to use WhatsApp's own native
+     location share (📎 > Location) inside the chat.
+     This is MORE reliable than browser GPS because:
+     - Works offline (GPS satellites, no browser permission)
+     - WhatsApp location share is always available
+     - No HTTPS required at all                          */
+
+  var waMsg=encodeURIComponent('EMERGENCY - I need help! Please call me back immediately.');
+  var waOpen=waBase+'?text='+waMsg;
+
+  var css='*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#F8F9FB;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding-bottom:48px}'
+    +'input#_hp{position:absolute;left:-9999px;height:0;opacity:0;pointer-events:none}'
+    +'.hero{background:#D92B2B;width:100%;max-width:520px;padding:24px 20px;text-align:center;color:#fff}'
+    +'.pulse{width:58px;height:58px;background:rgba(255,255,255,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 10px;animation:pu 2s infinite}'
+    +'@keyframes pu{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.3)}50%{box-shadow:0 0 0 18px rgba(255,255,255,0)}}'
+    +'.hero h1{font-size:22px;font-weight:700;margin-bottom:2px}'
+    +'.hero p{font-size:12px;opacity:.75}'
+    +'.body{width:100%;max-width:520px;padding:18px 16px}'
+    +'.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}'
+    +'.cb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:26px 8px;border-radius:18px;text-decoration:none;color:#fff;font-size:15px;font-weight:700;-webkit-tap-highlight-color:transparent;transition:.1s}'
+    +'.cb:active{transform:scale(.95)}'
+    +'.ico{font-size:32px}'
+    +'.wv{background:linear-gradient(145deg,#25D366,#128C7E)}'
+    +'.wvid{background:linear-gradient(145deg,#34B7F1,#075E54)}'
+    +'.tb{display:flex;align-items:center;gap:14px;background:#fff;color:#111318;border-radius:16px;padding:18px;text-decoration:none;font-weight:700;font-size:16px;border:2px solid #E2E5EC;margin-bottom:14px;-webkit-tap-highlight-color:transparent}'
+    +'.tb:active{opacity:.8}'
+    +'.tip{background:#FFF8E7;border:1px solid #F6A623;border-radius:14px;padding:14px 16px;margin-bottom:12px}'
+    +'.tip h3{font-size:13px;font-weight:700;color:#7A5800;margin-bottom:8px}'
+    +'.tip ol{padding-left:18px;font-size:13px;color:#7A5800;line-height:1.9}'
+    +'.tip ol li span{font-weight:700}'
+    +'.blk{display:none;background:#fff;border:1px solid #E2E5EC;border-radius:14px;padding:28px 20px;text-align:center;margin-bottom:14px}'
+    +'.blk h2{font-size:16px;font-weight:700;margin:10px 0 6px}'
+    +'.blk p{font-size:13px;color:#4A4F5C;line-height:1.6}'
+    +'.ft{margin-top:16px;text-align:center;font-size:11px;color:#8A909E}';
+
+  var js='var WA="'+waBase+'",CALL="'+callE164+'";'
+    +'var RK="eqr4",RW=3600000,RM=5;'
+    +'function grl(){try{return JSON.parse(localStorage.getItem(RK)||\'{"n":0,"t":0}\')}catch(e){return{n:0,t:0};}}'
+    +'function srl(d){try{localStorage.setItem(RK,JSON.stringify(d));}catch(e){}}'
+    +'function isBlocked(){var d=grl();if(Date.now()-d.t>RW){srl({n:0,t:Date.now()});return false;}return d.n>=RM;}'
+    +'function visit(){var d=grl();if(Date.now()-d.t>RW)d={n:0,t:Date.now()};d.n++;srl(d);}'
+    +'function isBot(){var h=document.getElementById("_hp");return h&&h.value.length>0;}'
+    +'(function(){'
+    +'  if(isBot()||isBlocked()){document.getElementById("main").style.display="none";document.getElementById("blk").style.display="block";return;}'
+    +'  visit();'
+    +'  document.getElementById("btel").href="tel:"+CALL;'
+    +'  document.getElementById("btel").querySelector("span.num").textContent=CALL;'
+    +'})();';
+
+  return '<!DOCTYPE html><html lang="en"><head>'
+    +'<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
+    +'<title>Emergency Contact</title><style>'+css+'</style></head><body>'
+    +'<input type="text" id="_hp" name="website" tabindex="-1" autocomplete="off">'
+    +'<div class="hero"><div class="pulse">&#x1F6A8;</div><h1>Emergency Contact</h1><p>Tap a button below to call immediately</p></div>'
+    +'<div class="body">'
+    +'<div class="blk" id="blk"><div style="font-size:36px;margin-bottom:8px">&#x1F6AB;</div><h2>Too many attempts</h2><p>This device has reached the limit. Wait 1 hour or use another device.</p></div>'
+    +'<div id="main">'
+    +'<div class="grid">'
+    +'<a class="cb wv" href="'+waOpen+'"><span class="ico">&#x1F4DE;</span>WhatsApp<br>Voice</a>'
+    +'<a class="cb wvid" href="'+waOpen+'"><span class="ico">&#x1F4F9;</span>WhatsApp<br>Video</a>'
+    +'</div>'
+    +'<a class="tb" id="btel" href="tel:'+callE164+'"><span style="font-size:26px">&#x260E;&#xFE0F;</span>&nbsp;<span class="num">'+callE164+'</span></a>'
+    // Location tip — uses WhatsApp's built-in location share, zero tech required
+    +'<div class="tip">'
+    +'<h3>&#x1F4CD; How to share your location</h3>'
+    +'<ol>'
+    +'<li>Tap <span>WhatsApp Voice or Video</span> above</li>'
+    +'<li>Once the chat opens, tap the <span>&#x1F4CE; Attach (paperclip)</span> icon</li>'
+    +'<li>Tap <span>&#x1F4CD; Location</span> and share your live location</li>'
+    +'</ol>'
+    +'</div>'
+    +'</div></div>'
+    +'<div class="ft">Emergency QR &#x2022; Opens instantly &#x2022; Spam-protected</div>'
+    +'<script>'+js+'<\/script></body></html>';
+}
+
+function downloadLP(){
+  if(!STATE.waBase){alert('Generate first.');return;}
+  var html=buildLP(STATE.waBase,STATE.callE164);
+  var blob=new Blob([html],{type:'text/html'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='emergency-landing.html';a.click();URL.revokeObjectURL(a.href);
+}
+
+function testLP(){
+  if(!STATE.waBase){alert('Generate first.');return;}
+  var html=buildLP(STATE.waBase,STATE.callE164);
+  var w=window.open('','_blank');w.document.open();w.document.write(html);w.document.close();
+}
+
+function showTab(t){
+  document.getElementById('dview').style.display=t==='d'?'block':'none';
+  document.getElementById('lprev').style.display=t==='l'?'block':'none';
+  document.getElementById('td').className='tab'+(t==='d'?' on':'');
+  document.getElementById('tl').className='tab'+(t==='l'?' on':'');
+}
+</script>
+</body>
+</html>

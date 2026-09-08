@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Generator</title>
+<style>
+* { box-sizing:border-box; font-family:system-ui,-apple-system,sans-serif; }
+body { margin:0; background:#fff; color:#0f172a; }
+.container { max-width:480px; margin:auto; padding:12px; }
+
+/* Header */
+h1 { 
+  font-size:1.5rem;  
+  margin-top:20px; /* move header slightly down from top */
+  margin-bottom:24px; /* more gap below header to password box */
+  text-align:center; 
+  color:#f87171; 
+}
+
+/* Password display */
+.password-row { display:flex; gap:4px; align-items:center; margin-bottom:16px; }
+.password-display { 
+  flex:1; font-size:1.3rem; font-family:'Courier New', monospace; color:#6b7280; 
+  padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px; min-height:36px; overflow-x:auto; 
+}
+.password-display span.user { color:#3b82f6; font-weight:400; font-style:normal; }
+.password-row button { padding:5px 8px; border:none; border-radius:6px; background:#e5e7eb; cursor:pointer; font-size:0.9rem; }
+
+/* User input */
+textarea { 
+  width:100%; margin-top:0; padding:4px 6px; font-size:0.55rem; border:1px solid #e5e7eb; border-radius:6px; resize:none; 
+  margin-bottom:10px; font-family:system-ui,sans-serif; 
+}
+
+/* Option rows */
+.option-row { display:flex; justify-content:space-between; align-items:center; margin-top:4px; }
+.option-row span { font-size:0.8rem; }
+.option-row .controls { display:flex; align-items:center; gap:3px; }
+.option-row button { 
+  width:26px; height:26px; border:none; border-radius:4px; font-size:0.85rem; line-height:1; cursor:pointer; 
+  background:#d1d5db; color:#111; transition: background 0.2s; 
+}
+.option-row button:hover:not(.disabled){ background:#9ca3af; } 
+.option-row button.disabled { background:#555; cursor:not-allowed; color:#ccc; }
+.option-row strong { width:18px; text-align:center; display:inline-block; font-weight:400; font-size:0.85rem; }
+
+/* Info */
+.info { font-size:0.65rem; color:#64748b; margin-bottom:2px; text-align:left; }
+.info.notallowed { color:red; font-weight:600; }
+.info.small { font-size:0.55rem; font-style:italic; color:#64748b; margin-left:4px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Password Generator</h1>
+
+<div class="password-row">
+  <div id="password" class="password-display" title="Generated password"></div>
+  <button onclick="copyPassword()">Copy</button>
+</div>
+
+<div class="info" id="limitInfo">
+  Upto 6 letters <span class="info small">as per password length and other requirements</span>
+</div>
+
+<textarea id="userInput" rows="2" placeholder="Type letters of your choice to include in password (optional)"></textarea>
+
+<!-- TOTAL PASSWORD LENGTH -->
+<div class="option-row">
+  <span>Total Length</span>
+  <div class="controls">
+    <button id="lengthMinus" onclick="changeValue('length',-1)">-</button>
+    <strong id="lenVal">8</strong>
+    <button id="lengthPlus" onclick="changeValue('length',1,true)">+</button>
+  </div>
+</div>
+
+<!-- OPTIONS -->
+<div class="option-row">
+  <span>Uppercase</span>
+  <div class="controls">
+    <button id="upperMinus" onclick="changeValue('upper',-1)">-</button>
+    <strong id="uVal">1</strong>
+    <button id="upperPlus" onclick="changeValue('upper',1,true)">+</button>
+  </div>
+</div>
+
+<div class="option-row">
+  <span>Lowercase</span>
+  <div class="controls">
+    <button id="lowerMinus" onclick="changeValue('lower',-1)">-</button>
+    <strong id="lVal">1</strong>
+    <button id="lowerPlus" onclick="changeValue('lower',1,true)">+</button>
+  </div>
+</div>
+
+<div class="option-row">
+  <span>Numbers</span>
+  <div class="controls">
+    <button id="numbersMinus" onclick="changeValue('numbers',-1)">-</button>
+    <strong id="nVal">1</strong>
+    <button id="numbersPlus" onclick="changeValue('numbers',1,true)">+</button>
+  </div>
+</div>
+
+<div class="option-row">
+  <span>Symbols</span>
+  <div class="controls">
+    <button id="symbolsMinus" onclick="changeValue('symbols',-1)">-</button>
+    <strong id="sVal">1</strong>
+    <button id="symbolsPlus" onclick="changeValue('symbols',1,true)">+</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const pools = { 
+  upper:"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 
+  lower:"abcdefghijklmnopqrstuvwxyz", 
+  numbers:"0123456789", 
+  symbols:"!@#$%^&*()_+{}[]<>?" 
+};
+
+const values = { length:8, upper:1, lower:1, numbers:1, symbols:1 };
+const minOption = 1, maxOption = 3;
+const minLength = 8;
+const maxLength = 20;
+
+const uVal = document.getElementById("uVal");
+const lVal = document.getElementById("lVal");
+const nVal = document.getElementById("nVal");
+const sVal = document.getElementById("sVal");
+const lenVal = document.getElementById("lenVal");
+const userInput = document.getElementById("userInput");
+const password = document.getElementById("password");
+const limitInfo = document.getElementById("limitInfo");
+
+const plusButtons = {
+  upper: document.getElementById("upperPlus"),
+  lower: document.getElementById("lowerPlus"),
+  numbers: document.getElementById("numbersPlus"),
+  symbols: document.getElementById("symbolsPlus"),
+  length: document.getElementById("lengthPlus")
+};
+
+const minusButtons = {
+  upper: document.getElementById("upperMinus"),
+  lower: document.getElementById("lowerMinus"),
+  numbers: document.getElementById("numbersMinus"),
+  symbols: document.getElementById("symbolsMinus"),
+  length: document.getElementById("lengthMinus")
+};
+
+userInput.addEventListener("input", () => {
+  adjustOptions();
+  generate();
+});
+
+function changeValue(key, delta, isPlus=false){
+  let prevValue = values[key];
+  if(key==='length'){
+    let minTotal = values.upper + values.lower + values.numbers + values.symbols;
+    let newVal = values.length + delta;
+    if(newVal >= Math.max(minLength, minTotal) && newVal <= maxLength){
+      values.length = newVal;
+      if(!isPlus || (isPlus && prevValue < maxLength)) generate();
+    }
+  } else {
+    let newVal = values[key] + delta;
+    if(newVal >= minOption && newVal <= maxOption){
+      values[key] = newVal;
+      if(!isPlus || (isPlus && prevValue < maxOption)) generate();
+    }
+  }
+  adjustOptions();
+  updateUI();
+}
+
+function adjustOptions(){
+  const totalOpts = values.upper + values.lower + values.numbers + values.symbols;
+  const maxCustom = Math.max(0, values.length - totalOpts);
+  if(userInput.value.length > maxCustom){
+    userInput.value = userInput.value.slice(0,maxCustom);
+  }
+}
+
+function updateUI(){
+  lenVal.textContent = values.length;
+  uVal.textContent = values.upper;
+  lVal.textContent = values.lower;
+  nVal.textContent = values.numbers;
+  sVal.textContent = values.symbols;
+
+  const mandatory = values.upper + values.lower + values.numbers + values.symbols;
+  const maxUser = Math.max(0, values.length - mandatory);
+  if(maxUser === 0){
+    limitInfo.innerHTML = 'Not allowed <span class="info small">as per password length and other requirement</span>';
+    limitInfo.classList.add("notallowed");
+  } else {
+    limitInfo.innerHTML = `Upto ${maxUser} letters <span class="info small">as per password length and other requirement</span>`;
+    limitInfo.classList.remove("notallowed");
+  }
+
+  for(let k of ['upper','lower','numbers','symbols']){
+    plusButtons[k].classList.toggle('disabled', values[k] >= maxOption);
+    minusButtons[k].classList.toggle('disabled', values[k] <= minOption);
+  }
+
+  plusButtons.length.classList.toggle('disabled', values.length >= maxLength);
+  minusButtons.length.classList.toggle('disabled', values.length <= mandatory);
+}
+
+// PASSWORD GENERATION
+function randomChars(pool,count){
+  const r = crypto.getRandomValues(new Uint32Array(count));
+  return [...r].map(v=>pool[v % pool.length]).join("");
+}
+function generate(){
+  let parts = [];
+  let userVal = userInput.value || '';
+  if(userVal) parts.push({text:userVal,type:'user'});
+  if(values.upper>0) parts.push({text:randomChars(pools.upper, values.upper),type:'other'});
+  if(values.lower>0) parts.push({text:randomChars(pools.lower, values.lower),type:'other'});
+  if(values.numbers>0) parts.push({text:randomChars(pools.numbers, values.numbers),type:'other'});
+  if(values.symbols>0) parts.push({text:randomChars(pools.symbols, values.symbols),type:'other'});
+
+  let currentLen = parts.map(p=>p.text.length).reduce((a,b)=>a+b,0);
+  const remaining = values.length - currentLen;
+  if(remaining>0) parts.push({text:randomChars(Object.values(pools).join(""), remaining),type:'other'});
+
+  const r = crypto.getRandomValues(new Uint32Array(parts.length));
+  parts = parts.map((v,i)=>[r[i],v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+
+  password.innerHTML = parts.map(p=>p.type==='user'?`<span class="user">${p.text}</span>`:p.text).join('');
+}
+
+// COPY
+function copyPassword(){
+  if(!password.textContent) return;
+  navigator.clipboard.writeText(password.textContent).then(()=>{alert("Password copied!");});
+}
+
+// GENERATE PASSWORD ON PAGE LOAD
+window.onload = function(){
+  generate();
+  updateUI();
+};
+</script>
+</body>
+</html>

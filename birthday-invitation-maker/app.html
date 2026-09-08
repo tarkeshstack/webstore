@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎉 Birthday Invitation Maker</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: #12112a;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 40px;
+  gap: 28px;
+}
+
+h1 {
+  font-family: 'Fredoka One', cursive;
+  color: #fff; font-size: 2.4rem; text-align: center;
+  letter-spacing: 1px; text-shadow: 0 0 30px rgba(255,200,0,0.6);
+}
+
+/* ── EDITOR ── */
+.editor {
+  background: rgba(255,255,255,0.07);
+  border: 1.5px solid rgba(255,255,255,0.14);
+  border-radius: 22px; padding: 26px;
+  width: 100%; max-width: 720px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.editor-section-title {
+  grid-column: 1/-1; font-family: 'Fredoka One', cursive;
+  color: #ffd700; font-size: 1.15rem;
+  padding-bottom: 4px; border-bottom: 1px solid rgba(255,215,0,0.2); margin-top: 6px;
+}
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field.full { grid-column: 1/-1; }
+label { color: #bbb; font-size: 0.82rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+input[type="text"], input[type="time"], input[type="file"] {
+  background: rgba(255,255,255,0.09);
+  border: 1.5px solid rgba(255,255,255,0.18);
+  border-radius: 11px; color: #fff;
+  font-family: 'Nunito', sans-serif; font-size: 1rem;
+  padding: 11px 15px; outline: none;
+  transition: border-color 0.2s, background 0.2s; width: 100%;
+}
+input:focus { border-color: #ffd700; background: rgba(255,255,255,0.13); }
+input[type="file"] { cursor: pointer; padding: 9px; }
+
+/* ── THEME SWATCHES ── */
+.themes-wrap { grid-column: 1/-1; display: flex; flex-direction: column; gap: 10px; }
+.themes { display: flex; flex-wrap: wrap; gap: 10px; }
+.theme-btn {
+  width: 52px; height: 52px; border-radius: 14px;
+  border: 3px solid transparent; cursor: pointer;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px;
+}
+.theme-btn:hover { transform: scale(1.12); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+.theme-btn.active { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 0 3px rgba(255,255,255,0.3); }
+.theme-btn .tb-label {
+  font-size: 0.5rem; font-weight: 900; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  text-align: center; line-height: 1; position: relative; z-index: 2;
+}
+
+/* ── BG CHOOSER ── */
+.bg-chooser-wrap { grid-column: 1/-1; display: flex; flex-direction: column; gap: 10px; }
+.bg-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.bg-btn {
+  width: 80px; height: 54px; border-radius: 12px;
+  border: 3px solid transparent; cursor: pointer;
+  transition: transform 0.18s, border-color 0.18s;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; flex-direction: column; gap: 2px;
+}
+.bg-btn:hover { transform: scale(1.1); }
+.bg-btn.active { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 0 3px rgba(255,255,255,0.3); }
+.bg-btn-label {
+  font-size: 0.48rem; font-weight: 900; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* ── BTN ROW ── */
+.btn-row { grid-column: 1/-1; display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+button.action {
+  flex: 1; min-width: 150px; font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem; letter-spacing: 0.5px; padding: 14px 22px;
+  border: none; border-radius: 14px; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+button.action:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+button.action:active { transform: translateY(0); }
+.btn-save { background: linear-gradient(135deg,#f9c74f,#f3722c); color: #fff; }
+
+/* ── INVITE WRAPPER ── */
+#invite-wrapper { width: 100%; max-width: 560px; position: relative; }
+#invite {
+  width: 560px; min-height: 900px;
+  border-radius: 30px; overflow: hidden; position: relative;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.6);
+  display: flex; flex-direction: column; align-items: center;
+  transform-origin: top left; padding-bottom: 28px;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  #invite { transform: scale(0.62); }
+  #invite-wrapper { height: 558px; overflow: hidden; }
+}
+
+/* ── THEME BACKGROUNDS ── */
+#invite.theme-rainbow { background: linear-gradient(155deg,#ff9a9e 0%,#fad0c4 22%,#ffecd2 44%,#a1c4fd 70%,#c2e9fb 100%); }
+#invite.theme-jungle  { background: linear-gradient(155deg,#11998e 0%,#38ef7d 45%,#f9f871 80%,#fff 100%); }
+#invite.theme-space   { background: linear-gradient(155deg,#0f0c29 0%,#302b63 50%,#1a1a3e 100%); }
+#invite.theme-candy   { background: linear-gradient(155deg,#f953c6 0%,#b91d73 30%,#ff6b6b 60%,#feca57 100%); }
+#invite.theme-ocean   { background: linear-gradient(155deg,#1565c0 0%,#1e88e5 35%,#29b6f6 65%,#b3e5fc 100%); }
+#invite.theme-princess{ background: linear-gradient(155deg,#fbc2eb 0%,#e0aaff 35%,#a6c1ee 70%,#ffecd2 100%); }
+#invite.theme-dino    { background: linear-gradient(155deg,#004d1a 0%,#1b7c3b 40%,#a8e063 75%,#f0f9a0 100%); }
+#invite.theme-unicorn { background: linear-gradient(155deg,#fc5c7d 0%,#f7971e 25%,#ffe259 50%,#a1c4fd 75%,#c2e9fb 100%); }
+
+/* ── BG PATTERN LAYER ── */
+.bg-pattern { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.bg-emoji {
+  position: absolute; user-select: none; pointer-events: none;
+  animation: floatBg ease-in-out infinite; opacity: 0.2;
+}
+@keyframes floatBg {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-16px) rotate(10deg); }
+}
+
+/* ── CONFETTI TOP STRIP ── */
+.confetti-strip {
+  width: 100%; height: 18px;
+  background: repeating-linear-gradient(90deg,
+    #ff6b6b 0 22px,#ffd700 22px 44px,#6bcb77 44px 66px,
+    #4d96ff 66px 88px,#ff6bff 88px 110px,#ffa94d 110px 132px);
+  position: absolute; top: 0; left: 0; z-index: 3;
+}
+
+/* ── FOREGROUND DECO ICONS ── */
+.deco {
+  position: absolute; pointer-events: none; user-select: none;
+  animation: floatDeco ease-in-out infinite; z-index: 2;
+}
+@keyframes floatDeco {
+  0%,100% { transform: translateY(0) rotate(0deg) scale(1); }
+  50%      { transform: translateY(-14px) rotate(10deg) scale(1.05); }
+}
+
+/* ── CARD CONTENT — ALL TEXT BLACK ── */
+.card-top {
+  width: 100%; display: flex; flex-direction: column;
+  align-items: center; padding: 44px 30px 0; gap: 12px;
+  position: relative; z-index: 4;
+}
+.invite-badge {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.3rem; letter-spacing: 2px; text-transform: uppercase;
+  padding: 9px 30px; border-radius: 999px;
+  background: rgba(255,255,255,0.5); backdrop-filter: blur(8px);
+  color: #000;                          /* BLACK */
+  border: 2.5px solid rgba(255,255,255,0.7);
+  text-shadow: none;
+}
+.invite-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 4rem; line-height: 1.08; text-align: center;
+  color: #111;                          /* BLACK */
+  text-shadow: 0 2px 0 rgba(255,255,255,0.4);
+}
+.invite-year {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.7rem; color: #222;       /* BLACK */
+  letter-spacing: 2px;
+}
+
+/* ── PHOTO WRAPPER — holds fixed space in flex column ── */
+.photo-wrap {
+  width: 240px !important;
+  height: 240px !important;
+  min-width: 240px !important;
+  min-height: 240px !important;
+  max-width: 240px !important;
+  max-height: 240px !important;
+  flex: 0 0 240px !important;
+  align-self: center;
+  position: relative; z-index: 4;
+  margin: 16px 0;
+}
+/* ── PHOTO RING — FIXED, NO SHRINK ── */
+.photo-ring {
+  width: 240px !important;
+  height: 240px !important;
+  min-width: 240px !important;
+  min-height: 240px !important;
+  border-radius: 50%; padding: 7px;
+  background: linear-gradient(135deg,#ffd700,#ff6b6b,#a29bfe,#74b9ff);
+  box-shadow: 0 10px 38px rgba(0,0,0,0.3);
+  position: absolute; top: 0; left: 0;
+  z-index: 4;
+  display: block;
+}
+.photo-ring img {
+  width: 100%; height: 100%;
+  border-radius: 50%; object-fit: cover;
+  background: rgba(255,255,255,0.25); display: block;
+}
+
+/* ── DETAILS BOX ── */
+.details-box {
+  background: rgba(255,255,255,0.45); backdrop-filter: blur(14px);
+  border: 2.5px solid rgba(255,255,255,0.7);
+  border-radius: 24px; padding: 24px 32px;
+  width: calc(100% - 60px);
+  display: flex; flex-direction: column; gap: 16px;
+  margin: 0 30px; position: relative; z-index: 4;
+}
+.detail-row { display: flex; align-items: center; gap: 16px; }
+.detail-icon { font-size: 2rem; flex-shrink: 0; }
+.detail-text { display: flex; flex-direction: column; }
+.detail-label {
+  font-size: 0.85rem; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 1.8px; color: #444;  /* dark grey */
+}
+.detail-value {
+  font-family: 'Fredoka One', cursive; font-size: 1.4rem;
+  color: #111;                          /* BLACK */
+}
+.divider {
+  width: 82%; height: 2px; margin: 2px auto;
+  background: linear-gradient(90deg,transparent,rgba(0,0,0,0.15),transparent);
+  border: none;
+}
+
+/* ── FOOTER ── */
+.card-footer {
+  padding: 18px 30px 10px; text-align: center;
+  position: relative; z-index: 4;
+}
+.footer-text {
+  font-family: 'Fredoka One', cursive; font-size: 1.65rem;
+  color: #111;                          /* BLACK */
+}
+.footer-sub {
+  font-size: 1.05rem; color: #333;      /* dark */
+  font-weight: 800; margin-top: 6px;
+}
+
+/* ── SAVING OVERLAY ── */
+.saving-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 999;
+  align-items: center; justify-content: center;
+  font-family: 'Fredoka One', cursive; color: #ffd700;
+  font-size: 2.2rem; flex-direction: column; gap: 14px;
+}
+.saving-overlay.show { display: flex; }
+.spinner {
+  width: 54px; height: 54px;
+  border: 6px solid rgba(255,215,0,0.25);
+  border-top-color: #ffd700; border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<h1>🎂 Birthday Invitation Maker 🎉</h1>
+
+<!-- ══════════════ EDITOR ══════════════ -->
+<div class="editor">
+
+  <div class="editor-section-title">✏️ Party Details</div>
+
+  <div class="field">
+    <label>👦 Child's Name</label>
+    <input type="text" id="inp-name" placeholder="e.g. Lily" value="Lily">
+  </div>
+  <div class="field">
+    <label>🔢 Turning Age</label>
+    <input type="text" id="inp-age" placeholder="e.g. 7th" value="7th">
+  </div>
+  <div class="field">
+    <label>📆 Year</label>
+    <input type="text" id="inp-year" placeholder="e.g. 2026" value="2026">
+  </div>
+  <!-- plain text — no calendar picker -->
+  <div class="field">
+    <label>📅 Party Date</label>
+    <input type="text" id="inp-date" placeholder="e.g. June 15, 2026" value="June 15, 2026">
+  </div>
+  <div class="field">
+    <label>⏰ Party Time</label>
+    <input type="time" id="inp-time" value="14:00">
+  </div>
+  <div class="field full">
+    <label>📍 Venue / Location</label>
+    <input type="text" id="inp-venue" placeholder="Sunshine Park, Hall B" value="Sunshine Park, Hall B">
+  </div>
+  <div class="field full">
+    <label>💌 RSVP / Note</label>
+    <input type="text" id="inp-rsvp" placeholder="RSVP by June 10 · 555-0123" value="RSVP by June 10 · 555-0123">
+  </div>
+  <div class="field full">
+    <label>📸 Child's Photo</label>
+    <input type="file" id="inp-photo" accept="image/*">
+  </div>
+
+  <!-- THEME -->
+  <div class="editor-section-title">🎨 Card Theme</div>
+  <div class="themes-wrap">
+    <div class="themes">
+      <button class="theme-btn active" data-theme="rainbow"
+        style="background:linear-gradient(135deg,#ff9a9e,#fad0c4,#a1c4fd)">
+        <span class="tb-label">Rainbow</span></button>
+      <button class="theme-btn" data-theme="jungle"
+        style="background:linear-gradient(135deg,#11998e,#38ef7d,#f9f871)">
+        <span class="tb-label">Jungle</span></button>
+      <button class="theme-btn" data-theme="space"
+        style="background:linear-gradient(135deg,#0f0c29,#302b63,#6a11cb)">
+        <span class="tb-label">Space</span></button>
+      <button class="theme-btn" data-theme="candy"
+        style="background:linear-gradient(135deg,#f953c6,#ff6b6b,#feca57)">
+        <span class="tb-label">Candy</span></button>
+      <button class="theme-btn" data-theme="ocean"
+        style="background:linear-gradient(135deg,#1565c0,#29b6f6,#b3e5fc)">
+        <span class="tb-label">Ocean</span></button>
+      <button class="theme-btn" data-theme="princess"
+        style="background:linear-gradient(135deg,#fbc2eb,#e0aaff,#a6c1ee)">
+        <span class="tb-label">Princess</span></button>
+      <button class="theme-btn" data-theme="dino"
+        style="background:linear-gradient(135deg,#004d1a,#38ef7d,#f0f9a0)">
+        <span class="tb-label">Dino</span></button>
+      <button class="theme-btn" data-theme="unicorn"
+        style="background:linear-gradient(135deg,#fc5c7d,#f7971e,#ffe259,#a1c4fd)">
+        <span class="tb-label">Unicorn</span></button>
+    </div>
+  </div>
+
+  <!-- BACKGROUND PATTERN -->
+  <div class="editor-section-title">🖼️ Background Style</div>
+  <div class="bg-chooser-wrap">
+    <div class="bg-grid" id="bg-grid"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="action btn-save" onclick="saveAsJPG()">💾 Save as JPG</button>
+  </div>
+</div>
+
+<!-- ══════════════ INVITATION CARD ══════════════ -->
+<div id="invite-wrapper">
+<div id="invite" class="theme-rainbow">
+
+  <div class="confetti-strip"></div>
+  <div class="bg-pattern" id="bg-pattern"></div>
+  <div id="deco-layer"></div>
+
+  <div class="card-top">
+    <div class="invite-badge">✨ You're Invited! ✨</div>
+    <div class="invite-title" id="out-title">Lily's<br>Birthday!</div>
+    <div class="invite-year" id="out-age-year">🎈 7th Birthday · 2026 🎈</div>
+  </div>
+
+  <!-- photo: fixed 240px, never shrinks -->
+  <div class="photo-wrap">
+    <div class="photo-ring">
+      <img id="out-photo"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Ccircle cx='120' cy='120' r='120' fill='rgba(255,255,255,0.25)'/%3E%3Ctext x='120' y='142' text-anchor='middle' font-size='88' fill='white'%3E%F0%9F%8E%82%3C/text%3E%3C/svg%3E"
+        alt="Child photo">
+    </div>
+  </div>
+
+  <div class="details-box">
+    <div class="detail-row">
+      <div class="detail-text">
+        <span class="detail-label">Date</span>
+        <span class="detail-value" id="out-date">June 15, 2026</span>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="detail-row">
+      <div class="detail-text">
+        <span class="detail-label">Time</span>
+        <span class="detail-value" id="out-time">2:00 PM</span>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="detail-row">
+      <span class="detail-icon">📍</span>
+      <div class="detail-text">
+        <span class="detail-label">Venue</span>
+        <span class="detail-value" id="out-venue">Sunshine Park, Hall B</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-footer">
+    <div class="footer-text">🎂 Come Celebrate! 🎂</div>
+    <div class="footer-sub" id="out-rsvp">RSVP by June 10 · 555-0123</div>
+  </div>
+
+</div>
+</div>
+
+<div class="saving-overlay" id="saving-overlay">
+  <div class="spinner"></div>
+  Saving your invite…
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* ── THEME EMOJI SETS ── */
+const THEMES = {
+  rainbow:  {fg:['🎈','🎉','🌟','⭐','🎀','🎊','🍭','🧁','🎁','🎶','🌈','💖','🥳','🎠','🎪','🎡']},
+  jungle:   {fg:['🌿','🦁','🐘','🌴','🦜','🐒','🌺','🦋','🌻','🍃','🐸','🦊','🌵','🐾','🍀','🌱']},
+  space:    {fg:['🚀','⭐','🌙','✨','🛸','💫','🌟','🪐','☄️','🛰️','👾','🌠','🔭','💥','🌛','🔮']},
+  candy:    {fg:['🍭','🍬','🍩','🍫','🧁','🍰','🎀','💗','🍡','🧃','🍓','🍒','🍑','🫐','🍇','🍦']},
+  ocean:    {fg:['🐠','🐙','🦈','🌊','🐚','⚓','🦀','🐡','🐋','🦞','🌴','🐬','🪸','🦭','🪼','🐟']},
+  princess: {fg:['👸','🦄','🌸','💎','👑','🌺','🪄','💅','🎀','🌷','🌙','✨','💞','🫶','🦋','🌼']},
+  dino:     {fg:['🦕','🦖','🌿','🌋','🪨','🐾','🦎','🌴','🍃','🥚','🌵','🪸','🐉','🦴','🌱','🍀']},
+  unicorn:  {fg:['🦄','🌈','✨','💫','🌸','🎠','💖','🌟','🎀','🧚','🌺','🍭','💜','💛','💚','💙']},
+};
+
+/* ── BACKGROUND PATTERNS ── */
+const BG_PATTERNS = [
+  {id:'none',     label:'Clean',    emoji:'✨', emojis:[]},
+  {id:'balloons', label:'Balloons', emoji:'🎈', emojis:['🎈','🎈','🎉','🎈','🎈','🎉','🎈','🎈','🎉','🎈','🎈','🎉','🎈','🎈','🎉','🎈','🎈','🎉','🎈','🎈','🎉','🎈','🎈','🎉','🎈','🎈','🎉','🎈','🎈','🎉']},
+  {id:'stars',    label:'Stars',    emoji:'⭐', emojis:['⭐','🌟','✨','💫','⭐','🌟','✨','💫','⭐','🌟','✨','💫','⭐','🌟','✨','💫','⭐','🌟','✨','💫','⭐','🌟','✨','💫','⭐','🌟','✨','💫','⭐','🌟']},
+  {id:'confetti', label:'Confetti', emoji:'🎊', emojis:['🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉','🎊','🎉']},
+  {id:'candy',    label:'Candy',    emoji:'🍭', emojis:['🍭','🍬','🧁','🍰','🍭','🍬','🧁','🍩','🍭','🍬','🍰','🍩','🍭','🍬','🧁','🍭','🍰','🍬','🍩','🍭','🧁','🍬','🍭','🍰','🍭','🍬','🧁','🍩','🍰','🍬']},
+  {id:'animals',  label:'Animals',  emoji:'🐾', emojis:['🦁','🐘','🐒','🦊','🐸','🦜','🐯','🐰','🦁','🐘','🐒','🦊','🐸','🦜','🐯','🐰','🦁','🐘','🦊','🐒','🐸','🦜','🐯','🐰','🦁','🐘','🦊','🐒','🐸','🦜']},
+  {id:'music',    label:'Music',    emoji:'🎵', emojis:['🎵','🎶','🎸','🥁','🎺','🎵','🎶','🎸','🥁','🎺','🎵','🎶','🎸','🥁','🎺','🎵','🎶','🎸','🥁','🎺','🎵','🎶','🎸','🥁','🎺','🎵','🎶','🎸','🥁','🎺']},
+  {id:'flowers',  label:'Flowers',  emoji:'🌸', emojis:['🌸','🌺','🌼','🌷','💐','🌸','🌺','🌼','🌷','💐','🌸','🌺','🌼','🌷','💐','🌸','🌺','🌼','🌷','💐','🌸','🌺','🌼','🌷','💐','🌸','🌺','🌼','🌷','💐']},
+  {id:'sports',   label:'Sports',   emoji:'⚽', emojis:['⚽','🏀','🎾','🏈','⚾','🎮','🏆','🥇','⚽','🏀','🎾','🏈','⚾','🎮','🏆','🥇','⚽','🏀','🎾','🏈','⚾','🥇','🎮','🏆','⚽','🏀','🎾','🏈','⚾','🏆']},
+  {id:'dino',     label:'Dinos',    emoji:'🦕', emojis:['🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖','🦕','🦖']},
+  {id:'unicorn',  label:'Unicorns', emoji:'🦄', emojis:['🦄','🌈','✨','💫','🦄','🌈','✨','💫','🦄','🌈','✨','💫','🦄','🌈','✨','💫','🦄','🌈','✨','💫','🦄','🌈','✨','💫','🦄','🌈','✨','💫','🦄','🌈']},
+  {id:'space',    label:'Space',    emoji:'🚀', emojis:['🚀','⭐','🌙','🛸','💫','🪐','✨','☄️','🚀','⭐','🌙','🛸','💫','🪐','✨','☄️','🚀','⭐','🌙','🛸','💫','🪐','✨','☄️','🚀','⭐','🌙','🛸','💫','🪐']},
+];
+
+let currentBgPattern = BG_PATTERNS[0];
+let currentTheme = 'rainbow';
+
+/* build BG grid */
+const bgGrid = $('bg-grid');
+BG_PATTERNS.forEach(p => {
+  const btn = document.createElement('button');
+  btn.className = 'bg-btn' + (p.id === 'none' ? ' active' : '');
+  btn.dataset.bgid = p.id;
+  btn.title = p.label;
+  btn.style.background = 'rgba(255,255,255,0.1)';
+  btn.innerHTML = `<span style="font-size:1.7rem">${p.emoji}</span><span class="bg-btn-label">${p.label}</span>`;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentBgPattern = p;
+    applyBackground(p);
+  });
+  bgGrid.appendChild(btn);
+});
+
+/* ── FOREGROUND DECO POSITIONS ── */
+const DECO_POS = [
+  {top:'22px',   left:'28px',   size:'2.5rem', delay:'0s',   dur:'3.1s'},
+  {top:'28px',   right:'34px',  size:'2.5rem', delay:'0.5s', dur:'2.8s'},
+  {top:'92px',   left:'12px',   size:'1.9rem', delay:'1.0s', dur:'3.4s'},
+  {top:'88px',   right:'14px',  size:'1.9rem', delay:'1.5s', dur:'2.6s'},
+  {top:'210px',  left:'8px',    size:'2.1rem', delay:'0.3s', dur:'3.2s'},
+  {top:'210px',  right:'8px',   size:'2.1rem', delay:'0.8s', dur:'3.0s'},
+  {top:'360px',  left:'6px',    size:'1.8rem', delay:'1.2s', dur:'2.9s'},
+  {top:'360px',  right:'6px',   size:'1.8rem', delay:'0.6s', dur:'3.5s'},
+  {top:'500px',  left:'10px',   size:'2rem',   delay:'0.9s', dur:'3.1s'},
+  {top:'500px',  right:'10px',  size:'2rem',   delay:'0.4s', dur:'2.7s'},
+  {bottom:'200px',left:'14px',  size:'2.2rem', delay:'1.1s', dur:'3.3s'},
+  {bottom:'200px',right:'14px', size:'2.2rem', delay:'0.7s', dur:'3.0s'},
+  {bottom:'110px',left:'22px',  size:'1.9rem', delay:'0.2s', dur:'2.8s'},
+  {bottom:'110px',right:'22px', size:'1.9rem', delay:'1.3s', dur:'3.6s'},
+  {bottom:'40px', left:'36px',  size:'1.7rem', delay:'1.4s', dur:'2.5s'},
+  {bottom:'40px', right:'36px', size:'1.7rem', delay:'0.1s', dur:'3.2s'},
+];
+
+function buildDecoLayer(theme) {
+  const layer = $('deco-layer');
+  layer.innerHTML = '';
+  const emojis = (THEMES[theme] || THEMES.rainbow).fg;
+  DECO_POS.forEach((pos, i) => {
+    const span = document.createElement('span');
+    span.className = 'deco';
+    const styleProps = Object.entries(pos)
+      .filter(([k]) => !['size','delay','dur'].includes(k))
+      .map(([k,v]) => `${k}:${v}`).join(';');
+    span.style.cssText = styleProps;
+    span.style.fontSize = pos.size;
+    span.style.animationDelay = pos.delay;
+    span.style.animationDuration = pos.dur;
+    span.textContent = emojis[i % emojis.length];
+    layer.appendChild(span);
+  });
+}
+
+function applyBackground(pattern) {
+  const layer = $('bg-pattern');
+  layer.innerHTML = '';
+  if (!pattern.emojis || !pattern.emojis.length) return;
+  const cols = 6, rows = 5;
+  const colW = 560 / cols, rowH = 820 / rows;
+  pattern.emojis.slice(0, cols * rows).forEach((em, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    const el = document.createElement('span');
+    el.className = 'bg-emoji';
+    el.style.left = (col * colW + colW/2 - 18) + 'px';
+    el.style.top  = (row * rowH + rowH/2 - 18) + 'px';
+    el.style.animationDelay    = (Math.random() * 3).toFixed(2) + 's';
+    el.style.animationDuration = (3 + Math.random() * 2).toFixed(2) + 's';
+    el.style.fontSize = (1.9 + Math.random() * 0.9).toFixed(2) + 'rem';
+    el.textContent = em;
+    layer.appendChild(el);
+  });
+}
+
+/* ── THEME SWITCHER ── */
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTheme = btn.dataset.theme;
+    $('invite').className = $('invite').className.replace(/theme-\w+/, '') + ' theme-' + currentTheme;
+    buildDecoLayer(currentTheme);
+  });
+});
+
+/* ── LIVE UPDATE ── */
+function fmtTime(t) {
+  if (!t) return '';
+  const [h, mi] = t.split(':');
+  const hr = +h, ampm = hr >= 12 ? 'PM' : 'AM';
+  return `${hr % 12 || 12}:${mi} ${ampm}`;
+}
+
+function update() {
+  const name  = $('inp-name').value  || 'Name';
+  const age   = $('inp-age').value   || '';
+  const year  = $('inp-year').value  || '';
+  const date  = $('inp-date').value  || '';
+  const time  = $('inp-time').value;
+  const venue = $('inp-venue').value || 'Venue TBD';
+  const rsvp  = $('inp-rsvp').value  || '';
+
+  $('out-title').innerHTML = `${name}'s<br>Birthday!`;
+  $('out-age-year').innerHTML = `🎈 ${[age && `${age} Birthday`, year].filter(Boolean).join(' · ')} 🎈`;
+  $('out-date').textContent  = date;           // plain text, exactly as typed
+  $('out-time').textContent  = fmtTime(time);
+  $('out-venue').textContent = venue;
+  $('out-rsvp').textContent  = rsvp;
+}
+
+['inp-name','inp-age','inp-year','inp-date','inp-time','inp-venue','inp-rsvp']
+  .forEach(id => $(id).addEventListener('input', update));
+
+$('inp-photo').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { $('out-photo').src = ev.target.result; };
+  reader.readAsDataURL(file);
+});
+
+/* ── SAVE AS JPG ── */
+async function saveAsJPG() {
+  const overlay = $('saving-overlay');
+  overlay.classList.add('show');
+  const invite = $('invite');
+  const saved = invite.style.transform;
+  invite.style.transform = 'none';
+  await new Promise(r => setTimeout(r, 160));
+  try {
+    const canvas = await html2canvas(invite, {
+      scale: 2.5, useCORS: true, allowTaint: true,
+      backgroundColor: null, logging: false,
+      width: 560, height: invite.scrollHeight,
+    });
+    const link = document.createElement('a');
+    const name = $('inp-name').value || 'birthday';
+    link.download = `${name.toLowerCase().replace(/\s+/g,'-')}-birthday-invite.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  } catch(err) {
+    alert('Could not save. Please try in Chrome or Edge.');
+    console.error(err);
+  }
+  invite.style.transform = saved;
+  overlay.classList.remove('show');
+}
+
+/* INIT */
+update();
+buildDecoLayer('rainbow');
+</script>
+</body>
+</html>

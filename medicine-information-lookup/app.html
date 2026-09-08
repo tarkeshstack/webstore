@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Medicine General Information</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.5/tesseract.min.js"></script>
+<style>
+  :root{
+    --ink:#1C2541;
+    --paper:#FBF8F2;
+    --paper-deep:#F1EBDC;
+    --indigo:#2C3E66;
+    --indigo-deep:#1E2A49;
+    --mustard:#E3A008;
+    --mustard-deep:#B87F04;
+    --coral:#D96C4F;
+    --mint:#3F8F78;
+    --line:#D8CFB8;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+  }
+  .hindi{ font-family:'Noto Sans Devanagari',sans-serif; }
+  .display{ font-family:'Space Grotesk',sans-serif; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+
+  /* ---------------- Hero: prescription-pad look ---------------- */
+  header.hero{
+    background:var(--indigo);
+    padding:36px 20px 0;
+    position:relative;
+  }
+  .hero-inner{ max-width:760px; margin:0 auto; padding-bottom:34px; text-align:center; }
+
+  h1{
+    color:var(--paper);
+    font-size:33px;
+    margin:0 0 26px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+
+  .pad{
+    background:var(--paper);
+    border-radius:14px 14px 4px 4px;
+    padding:16px 16px 18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.18);
+    text-align:left;
+  }
+  .pad-label{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11px; color:rgba(28,37,65,0.45); margin-bottom:10px;
+    text-transform:uppercase; letter-spacing:0.08em;
+  }
+  .row{
+    display:flex; flex-direction:column; gap:10px;
+  }
+  @media (min-width:640px){
+    .row{ flex-direction:row; align-items:center; }
+  }
+  .search-box{
+    flex:1;
+    display:flex; align-items:center; gap:10px;
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .search-box input{
+    border:none; outline:none; background:transparent;
+    width:100%; font-size:15px; color:var(--ink); font-family:'Inter',sans-serif;
+  }
+  .clear-btn{ background:none; border:none; cursor:pointer; color:rgba(28,37,65,0.4); display:flex; }
+
+  .scan-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--indigo); color:var(--paper);
+    border:none; border-radius:10px; padding:12px 18px;
+    font-weight:600; font-size:14px; cursor:pointer;
+    white-space:nowrap;
+  }
+  .scan-btn:active{ transform:scale(0.97); }
+  .scan-btn:disabled{ opacity:0.6; }
+
+  /* torn / die-cut edge under the pad */
+  .tear{
+    height:14px;
+    background:
+      linear-gradient(135deg, var(--indigo) 50%, transparent 50%) 0 0/14px 14px repeat-x,
+      linear-gradient(45deg, var(--indigo) 50%, transparent 50%) 0 0/14px 14px repeat-x;
+    background-position: 0 0, 7px 0;
+    margin-top:-1px;
+  }
+
+  .ocr-note{
+    margin-top:10px; font-size:12px; color:var(--mustard);
+    display:flex; align-items:center; gap:6px;
+  }
+
+  /* ---------------- Category tabs: folder-tab look ---------------- */
+  .chips{
+    max-width:760px; margin:0 auto; padding:22px 20px 0;
+    display:flex; gap:6px; overflow-x:auto;
+  }
+  .chip{
+    white-space:nowrap; border:1.5px solid var(--line); border-bottom:none;
+    border-radius:8px 8px 0 0; padding:8px 15px 9px; font-size:13px; font-weight:600;
+    background:var(--paper-deep); color:rgba(28,37,65,0.6); cursor:pointer;
+    transform:translateY(2px);
+  }
+  .chip.active{
+    background:var(--white); color:var(--indigo); border-color:var(--indigo);
+    transform:translateY(0);
+    box-shadow:0 -2px 0 var(--mustard) inset;
+  }
+  .chip-shelf{
+    max-width:760px; margin:0 auto; padding:0 20px;
+    border-bottom:1.5px solid var(--line);
+  }
+
+  /* ---------------- Results ---------------- */
+  main{
+    max-width:760px; margin:0 auto; padding:20px 20px 60px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .empty{
+    background:var(--paper-deep); border-radius:12px; padding:36px 20px; text-align:center;
+    color:rgba(28,37,65,0.55); font-size:14px;
+  }
+
+  .cat-fever{ --catclr:#D96C4F; }
+  .cat-allergy{ --catclr:#8F6FD9; }
+  .cat-digestive{ --catclr:#3F8F78; }
+  .cat-diabetes{ --catclr:#B87F04; }
+  .cat-cholesterol{ --catclr:#5A6ACF; }
+  .cat-cold{ --catclr:#2C9AA6; }
+  .cat-topical{ --catclr:#8A7A3F; }
+  .cat-vitamin{ --catclr:#3F9E5D; }
+
+  .card{
+    background:var(--white); border-radius:10px; overflow:hidden;
+    border:1px solid var(--line);
+    border-left:5px solid var(--catclr, var(--indigo));
+    box-shadow:0 2px 6px rgba(28,37,65,0.06);
+  }
+  .card.expanded{ box-shadow:0 10px 22px rgba(28,37,65,0.14); }
+  .card-head{
+    display:flex; align-items:center; gap:14px;
+    width:100%; background:none; border:none; text-align:left;
+    padding:15px 18px; cursor:pointer; font:inherit; color:inherit;
+  }
+  .token{
+    flex-shrink:0; width:38px; height:38px; border-radius:8px;
+    background:var(--paper-deep); color:var(--catclr, var(--indigo));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;
+    border:1px solid var(--line);
+  }
+  .head-text{ min-width:0; flex:1; }
+  .name-row{ display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; }
+  .name-row .en{ font-size:17px; font-weight:700; }
+  .name-row .hi{ font-size:15px; color:var(--catclr, var(--indigo)); }
+  .sub{
+    margin:3px 0 0; font-size:12.5px; color:rgba(28,37,65,0.55);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .badge{
+    flex-shrink:0; font-size:11px; font-weight:700; padding:5px 10px; border-radius:6px;
+    background:color-mix(in srgb, var(--catclr, var(--indigo)) 14%, white);
+    color:var(--catclr, var(--indigo));
+    text-transform:uppercase; letter-spacing:0.02em;
+  }
+  .chev{ color:rgba(28,37,65,0.3); flex-shrink:0; transition:transform 0.15s; }
+  .card.expanded .chev{ transform:rotate(90deg); }
+
+  .card-body{ padding:0 18px 18px; display:none; }
+  .card.expanded .card-body{ display:block; }
+  .divider{ height:1px; background:var(--line); margin-bottom:16px; }
+  .lang-label{
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--catclr, var(--mint)); margin:0 0 4px;
+  }
+  .usage-text{ font-size:15px; line-height:1.6; margin:0 0 14px; }
+  .usage-text.hindi{ font-size:16px; }
+
+  .speak-row{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+  .speak-btn{
+    display:flex; align-items:center; gap:8px;
+    border:1.5px solid var(--indigo); border-radius:8px; padding:9px 16px; font-size:14px; font-weight:600;
+    background:var(--white); color:var(--indigo); cursor:pointer;
+    text-decoration:none;
+  }
+  .speak-btn.active{ background:var(--coral); color:var(--white); border-color:var(--coral); }
+  .speak-btn:active{ transform:scale(0.97); }
+
+  .caution{
+    display:flex; gap:8px; align-items:flex-start;
+    background:color-mix(in srgb, var(--coral) 10%, white); color:var(--coral);
+    border-radius:8px; padding:10px 12px; font-size:12px; line-height:1.5;
+    border:1px dashed color-mix(in srgb, var(--coral) 40%, white);
+  }
+
+  footer{
+    border-top:1px solid var(--line);
+    padding:22px 20px; text-align:center; font-size:12px; color:rgba(28,37,65,0.5);
+    max-width:760px; margin:0 auto;
+  }
+
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .spin{ display:inline-block; animation:spin 1s linear infinite; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <h1 class="display">Medicine General Information</h1>
+
+    <div class="pad">
+      <div class="pad-label"><span>Find a medicine</span><span class="mono" id="listedCount"></span></div>
+      <div class="row">
+        <div class="search-box">
+          <span>🔍</span>
+          <input id="searchInput" type="text" placeholder="Try 'Saridon', 'Dolo 650', or 'Cip Zox'..." />
+          <button class="clear-btn" id="clearBtn" title="Clear" style="display:none;">✕</button>
+        </div>
+        <button class="scan-btn" id="scanBtn">📷 <span id="scanLabel">Scan pack</span></button>
+        <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none;" />
+      </div>
+    </div>
+  </div>
+  <div class="tear"></div>
+</header>
+
+<div class="chips" id="chips"></div>
+<div class="chip-shelf"></div>
+
+<div style="max-width:760px;margin:0 auto;padding:0 20px;">
+  <p class="ocr-note" id="ocrNote" style="display:none;"></p>
+</div>
+
+<main id="results"></main>
+<div id="webPanel" style="max-width:760px;margin:-4px auto 0;padding:0 20px 40px;"></div>
+
+<footer>
+  Covers <span id="medCount"></span> commonly available medicines in our curated list — search anything else and we'll also check the web. General awareness only, not a substitute for professional medical advice.
+  Hindi voice playback depends on the voices installed on your device or browser.
+</footer>
+
+<script>
+const CATEGORIES = [
+  { label:"All", cls:"" },
+  { label:"Fever & Pain", cls:"cat-fever" },
+  { label:"Allergy", cls:"cat-allergy" },
+  { label:"Digestive", cls:"cat-digestive" },
+  { label:"Diabetes", cls:"cat-diabetes" },
+  { label:"Cholesterol", cls:"cat-cholesterol" },
+  { label:"Cold & Flu", cls:"cat-cold" },
+  { label:"Pain Relief", cls:"cat-topical" },
+  { label:"Vitamin", cls:"cat-vitamin" },
+];
+function catClass(label){
+  const c = CATEGORIES.find(c => c.label === label);
+  return c ? c.cls : "";
+}
+
+/* name = what common people actually call it (spoken aloud too)
+   composition = the generic/technical makeup, shown as a small detail line
+   brands = other names it is also sold under */
+const MEDICINES = [
+  { id:1, name:"Dolo 650", hindi:"डोलो 650", composition:"Paracetamol", brands:"Crocin, Calpol", type:"Tablet / Syrup", category:"Fever & Pain",
+    usageEn:"Relieves fever and mild-to-moderate pain such as headache, body ache and toothache.",
+    usageHi:"बुखार और हल्के से मध्यम दर्द जैसे सिरदर्द, बदन दर्द और दांत दर्द में राहत देता है।",
+    aliases:["dolo","dolo 650","paracetamol","crocin","calpol","acetaminophen"] },
+  { id:2, name:"Combiflam", hindi:"कॉम्बिफ्लेम", composition:"Ibuprofen + Paracetamol", brands:"Brufen", type:"Tablet", category:"Fever & Pain",
+    usageEn:"An anti-inflammatory pain reliever used for pain, swelling and fever.",
+    usageHi:"यह सूजन-रोधी दर्द निवारक है, जो दर्द, सूजन और बुखार में उपयोग होता है।",
+    aliases:["combiflam","ibuprofen","brufen"] },
+  { id:3, name:"Disprin", hindi:"डिस्प्रिन", composition:"Aspirin", brands:"Ecosprin", type:"Tablet", category:"Fever & Pain",
+    usageEn:"Used for mild pain and fever relief; low doses are also used to thin the blood under medical supervision.",
+    usageHi:"हल्के दर्द और बुखार में राहत के लिए उपयोग होता है; कम मात्रा में डॉक्टर की सलाह पर खून पतला करने हेतु भी दी जाती है।",
+    aliases:["disprin","aspirin","ecosprin"] },
+  { id:4, name:"Alerid", hindi:"अलेरिड", composition:"Cetirizine", brands:"Cetrizine, Zyrtec", type:"Tablet", category:"Allergy",
+    usageEn:"An antihistamine used for allergy symptoms like sneezing, runny nose, itching and hives.",
+    usageHi:"यह एंटीहिस्टामिन एलर्जी के लक्षणों जैसे छींक, बहती नाक, खुजली और पित्ती में उपयोग होता है।",
+    aliases:["alerid","cetirizine","cetrizine","zyrtec"] },
+  { id:5, name:"Levocet", hindi:"लिवोसेट", composition:"Levocetirizine", brands:"Xyzal", type:"Tablet", category:"Allergy",
+    usageEn:"A newer antihistamine for allergic rhinitis, skin allergies and chronic itching.",
+    usageHi:"यह एक नया एंटीहिस्टामिन है जो एलर्जी नाक, त्वचा एलर्जी और लगातार खुजली के लिए उपयोग होता है।",
+    aliases:["levocet","levocetirizine","xyzal"] },
+  { id:6, name:"Montair", hindi:"मोंटेयर", composition:"Montelukast", brands:"Montek", type:"Tablet", category:"Allergy",
+    usageEn:"Used to prevent asthma symptoms and relieve allergic rhinitis, often taken at night.",
+    usageHi:"अस्थमा के लक्षणों को रोकने और एलर्जी नाक में राहत के लिए उपयोग होता है, आमतौर पर रात में लिया जाता है।",
+    aliases:["montair","montelukast","montek"] },
+  { id:7, name:"Omez", hindi:"ओमेज़", composition:"Omeprazole", brands:"", type:"Capsule", category:"Digestive",
+    usageEn:"Reduces stomach acid; used for acidity, heartburn and stomach ulcers.",
+    usageHi:"पेट के एसिड को कम करता है; एसिडिटी, सीने में जलन और पेट के अल्सर में उपयोग होता है।",
+    aliases:["omez","omeprazole"] },
+  { id:8, name:"Pan-D", hindi:"पैन-डी", composition:"Pantoprazole", brands:"Pantocid, Pan 40", type:"Tablet", category:"Digestive",
+    usageEn:"Reduces acid production; commonly used for acid reflux, gastritis and GERD.",
+    usageHi:"एसिड बनना कम करता है; एसिड रिफ्लक्स, गैस्ट्राइटिस और जीईआरडी में सामान्यतः उपयोग होता है।",
+    aliases:["pan-d","pand","pantoprazole","pantocid","pan 40"] },
+  { id:9, name:"Domstal", hindi:"डॉम्स्टल", composition:"Domperidone", brands:"", type:"Tablet", category:"Digestive",
+    usageEn:"Relieves nausea, vomiting and bloating by helping the stomach empty faster.",
+    usageHi:"पेट को जल्दी खाली करने में मदद करके मतली, उल्टी और पेट फूलने में राहत देता है।",
+    aliases:["domstal","domperidone"] },
+  { id:10, name:"Emeset", hindi:"इमेसेट", composition:"Ondansetron", brands:"Ondem", type:"Tablet", category:"Digestive",
+    usageEn:"A stronger anti-nausea medicine, often used for vomiting from illness, motion or treatment side-effects.",
+    usageHi:"यह एक मजबूत मतली-रोधी दवा है, जो बीमारी, यात्रा या इलाज के दुष्प्रभाव से होने वाली उल्टी में दी जाती है।",
+    aliases:["emeset","ondansetron","ondem"] },
+  { id:11, name:"Electral", hindi:"इलेक्ट्राल", composition:"Oral Rehydration Salts (ORS)", brands:"", type:"Sachet", category:"Digestive",
+    usageEn:"Oral rehydration salts that replace lost fluids and minerals during diarrhoea, vomiting or heat exhaustion.",
+    usageHi:"यह ओरल रिहाइड्रेशन साल्ट दस्त, उल्टी या लू लगने पर शरीर से गए पानी और मिनरल्स की भरपाई करता है।",
+    aliases:["electral","ors"] },
+  { id:17, name:"Glycomet", hindi:"ग्लाइकोमेट", composition:"Metformin", brands:"Glucophage", type:"Tablet", category:"Diabetes",
+    usageEn:"First-line medicine for type 2 diabetes; helps control blood sugar levels.",
+    usageHi:"टाइप 2 डायबिटीज़ के लिए पहली पसंद की दवा; रक्त शर्करा को नियंत्रित करने में मदद करती है।",
+    aliases:["glycomet","metformin","glucophage"] },
+  { id:18, name:"Amaryl", hindi:"एमरिल", composition:"Glimepiride", brands:"", type:"Tablet", category:"Diabetes",
+    usageEn:"Stimulates insulin release to lower blood sugar in type 2 diabetes.",
+    usageHi:"टाइप 2 डायबिटीज़ में रक्त शर्करा घटाने के लिए इंसुलिन के स्राव को बढ़ाती है।",
+    aliases:["amaryl","glimepiride"] },
+  { id:22, name:"Atorva", hindi:"एटोर्वा", composition:"Atorvastatin", brands:"Storvas", type:"Tablet", category:"Cholesterol",
+    usageEn:"Lowers LDL (bad) cholesterol and reduces the risk of heart disease.",
+    usageHi:"एलडीएल (खराब) कोलेस्ट्रॉल को कम करती है और हृदय रोग के खतरे को घटाती है।",
+    aliases:["atorva","atorvastatin","storvas"] },
+  { id:23, name:"Digene", hindi:"डाइजीन", composition:"Antacid (Aluminium & Magnesium Hydroxide)", brands:"Gelusil", type:"Gel / Tablet", category:"Digestive",
+    usageEn:"Neutralises stomach acid for quick relief from acidity, gas and indigestion.",
+    usageHi:"पेट के एसिड को निष्क्रिय कर एसिडिटी, गैस और अपच में तुरंत राहत देता है।",
+    aliases:["digene","gelusil","antacid"] },
+  { id:24, name:"Eno", hindi:"इनो", composition:"Fruit Salt (Sodium Bicarbonate + Citric Acid)", brands:"", type:"Sachet", category:"Digestive",
+    usageEn:"An effervescent antacid giving fast relief from acidity and gas.",
+    usageHi:"यह एक फिज़ी एंटासिड है, जो एसिडिटी और गैस से तुरंत राहत देता है।",
+    aliases:["eno","fruit salt"] },
+  { id:25, name:"Vicks Action 500", hindi:"विक्स एक्शन 500", composition:"Paracetamol + Phenylephrine + Caffeine", brands:"Sinarest, D'Cold", type:"Tablet", category:"Cold & Flu",
+    usageEn:"Used for cold, headache, body ache and blocked nose.",
+    usageHi:"सर्दी, सिरदर्द, बदन दर्द और बंद नाक में उपयोग होता है।",
+    aliases:["vicks action 500","sinarest","d'cold","dcold","cold and flu"] },
+  { id:26, name:"Cheston Cold", hindi:"चेस्टन कोल्ड", composition:"Cetirizine + Phenylephrine", brands:"", type:"Tablet", category:"Cold & Flu",
+    usageEn:"Combines an antihistamine and decongestant for allergic cold symptoms and blocked nose.",
+    usageHi:"यह एंटीहिस्टामिन और डिकंजेस्टेंट का मिश्रण है, जो एलर्जी सर्दी और बंद नाक के लक्षणों में उपयोग होता है।",
+    aliases:["cheston cold","cheston"] },
+  { id:27, name:"Saridon", hindi:"सैरिडॉन", composition:"Paracetamol + Caffeine", brands:"", type:"Tablet", category:"Fever & Pain",
+    usageEn:"A fast-acting tablet used specifically for headache relief.",
+    usageHi:"यह एक तेज़ असर वाली टैबलेट है, जो विशेष रूप से सिरदर्द में राहत के लिए उपयोग होती है।",
+    aliases:["saridon","paracetamol caffeine"] },
+  { id:28, name:"Volini", hindi:"वोलिनी", composition:"Diclofenac Gel", brands:"Voveran Gel", type:"Gel", category:"Pain Relief",
+    usageEn:"A topical pain-relief gel applied to sore muscles and joints for localised relief.",
+    usageHi:"यह एक बाहरी दर्द निवारक जेल है, जो दर्द वाली मांसपेशियों और जोड़ों पर लगाया जाता है।",
+    aliases:["volini","voveran gel","diclofenac gel"] },
+  { id:29, name:"Moov", hindi:"मूव", composition:"Ayurvedic Pain-Relief Balm", brands:"Iodex", type:"Ointment", category:"Pain Relief",
+    usageEn:"A rub-on balm used for quick relief from body ache, back pain and sprains.",
+    usageHi:"यह एक बाम है, जो बदन दर्द, कमर दर्द और मोच में तुरंत राहत के लिए लगाया जाता है।",
+    aliases:["moov","iodex","balm"] },
+  { id:30, name:"Betadine", hindi:"बीटाडीन", composition:"Povidone-Iodine", brands:"", type:"Antiseptic Solution", category:"Pain Relief",
+    usageEn:"An antiseptic used to clean wounds and prevent infection before dressing.",
+    usageHi:"यह एक एंटीसेप्टिक है, जो घाव साफ करने और पट्टी बांधने से पहले संक्रमण रोकने के लिए उपयोग होता है।",
+    aliases:["betadine","povidone iodine","povidone-iodine"] },
+  { id:31, name:"Becosules", hindi:"बीकोसूल्स", composition:"Vitamin B-Complex", brands:"", type:"Capsule", category:"Vitamin",
+    usageEn:"Supplements B-vitamins for general weakness, fatigue and nerve health.",
+    usageHi:"यह सामान्य कमज़ोरी, थकान और नसों के स्वास्थ्य के लिए बी-विटामिन की पूर्ति करता है।",
+    aliases:["becosules","vitamin b complex","b-complex"] },
+  { id:32, name:"Zincovit", hindi:"ज़िंकोविट", composition:"Multivitamin + Zinc", brands:"", type:"Tablet", category:"Vitamin",
+    usageEn:"A multivitamin and mineral supplement used for general nutrition support and low immunity.",
+    usageHi:"यह मल्टीविटामिन और मिनरल सप्लीमेंट सामान्य पोषण सहायता और कमज़ोर इम्युनिटी के लिए उपयोग होता है।",
+    aliases:["zincovit","multivitamin"] },
+  { id:33, name:"Shelcal 500", hindi:"शेलकैल 500", composition:"Calcium + Vitamin D3", brands:"", type:"Tablet", category:"Vitamin",
+    usageEn:"A calcium and vitamin D3 supplement used to support bone health.",
+    usageHi:"यह कैल्शियम और विटामिन डी3 सप्लीमेंट हड्डियों के स्वास्थ्य के लिए उपयोग होता है।",
+    aliases:["shelcal","shelcal 500","calcium tablet"] },
+  { id:34, name:"Rantac", hindi:"रैंटेक", composition:"Ranitidine (often replaced today by Pantoprazole-based options)", brands:"Pantop", type:"Tablet", category:"Digestive",
+    usageEn:"Historically used for acidity; pantoprazole-based products are now the common replacement.",
+    usageHi:"पहले एसिडिटी में उपयोग होती थी; अब सामान्यतः पैंटोप्राज़ोल आधारित दवाएं इसका स्थान लेती हैं।",
+    aliases:["rantac","ranitidine","pantop"] },
+  { id:35, name:"Imodium", hindi:"इमोडियम", composition:"Loperamide", brands:"Eldoper", type:"Capsule", category:"Digestive",
+    usageEn:"Used to control acute diarrhoea by slowing down bowel movement.",
+    usageHi:"यह आंतों की गति धीमी कर तीव्र दस्त को नियंत्रित करने के लिए उपयोग होता है।",
+    aliases:["imodium","loperamide","eldoper"] },
+  { id:36, name:"Meftal Spas", hindi:"मेफ्टाल स्पास", composition:"Dicyclomine + Paracetamol", brands:"", type:"Tablet", category:"Digestive",
+    usageEn:"Used for stomach cramps and pain associated with menstrual cramps or intestinal spasm.",
+    usageHi:"पेट में ऐंठन और मासिक धर्म के दर्द या आंतों की ऐंठन में उपयोग होता है।",
+    aliases:["meftal spas","meftal"] },
+
+  { id:37, name:"Flexon", hindi:"फ्लेक्सन", composition:"Ibuprofen + Paracetamol", brands:"", type:"Tablet", category:"Fever & Pain",
+    usageEn:"A combination pain reliever used for body ache, joint pain and fever.",
+    usageHi:"यह एक संयुक्त दर्द निवारक है, जो बदन दर्द, जोड़ों के दर्द और बुखार में उपयोग होता है।",
+    aliases:["flexon","ibuprofen paracetamol"] },
+  { id:38, name:"Zerodol-P", hindi:"ज़ेरोडोल-पी", composition:"Aceclofenac + Paracetamol", brands:"", type:"Tablet", category:"Fever & Pain",
+    usageEn:"Used for pain and inflammation from arthritis, sprains and muscle injuries, alongside fever relief.",
+    usageHi:"गठिया, मोच और मांसपेशियों की चोट से होने वाले दर्द व सूजन में उपयोग होता है, साथ ही बुखार में भी राहत देता है।",
+    aliases:["zerodol-p","zerodol p","zerodol","aceclofenac"] },
+  { id:39, name:"Sumo", hindi:"सुमो", composition:"Nimesulide + Paracetamol", brands:"", type:"Tablet", category:"Fever & Pain",
+    usageEn:"A strong pain and fever reliever, often used for period pain, headache and toothache.",
+    usageHi:"यह एक तेज़ असर वाला दर्द व बुखार निवारक है, जो मासिक धर्म दर्द, सिरदर्द और दांत दर्द में उपयोग होता है।",
+    aliases:["sumo","nimesulide"] },
+
+  { id:40, name:"Avil", hindi:"एविल", composition:"Pheniramine Maleate", brands:"", type:"Tablet / Injection", category:"Allergy",
+    usageEn:"An older antihistamine used for allergic reactions, itching and hives.",
+    usageHi:"यह एक पुराना एंटीहिस्टामिन है, जो एलर्जी प्रतिक्रिया, खुजली और पित्ती में उपयोग होता है।",
+    aliases:["avil","pheniramine"] },
+  { id:41, name:"Allegra", hindi:"एलेग्रा", composition:"Fexofenadine", brands:"", type:"Tablet", category:"Allergy",
+    usageEn:"A non-drowsy antihistamine used for allergic rhinitis and skin allergies.",
+    usageHi:"यह एक गैर-नींद लाने वाला एंटीहिस्टामिन है, जो एलर्जी नाक और त्वचा एलर्जी में उपयोग होता है।",
+    aliases:["allegra","fexofenadine"] },
+
+  { id:42, name:"Cyclopam", hindi:"साइक्लोपैम", composition:"Dicyclomine", brands:"", type:"Tablet", category:"Digestive",
+    usageEn:"Relieves stomach cramps and pain caused by intestinal spasms.",
+    usageHi:"पेट की ऐंठन और आंतों की मरोड़ से होने वाले दर्द में राहत देता है।",
+    aliases:["cyclopam","dicyclomine"] },
+  { id:43, name:"Perinorm", hindi:"पेरिनॉर्म", composition:"Metoclopramide", brands:"", type:"Tablet", category:"Digestive",
+    usageEn:"Used for nausea, vomiting and acidity-related discomfort.",
+    usageHi:"मतली, उल्टी और एसिडिटी से जुड़ी परेशानी में उपयोग होता है।",
+    aliases:["perinorm","metoclopramide"] },
+  { id:44, name:"Sporlac", hindi:"स्पोरलैक", composition:"Lactic Acid Bacillus (Probiotic)", brands:"", type:"Tablet / Sachet", category:"Digestive",
+    usageEn:"A probiotic used to restore healthy gut bacteria, often after diarrhoea or a course of antibiotics.",
+    usageHi:"यह एक प्रोबायोटिक है, जो दस्त या एंटीबायोटिक लेने के बाद आंतों के अच्छे बैक्टीरिया को फिर से बनाने में मदद करता है।",
+    aliases:["sporlac","probiotic"] },
+
+  { id:45, name:"Januvia", hindi:"जानुविया", composition:"Sitagliptin", brands:"", type:"Tablet", category:"Diabetes",
+    usageEn:"Helps control blood sugar in type 2 diabetes by increasing insulin release after meals.",
+    usageHi:"भोजन के बाद इंसुलिन स्राव बढ़ाकर टाइप 2 डायबिटीज़ में रक्त शर्करा नियंत्रित करने में मदद करती है।",
+    aliases:["januvia","sitagliptin"] },
+  { id:46, name:"Volibo", hindi:"वोलिबो", composition:"Voglibose", brands:"", type:"Tablet", category:"Diabetes",
+    usageEn:"Taken with meals to reduce the rise in blood sugar after eating, in type 2 diabetes.",
+    usageHi:"टाइप 2 डायबिटीज़ में भोजन के बाद रक्त शर्करा बढ़ने को कम करने के लिए भोजन के साथ ली जाती है।",
+    aliases:["volibo","voglibose"] },
+
+  { id:47, name:"Rosuvas", hindi:"रोसुवास", composition:"Rosuvastatin", brands:"", type:"Tablet", category:"Cholesterol",
+    usageEn:"Lowers LDL cholesterol and triglycerides to reduce the risk of heart disease.",
+    usageHi:"हृदय रोग के खतरे को कम करने के लिए एलडीएल कोलेस्ट्रॉल और ट्राइग्लिसराइड्स को घटाती है।",
+    aliases:["rosuvas","rosuvastatin"] },
+
+  { id:48, name:"Ascoril", hindi:"एस्कोरिल", composition:"Bromhexine + Terbutaline + Guaifenesin", brands:"", type:"Syrup", category:"Cold & Flu",
+    usageEn:"A cough syrup that loosens mucus and eases breathing during a cold or chest congestion.",
+    usageHi:"यह एक कफ सिरप है, जो सर्दी या छाती में जमाव के दौरान बलगम को पतला कर सांस लेना आसान बनाता है।",
+    aliases:["ascoril","cough syrup"] },
+  { id:49, name:"Benadryl", hindi:"बेनाड्रिल", composition:"Diphenhydramine", brands:"", type:"Syrup", category:"Cold & Flu",
+    usageEn:"A cough syrup used for dry cough and allergy symptoms; can cause drowsiness.",
+    usageHi:"यह सूखी खांसी और एलर्जी के लक्षणों में उपयोग होने वाला सिरप है; इससे नींद आ सकती है।",
+    aliases:["benadryl","diphenhydramine"] },
+  { id:50, name:"Wikoryl", hindi:"विकोरिल", composition:"Paracetamol + Phenylephrine + Chlorpheniramine", brands:"", type:"Tablet", category:"Cold & Flu",
+    usageEn:"Used for cold, runny nose, sneezing and mild fever.",
+    usageHi:"सर्दी, बहती नाक, छींक और हल्के बुखार में उपयोग होता है।",
+    aliases:["wikoryl"] },
+
+  { id:51, name:"Relispray", hindi:"रेलिस्प्रे", composition:"Diclofenac (Spray)", brands:"", type:"Spray", category:"Pain Relief",
+    usageEn:"A pain-relief spray applied to sore muscles and joints for quick, localised relief.",
+    usageHi:"यह एक दर्द निवारक स्प्रे है, जो दर्द वाली मांसपेशियों और जोड़ों पर तुरंत राहत के लिए लगाया जाता है।",
+    aliases:["relispray"] },
+
+  { id:52, name:"Neurobion Forte", hindi:"न्यूरोबियन फोर्ट", composition:"Vitamin B1 + B6 + B12", brands:"", type:"Tablet", category:"Vitamin",
+    usageEn:"Supports nerve health and relieves weakness linked to a vitamin B deficiency.",
+    usageHi:"यह नसों के स्वास्थ्य में मदद करता है और विटामिन बी की कमी से जुड़ी कमज़ोरी में राहत देता है।",
+    aliases:["neurobion","neurobion forte"] },
+  { id:53, name:"Limcee", hindi:"लिम्सी", composition:"Vitamin C", brands:"", type:"Chewable Tablet", category:"Vitamin",
+    usageEn:"A vitamin C supplement used to support immunity and wound healing.",
+    usageHi:"यह विटामिन सी सप्लीमेंट इम्युनिटी और घाव भरने में सहायक होता है।",
+    aliases:["limcee","vitamin c"] },
+  { id:54, name:"Revital H", hindi:"रिवाइटल एच", composition:"Multivitamin + Ginseng", brands:"", type:"Capsule", category:"Vitamin",
+    usageEn:"A multivitamin supplement used for general energy and daily nutrition support.",
+    usageHi:"यह मल्टीविटामिन सप्लीमेंट सामान्य ऊर्जा और रोज़ाना पोषण सहायता के लिए उपयोग होता है।",
+    aliases:["revital","revital h"] }
+];
+
+document.getElementById("medCount").textContent = MEDICINES.length;
+document.getElementById("listedCount").textContent = MEDICINES.length + " listed";
+
+/* ---------------- state ---------------- */
+let query = "";
+let activeCategory = "All";
+let expandedId = null;
+let speakingKey = null;
+let voices = [];
+
+/* ---------------- web fallback state (Wikipedia lookup, zero setup) ---------------- */
+let webResult = null;      // { title, extractEn, titleHi, extractHi }
+let webLoading = false;
+let webError = null;
+let webQueryFor = null;
+let webDebounceTimer = null;
+
+/* ---------------- voices ---------------- */
+function loadVoices(){
+  voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+}
+loadVoices();
+if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = loadVoices;
+
+function pickVoice(langPrefix){
+  return voices.find(v => v.lang && v.lang.toLowerCase() === langPrefix.toLowerCase())
+    || voices.find(v => v.lang && v.lang.toLowerCase().startsWith(langPrefix.split("-")[0]))
+    || null;
+}
+
+function speak(med, lang){
+  if (!window.speechSynthesis) return;
+  const key = med.id + "-" + lang;
+  window.speechSynthesis.cancel();
+  if (speakingKey === key){
+    speakingKey = null;
+    render();
+    return;
+  }
+  // Always speak the name people actually use (med.name), never the raw composition.
+  const text = lang === "en" ? (med.name + ". " + med.usageEn) : (med.hindi + ". " + med.usageHi);
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang === "en" ? "en-IN" : "hi-IN";
+  const voice = pickVoice(utter.lang);
+  if (voice) utter.voice = voice;
+  utter.rate = 0.95;
+  utter.onend = () => { speakingKey = null; render(); };
+  utter.onerror = () => { speakingKey = null; render(); };
+  speakingKey = key;
+  window.speechSynthesis.speak(utter);
+  render();
+}
+
+/* ---------------- web fallback: look up medicines not in our list ---------------- */
+const DRUG_RELEVANCE_RE = /\b(drug|medicine|medication|tablet|capsule|syrup|pharmaceutical|antibiotic|antiviral|antifungal|antiseptic|antacid|generic name|brand name|dose|dosage|treat[s]?|therapy|therapeutic|ointment|injection|vitamin|supplement|analgesic|antihistamine|nsaid)\b/i;
+
+async function wikiExtract(q, lang){
+  const raw = q.trim();
+  const variants = Array.from(new Set([
+    raw,
+    raw.replace(/\s+/g, ""),
+    raw.replace(/\s+/g, "-"),
+    raw + " tablet",
+    raw + " drug",
+  ]));
+
+  for (const variant of variants){
+    try {
+      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(variant)}&format=json&origin=*&srlimit=1`;
+      const searchRes = await fetch(searchUrl);
+      const searchJson = await searchRes.json();
+      const hit = searchJson && searchJson.query && searchJson.query.search && searchJson.query.search[0];
+      if (!hit) continue;
+      const title = hit.title;
+
+      // Use the REST summary endpoint — it gives a short Wikidata "description"
+      // (e.g. "combination drug") which lets us confirm the page is actually
+      // about a medicine before showing it, instead of trusting the raw search hit.
+      const summaryUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`;
+      const summaryRes = await fetch(summaryUrl);
+      if (!summaryRes.ok) continue;
+      const summaryJson = await summaryRes.json();
+      if (summaryJson.type === "disambiguation") continue;
+
+      const description = summaryJson.description || "";
+      const extract = (summaryJson.extract || "").trim();
+      if (!extract) continue;
+
+      const isRelevant = DRUG_RELEVANCE_RE.test(description) || DRUG_RELEVANCE_RE.test(extract);
+      if (!isRelevant) continue;
+
+      return { title: summaryJson.title || title, extract };
+    } catch (e) { /* try next variant */ }
+  }
+  return null;
+}
+
+function scheduleWebFallback(){
+  clearTimeout(webDebounceTimer);
+  const q = query.trim();
+  if (q.length < 3 || getResults().length > 0){
+    webResult = null; webError = null; webLoading = false; webQueryFor = null;
+    renderWebPanel();
+    return;
+  }
+  webDebounceTimer = setTimeout(() => fetchWebFallback(q), 600);
+}
+
+async function fetchWebFallback(q){
+  webLoading = true; webError = null; webResult = null; webQueryFor = q;
+  renderWebPanel();
+  try {
+    const enData = await wikiExtract(q, "en");
+    if (query.trim() !== q) return; // query changed while we were fetching
+    if (!enData){
+      webError = `No reliable medicine information found for "${q}".`;
+      return;
+    }
+    let hiData = null;
+    try { hiData = await wikiExtract(q, "hi"); } catch (e) { hiData = null; }
+    if (query.trim() !== q) return;
+    webResult = {
+      title: enData.title,
+      extractEn: enData.extract,
+      titleHi: hiData ? hiData.title : null,
+      extractHi: hiData ? hiData.extract : null,
+    };
+  } catch (e) {
+    webError = "Couldn't reach the web right now.";
+  } finally {
+    webLoading = false;
+    renderWebPanel();
+  }
+}
+
+function speakWeb(lang){
+  if (!window.speechSynthesis || !webResult) return;
+  const key = "web-" + lang;
+  window.speechSynthesis.cancel();
+  if (speakingKey === key){
+    speakingKey = null;
+    renderWebPanel();
+    return;
+  }
+  const text = lang === "en" ? webResult.extractEn : webResult.extractHi;
+  if (!text) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang === "en" ? "en-IN" : "hi-IN";
+  const voice = pickVoice(utter.lang);
+  if (voice) utter.voice = voice;
+  utter.rate = 0.95;
+  utter.onend = () => { speakingKey = null; renderWebPanel(); };
+  utter.onerror = () => { speakingKey = null; renderWebPanel(); };
+  speakingKey = key;
+  window.speechSynthesis.speak(utter);
+  renderWebPanel();
+}
+
+function renderWebPanel(){
+  const panel = document.getElementById("webPanel");
+  if (!panel) return;
+  const q = query.trim();
+
+  if (q.length < 3 || getResults().length > 0){
+    panel.innerHTML = "";
+    return;
+  }
+
+  if (webLoading){
+    panel.innerHTML = `<div class="empty">🔎 Looking up "${escapeHtml(q)}"…</div>`;
+    return;
+  }
+
+  if (webResult && webQueryFor === q){
+    const speakingEnW = speakingKey === "web-en";
+    const speakingHiW = speakingKey === "web-hi";
+    panel.innerHTML = `
+      <div class="card" style="border-left:5px dashed var(--coral);">
+        <div class="card-head" style="cursor:default;">
+          <div class="head-text">
+            <div class="name-row">
+              <span class="en display">${escapeHtml(webResult.title)}</span>
+              ${webResult.titleHi ? `<span class="hi hindi">${escapeHtml(webResult.titleHi)}</span>` : ""}
+            </div>
+            <p class="sub">Not in our curated list of 28 — found automatically</p>
+          </div>
+        </div>
+        <div class="card-body" style="display:block;">
+          <div class="divider"></div>
+          <p class="lang-label">English</p>
+          <p class="usage-text">${escapeHtml(webResult.extractEn)}</p>
+          ${webResult.extractHi ? `<p class="lang-label">हिंदी</p><p class="usage-text hindi">${escapeHtml(webResult.extractHi)}</p>` : ""}
+          <div class="speak-row">
+            <button class="speak-btn ${speakingEnW ? "active" : ""}" id="webEnBtn">${speakingEnW ? "⏹ Stop" : "🔊 Listen in English"}</button>
+            ${webResult.extractHi ? `<button class="speak-btn ${speakingHiW ? "active" : ""}" id="webHiBtn">${speakingHiW ? "⏹ रोकें" : "🔊 हिंदी में सुनें"}</button>` : ""}
+          </div>
+          <div class="caution">⚠️ General information only — always confirm dose and suitability with a doctor or pharmacist before use.</div>
+        </div>
+      </div>
+    `;
+    const enBtn = document.getElementById("webEnBtn");
+    if (enBtn) enBtn.onclick = () => speakWeb("en");
+    const hiBtn = document.getElementById("webHiBtn");
+    if (hiBtn) hiBtn.onclick = () => speakWeb("hi");
+    return;
+  }
+
+  if (webError && webQueryFor === q){
+    panel.innerHTML = `<div class="empty">${escapeHtml(webError)}</div>`;
+    return;
+  }
+
+  panel.innerHTML = "";
+}
+
+/* ---------------- search ---------------- */
+function getResults(){
+  let list = MEDICINES;
+  if (activeCategory !== "All"){
+    list = list.filter(m => m.category === activeCategory);
+  }
+  const q = query.trim().toLowerCase();
+  if (!q) return list;
+  const scored = list.map(m => {
+    const hay = [m.name, m.brands, m.composition, ...m.aliases].join(" ").toLowerCase();
+    let score = -1;
+    if (hay.includes(q)) score = hay.startsWith(q) ? 2 : hay.split(" ").some(w => w.startsWith(q)) ? 1 : 0;
+    return { m, score };
+  }).filter(r => r.score >= 0).sort((a,b) => b.score - a.score);
+  return scored.map(r => r.m);
+}
+
+/* ---------------- render ---------------- */
+function renderChips(){
+  const chips = document.getElementById("chips");
+  chips.innerHTML = "";
+  CATEGORIES.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "chip" + (activeCategory === c.label ? " active" : "");
+    btn.textContent = c.label;
+    btn.onclick = () => { activeCategory = c.label; render(); };
+    chips.appendChild(btn);
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+function renderResults(){
+  const results = getResults();
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+
+  if (results.length === 0){
+    const div = document.createElement("div");
+    div.className = "empty";
+    div.textContent = query.trim().length >= 3
+      ? "Not in our curated list — looking it up automatically below…"
+      : "No matches yet — try a well-known name like \"Saridon\" or \"Volini\".";
+    container.appendChild(div);
+    return;
+  }
+
+  results.forEach(med => {
+    const isExpanded = expandedId === med.id;
+    const card = document.createElement("div");
+    card.className = "card " + catClass(med.category) + (isExpanded ? " expanded" : "");
+
+    const speakingEn = speakingKey === (med.id + "-en");
+    const speakingHi = speakingKey === (med.id + "-hi");
+    const subLine = med.composition ? med.composition : med.brands;
+
+    card.innerHTML = `
+      <button class="card-head" data-id="${med.id}">
+        <div class="head-text">
+          <div class="name-row">
+            <span class="en display">${escapeHtml(med.name)}</span>
+            <span class="hi hindi">${med.hindi}</span>
+          </div>
+          <p class="sub">${escapeHtml(subLine)}${subLine ? " · " : ""}${escapeHtml(med.type)}</p>
+        </div>
+        <span class="badge">${escapeHtml(med.category)}</span>
+        <span class="chev">›</span>
+      </button>
+      <div class="card-body">
+        <div class="divider"></div>
+        ${med.composition ? `<p class="lang-label">Composition</p><p class="usage-text mono" style="font-size:13px;">${escapeHtml(med.composition)}</p>` : ""}
+        ${med.brands ? `<p class="lang-label">Also sold as</p><p class="usage-text mono" style="font-size:13px;">${escapeHtml(med.brands)}</p>` : ""}
+        <p class="lang-label">English</p>
+        <p class="usage-text">${escapeHtml(med.usageEn)}</p>
+        <p class="lang-label">हिंदी</p>
+        <p class="usage-text hindi">${med.usageHi}</p>
+        <div class="speak-row">
+          <button class="speak-btn en-btn ${speakingEn ? "active" : ""}" data-id="${med.id}">
+            ${speakingEn ? "⏹ Stop" : "🔊 Listen in English"}
+          </button>
+          <button class="speak-btn hi-btn ${speakingHi ? "active" : ""}" data-id="${med.id}">
+            ${speakingHi ? "⏹ रोकें" : "🔊 हिंदी में सुनें"}
+          </button>
+        </div>
+        <div class="caution">⚠️ General information only — always confirm dose and suitability with a doctor or pharmacist before use.</div>
+      </div>
+    `;
+
+    card.querySelector(".card-head").onclick = () => {
+      expandedId = isExpanded ? null : med.id;
+      render();
+    };
+    card.querySelector(".en-btn").onclick = (e) => { e.stopPropagation(); speak(med, "en"); };
+    card.querySelector(".hi-btn").onclick = (e) => { e.stopPropagation(); speak(med, "hi"); };
+
+    container.appendChild(card);
+  });
+}
+
+function render(){
+  renderChips();
+  renderResults();
+}
+
+/* ---------------- search input ---------------- */
+const searchInput = document.getElementById("searchInput");
+const clearBtn = document.getElementById("clearBtn");
+searchInput.addEventListener("input", (e) => {
+  query = e.target.value;
+  clearBtn.style.display = query ? "flex" : "none";
+  render();
+  scheduleWebFallback();
+});
+clearBtn.addEventListener("click", () => {
+  query = "";
+  searchInput.value = "";
+  clearBtn.style.display = "none";
+  render();
+  scheduleWebFallback();
+});
+
+/* ---------------- OCR scan ---------------- */
+const scanBtn = document.getElementById("scanBtn");
+const scanLabel = document.getElementById("scanLabel");
+const fileInput = document.getElementById("fileInput");
+const ocrNote = document.getElementById("ocrNote");
+
+function showOcrNote(text){
+  ocrNote.textContent = "⬆ " + text;
+  ocrNote.style.display = "flex";
+}
+
+function matchTextToMedicine(raw){
+  const tokens = raw.toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length >= 3);
+  for (const med of MEDICINES){
+    for (const token of tokens){
+      if (med.aliases.some(a => a.includes(token) || token.includes(a))){
+        return med;
+      }
+    }
+  }
+  return null;
+}
+
+scanBtn.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  scanLabel.textContent = "Reading…";
+  scanBtn.disabled = true;
+
+  try {
+    if (!window.Tesseract){
+      showOcrNote("Text scanner is still loading — please try again in a moment.");
+      return;
+    }
+    const { data: { text } } = await window.Tesseract.recognize(file, "eng");
+    const cleaned = text.replace(/\s+/g, " ").trim();
+    const match = matchTextToMedicine(cleaned);
+    if (match){
+      query = match.name;
+      searchInput.value = match.name;
+      clearBtn.style.display = "flex";
+      activeCategory = "All";
+      expandedId = match.id;
+      showOcrNote(`Found "${match.name}" on the pack.`);
+      render();
+      scheduleWebFallback();
+    } else if (cleaned) {
+      const guess = cleaned.split(" ").slice(0, 3).join(" ");
+      query = guess;
+      searchInput.value = guess;
+      clearBtn.style.display = "flex";
+      showOcrNote("Couldn't confidently match a medicine — edit the search text above, or see the web result below.");
+      render();
+      scheduleWebFallback();
+    } else {
+      showOcrNote("Couldn't read any text from that photo. Try a clearer, well-lit shot of the label.");
+    }
+  } catch (err) {
+    showOcrNote("Something went wrong reading the photo. Please try again.");
+  } finally {
+    scanLabel.textContent = "Scan pack";
+    scanBtn.disabled = false;
+    e.target.value = "";
+  }
+});
+
+/* ---------------- initial render ---------------- */
+render();
+</script>
+</body>
+</html>

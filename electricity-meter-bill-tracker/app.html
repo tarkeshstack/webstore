@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Meter & Bill</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #262b35;
+    --accent: #34d399;
+    --text: #f1f5f4;
+    --muted: #8b93a1;
+    --danger: #f0655a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    padding: 24px 16px 50px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+
+  .title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .title svg { color: var(--accent); }
+
+  .summary {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .summary-cost-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .summary-cost {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .summary-sub { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .summary-reading { text-align: right; }
+  .summary-reading-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .summary-reading-value { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; }
+  .summary-reading-date { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .panel-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .last-reading-hint {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(52, 211, 153, 0.07);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    border-radius: 9px;
+    padding: 9px 12px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .last-reading-hint strong { color: var(--text); font-weight: 600; }
+  .last-reading-hint.empty { display: none; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 12px; color: var(--muted); }
+  .field input {
+    background: #0c0e12;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 11px;
+    color: var(--text);
+    font-size: 14.5px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    width: 100%;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::-webkit-calendar-picker-indicator { filter: invert(0.75) sepia(1) saturate(2) hue-rotate(100deg); cursor: pointer; }
+
+  .submit-btn {
+    grid-column: 1 / -1;
+    background: var(--accent);
+    color: #04140d;
+    border: none;
+    border-radius: 8px;
+    padding: 11px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 2px;
+  }
+  .submit-btn:hover { filter: brightness(1.07); }
+
+  .form-error {
+    grid-column: 1 / -1;
+    color: var(--danger);
+    font-size: 12.5px;
+    display: none;
+  }
+  .form-error.show { display: block; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0 8px 8px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+  td { padding: 9px 8px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  td.date-cell { color: var(--muted); }
+  .cost-cell { color: var(--accent); font-weight: 600; }
+  .del-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 3px; display: flex; }
+  .del-btn:hover { color: var(--danger); }
+
+  .empty { text-align: center; padding: 24px 10px; color: var(--muted); font-size: 13.5px; }
+
+  .save-error {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: rgba(240,101,90,0.1);
+    border: 1px solid rgba(240,101,90,0.3);
+    color: var(--danger);
+    padding: 9px 13px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+  .save-error.show { display: flex; }
+
+  @media (max-width: 420px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .summary { flex-direction: column; align-items: flex-start; }
+    .summary-reading { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="title">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+    Meter &amp; Bill
+  </div>
+
+  <div id="saveError" class="save-error">Couldn't save — your browser may be blocking local storage.</div>
+
+  <div class="summary">
+    <div>
+      <div class="summary-cost-label">Bill till date</div>
+      <div class="summary-cost" id="statBill">₹0.00</div>
+      <div class="summary-sub" id="statSub">No readings logged yet</div>
+    </div>
+    <div class="summary-reading">
+      <div class="summary-reading-label">Last reading</div>
+      <div class="summary-reading-value" id="lastReadingValue">—</div>
+      <div class="summary-reading-date" id="lastReadingDate"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Log a reading</div>
+    <div class="last-reading-hint empty" id="lastReadingHint">
+      Last logged: <strong id="hintValue"></strong> kWh on <strong id="hintDate"></strong>
+    </div>
+    <form class="form-grid" id="entryForm">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="inputDate" />
+      </div>
+      <div class="field">
+        <label>Current reading (kWh)</label>
+        <input type="number" inputmode="decimal" step="0.01" placeholder="e.g. 4820" id="inputReading" />
+      </div>
+      <div class="field full">
+        <label>Rate (currency / kWh)</label>
+        <input type="number" inputmode="decimal" step="0.01" placeholder="e.g. 7.50" id="inputRate" />
+      </div>
+      <div class="form-error" id="formError"></div>
+      <button class="submit-btn" type="submit">Add reading</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">History</div>
+    <div id="historyWrap"></div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = "electricity-meter-entries";
+  let entries = [];
+
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+
+  function fmtDate(d) {
+    const dt = new Date(d + "T00:00:00");
+    return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  function fmtMoney(n) {
+    return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function getSorted() {
+    return [...entries].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  }
+
+  function getComputed() {
+    let prev = null;
+    return getSorted().map((e) => {
+      const consumption = prev ? Math.max(0, e.reading - prev.reading) : null;
+      const cost = consumption != null ? consumption * e.rate : null;
+      const row = { ...e, consumption, cost, prevReading: prev ? prev.reading : null };
+      prev = e;
+      return row;
+    });
+  }
+
+  function loadEntries() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) entries = parsed;
+      }
+    } catch (e) {
+      // corrupted or inaccessible — start fresh
+    }
+  }
+
+  function persist() {
+    try {
+      document.getElementById("saveError").classList.remove("show");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    } catch (e) {
+      document.getElementById("saveError").classList.add("show");
+    }
+  }
+
+  function renderHistory(computed) {
+    const wrap = document.getElementById("historyWrap");
+    if (computed.length === 0) {
+      wrap.innerHTML = '<div class="empty">No readings yet — log your first one above.</div>';
+      return;
+    }
+    const rows = [...computed].reverse().map((r) => `
+      <tr>
+        <td class="date-cell">${fmtDate(r.date)}</td>
+        <td>${r.reading.toFixed(1)}</td>
+        <td>${r.consumption != null ? r.consumption.toFixed(1) + " kWh" : "—"}</td>
+        <td class="cost-cell">${r.cost != null ? "₹" + fmtMoney(r.cost) : "—"}</td>
+        <td>
+          <button class="del-btn" data-id="${r.id}" aria-label="Delete reading">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </td>
+      </tr>
+    `).join("");
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>Date</th><th>Reading</th><th>Usage</th><th>Cost</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    wrap.querySelectorAll(".del-btn").forEach((btn) => {
+      btn.addEventListener("click", () => deleteEntry(btn.dataset.id));
+    });
+  }
+
+  function render() {
+    const computed = getComputed();
+    const totalBill = computed.reduce((sum, r) => sum + (r.cost || 0), 0);
+    const latest = computed[computed.length - 1] || null;
+    const first = computed[0] || null;
+    const daysTracked = first && latest
+      ? Math.max(1, Math.round((new Date(latest.date) - new Date(first.date)) / 86400000))
+      : 0;
+
+    document.getElementById("statBill").textContent = `₹${fmtMoney(totalBill)}`;
+    document.getElementById("statSub").textContent = latest
+      ? `Across ${computed.length} reading${computed.length > 1 ? "s" : ""}${daysTracked ? ` · ${daysTracked} day${daysTracked > 1 ? "s" : ""}` : ""}`
+      : "No readings logged yet";
+
+    document.getElementById("lastReadingValue").textContent = latest ? `${latest.reading.toFixed(1)} kWh` : "—";
+    document.getElementById("lastReadingDate").textContent = latest ? fmtDate(latest.date) : "";
+
+    const hint = document.getElementById("lastReadingHint");
+    if (latest) {
+      hint.classList.remove("empty");
+      document.getElementById("hintValue").textContent = latest.reading.toFixed(1);
+      document.getElementById("hintDate").textContent = fmtDate(latest.date);
+    } else {
+      hint.classList.add("empty");
+    }
+
+    renderHistory(computed);
+  }
+
+  function showFormError(msg) {
+    const el = document.getElementById("formError");
+    el.textContent = msg;
+    el.classList.add("show");
+  }
+  function hideFormError() {
+    document.getElementById("formError").classList.remove("show");
+  }
+
+  function handleAdd(e) {
+    e.preventDefault();
+    hideFormError();
+    const date = document.getElementById("inputDate").value;
+    const readingNum = parseFloat(document.getElementById("inputReading").value);
+    const rateNum = parseFloat(document.getElementById("inputRate").value);
+
+    if (!date) return showFormError("Pick a reading date.");
+    if (isNaN(readingNum) || readingNum < 0) return showFormError("Enter a valid meter reading.");
+    if (isNaN(rateNum) || rateNum <= 0) return showFormError("Enter a valid rate per kWh.");
+    if (entries.some((en) => en.date === date)) return showFormError("A reading already exists for that date.");
+    const priorSameOrBefore = [...entries].filter((en) => en.date < date).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+    if (priorSameOrBefore && readingNum < priorSameOrBefore.reading) {
+      return showFormError("New reading is lower than a previous reading — check the number.");
+    }
+
+    entries.push({ id: uid(), date, reading: readingNum, rate: rateNum });
+    persist();
+    document.getElementById("inputReading").value = "";
+    render();
+  }
+
+  function deleteEntry(id) {
+    entries = entries.filter((e) => e.id !== id);
+    persist();
+    render();
+  }
+
+  function init() {
+    document.getElementById("inputDate").value = new Date().toISOString().slice(0, 10);
+    document.getElementById("inputDate").max = new Date().toISOString().slice(0, 10);
+    document.getElementById("entryForm").addEventListener("submit", handleAdd);
+    loadEntries();
+    render();
+  }
+
+  init();
+</script>
+</body>
+</html>

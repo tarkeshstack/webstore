@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Word PIN Lock</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html, body {
+    width:100%; height:100%;
+    font-family:'Times New Roman', Times, serif;
+    font-weight:bold;
+    overflow:hidden;
+    touch-action:manipulation;
+    background: linear-gradient(135deg,
+      #ffe8e8, #fff4e8, #fffde8, #eefff3, #e8f4ff, #f2eeff, #ffe8fb, #ffe8e8);
+    background-size: 400% 400%;
+    animation: rainbowShift 10s ease infinite;
+  }
+  @keyframes rainbowShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ── Full-screen layout ── */
+  .screen {
+    width:100vw; height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:space-between;
+    padding: env(safe-area-inset-top, 16px) 20px env(safe-area-inset-bottom, 16px);
+    background: transparent;
+  }
+
+  /* TOP SECTION */
+  .top {
+    flex:0 0 auto;
+    width:100%; text-align:center;
+    padding-top:10px;
+  }
+
+  .lock-icon {
+    font-size:clamp(2rem, 7vw, 3rem);
+    line-height:1;
+    margin-bottom:4px;
+    animation: bob 2.8s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+
+  h1 {
+    font-family:'Times New Roman', Times, serif;
+    font-weight:bold;
+    font-size:clamp(1.4rem, 6vw, 2rem);
+    color:#111;
+    letter-spacing:1px;
+    margin-bottom:2px;
+  }
+  .sub {
+    font-size:clamp(.65rem, 3vw, .85rem);
+    color:#666;
+    font-weight:bold;
+    letter-spacing:.3px;
+  }
+
+  /* PIN WORD */
+  .pin-section {
+    flex:0 0 auto;
+    width:100%; text-align:center;
+  }
+  .pin-label {
+    font-size:clamp(.6rem, 2.5vw, .72rem);
+    color:#888;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .pin-chip {
+    display:inline-block;
+    background:#111;
+    color:#fff;
+    border-radius:10px;
+    padding:clamp(8px,2.5vw,12px) clamp(22px,8vw,40px);
+    font-family:'Times New Roman', Times, serif;
+    font-weight:bold;
+    font-size:clamp(1.6rem, 8vw, 2.4rem);
+    letter-spacing:clamp(6px,3vw,12px);
+    box-shadow:0 3px 14px rgba(0,0,0,.18);
+  }
+
+  /* ENTRY SLOTS */
+  .entry-section {
+    flex:0 0 auto;
+    width:100%;
+  }
+  .entry-label {
+    font-size:clamp(.58rem, 2.4vw, .68rem);
+    color:#999;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    text-align:center;
+    margin-bottom:8px;
+  }
+  .entry-row {
+    display:flex;
+    justify-content:center;
+    gap:clamp(6px,2vw,12px);
+  }
+  .slot {
+    width:clamp(38px,11vw,56px);
+    height:clamp(46px,13vw,64px);
+    border-radius:10px;
+    border:2.5px solid #ddd;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Times New Roman', Times, serif;
+    font-weight:bold;
+    font-size:clamp(2.2rem, 10vw, 3.2rem);
+    color:#111;
+    background:#f8f8f8;
+    transition:border-color .15s, background .15s;
+    position:relative;
+  }
+  .slot.filled {
+    border-color:#111;
+    background:#fff;
+  }
+  .slot.active {
+    border-color:#111;
+    background:#fff;
+  }
+  .slot.correct { border-color:#2a9d4e; background:#f0fff4; color:#2a9d4e; }
+  .slot.wrong   { border-color:#e03232; background:#fff5f5; color:#e03232; }
+
+  .cursor {
+    width:2px; height:55%;
+    background:#111; border-radius:2px;
+    animation:blink 1s step-end infinite;
+    position:absolute;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* STATUS */
+  .status-bar {
+    flex:0 0 auto;
+    text-align:center;
+    height:22px;
+    font-size:clamp(.72rem, 3vw, .88rem);
+    color:#e03232;
+    letter-spacing:.3px;
+  }
+  .status-bar.ok { color:#2a9d4e; }
+
+  /* ATTEMPT DOTS */
+  .dots {
+    flex:0 0 auto;
+    display:flex; gap:8px; justify-content:center;
+  }
+  .dot {
+    width:clamp(8px,2.5vw,11px);
+    height:clamp(8px,2.5vw,11px);
+    border-radius:50%;
+    background:#ddd;
+    transition:background .25s;
+  }
+  .dot.used { background:#e03232; }
+
+  /* ── KEYPAD ── */
+  .keypad-section {
+    flex:1 1 auto;
+    width:100%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .keypad {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:clamp(5px,1.8vw,9px);
+    width:100%;
+    max-width:280px;
+  }
+  .key {
+    aspect-ratio:1.5;
+    border:2px solid #ddd;
+    border-radius:10px;
+    background:#fff;
+    font-family:'Times New Roman', Times, serif;
+    font-weight:bold;
+    font-size:clamp(1.1rem, 5vw, 1.5rem);
+    color:#111;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .1s;
+    box-shadow:0 2px 5px rgba(0,0,0,.07);
+    user-select:none;
+  }
+  .key:active, .key.pressed {
+    background:#111;
+    color:#fff;
+    border-color:#111;
+    transform:scale(.91);
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+  }
+  .key.pin-key {
+    border-color:#bbb;
+    background:#f5f5f5;
+  }
+
+  /* DELETE key */
+  .key.del-key {
+    font-size:clamp(.85rem, 3.8vw, 1.15rem);
+    color:#666;
+    border-color:#eee;
+  }
+  .key.del-key:active, .key.del-key.pressed {
+    background:#e03232;
+    color:#fff;
+    border-color:#e03232;
+  }
+
+  /* ── UNLOCK SCREEN ── */
+  .unlock-screen {
+    position:fixed; inset:0;
+    background:rgba(255,255,255,0.6);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    z-index:100;
+    opacity:0; pointer-events:none;
+    transition:opacity .35s;
+    padding:20px;
+  }
+  .unlock-screen.show { opacity:1; pointer-events:all; }
+
+  .confetti-layer { position:fixed; inset:0; pointer-events:none; overflow:hidden; }
+  .cf {
+    position:absolute; border-radius:2px;
+    animation:cfFall var(--d) var(--dl) ease-in forwards; opacity:0;
+  }
+  @keyframes cfFall { 0%{transform:translateY(-20px) rotate(0);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
+
+  .cartoon-wrap { animation:popIn .65s cubic-bezier(.34,1.56,.64,1) .25s both; }
+  @keyframes popIn { from{transform:scale(0) rotate(-10deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+  .cartoon-svg { width:min(55vw,220px); height:min(55vw,220px); }
+
+  .unlock-title {
+    font-family:'Times New Roman', Times, serif;
+    font-weight:bold;
+    font-size:clamp(2rem, 9vw, 2.8rem);
+    color:#111;
+    margin:16px 0 6px;
+    animation:popIn .45s cubic-bezier(.34,1.56,.64,1) .55s both;
+    text-align:center;
+  }
+  .unlock-sub {
+    font-size:clamp(.85rem, 3.5vw, 1rem);
+    color:#555;
+    font-weight:bold;
+    margin-bottom:28px;
+    text-align:center;
+    animation:fadeUp .4s ease .8s both;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<!-- Lock Screen -->
+<div class="screen" id="lockScreen">
+
+  <div class="top">
+    <div class="lock-icon">🔒</div>
+    <h1>Word PIN Lock</h1>
+    <div class="sub">Spell the word to unlock</div>
+  </div>
+
+  <div class="pin-section">
+    <div class="pin-label">🔑 Your PIN Word</div>
+    <div class="pin-chip" id="pinChip"></div>
+  </div>
+
+  <div class="entry-section">
+    <div class="entry-label">Your Entry</div>
+    <div class="entry-row" id="entryRow"></div>
+  </div>
+
+  <div class="status-bar" id="statusBar"></div>
+
+  <div class="dots" id="dotRow"></div>
+
+  <div class="keypad-section">
+    <div class="keypad" id="keypad"></div>
+  </div>
+
+</div>
+
+<!-- Unlock Screen -->
+<div class="unlock-screen" id="unlockScreen">
+  <div class="confetti-layer" id="confettiLayer"></div>
+  <div class="cartoon-wrap" id="cartoonWrap"></div>
+  <div class="unlock-title">🎉 UNLOCKED!</div>
+  <div class="unlock-sub" id="unlockSub"></div>
+</div>
+
+<script>
+const PINS = ["STAR","FROG","JUMP","CAKE","BOLT","WOLF","GEMS","NEON","DUSK","HYPE","GLOW","JAZZ"];
+
+const CARTOONS = [
+  {
+    sub: "Captain Rainbow is here! 🦸",
+    svg: `<svg viewBox="0 0 200 200" class="cartoon-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M55 130 Q40 180 100 198 Q160 180 145 130Z" fill="#ff6b6b"/>
+      <rect x="72" y="110" width="56" height="60" rx="14" fill="#4d96ff"/>
+      <polygon points="100,120 104,132 117,132 107,140 111,152 100,145 89,152 93,140 83,132 96,132" fill="#ffd93d"/>
+      <circle cx="100" cy="88" r="38" fill="#ffc87a"/>
+      <circle cx="87" cy="83" r="7" fill="white"/><circle cx="113" cy="83" r="7" fill="white"/>
+      <circle cx="89" cy="84" r="4" fill="#222"/><circle cx="115" cy="84" r="4" fill="#222"/>
+      <circle cx="90" cy="82" r="1.5" fill="white"/><circle cx="116" cy="82" r="1.5" fill="white"/>
+      <path d="M88 100 Q100 112 112 100" stroke="#e07040" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M78 79 Q88 71 98 79" stroke="#4d96ff" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+      <path d="M102 79 Q112 71 122 79" stroke="#4d96ff" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="100" cy="53" rx="30" ry="15" fill="#a0522d"/>
+      <ellipse cx="75" cy="61" rx="11" ry="7" fill="#a0522d" transform="rotate(-20,75,61)"/>
+      <ellipse cx="125" cy="61" rx="11" ry="7" fill="#a0522d" transform="rotate(20,125,61)"/>
+      <ellipse cx="60" cy="130" rx="10" ry="26" fill="#4d96ff" transform="rotate(20,60,130)"/>
+      <ellipse cx="140" cy="130" rx="10" ry="26" fill="#4d96ff" transform="rotate(-20,140,130)"/>
+      <circle cx="50" cy="148" r="12" fill="#ffc87a"/>
+      <circle cx="150" cy="148" r="12" fill="#ffc87a"/>
+    </svg>`
+  },
+  {
+    sub: "Greetings from Planet Fun! 👽",
+    svg: `<svg viewBox="0 0 200 200" class="cartoon-svg" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="100" cy="182" rx="65" ry="12" fill="#4d96ff" opacity="0.4"/>
+      <ellipse cx="100" cy="136" rx="42" ry="46" fill="#6bcb77"/>
+      <ellipse cx="100" cy="146" rx="24" ry="26" fill="#a8f0b0" opacity="0.6"/>
+      <circle cx="94" cy="138" r="5" fill="#ff6b6b"/>
+      <circle cx="106" cy="138" r="5" fill="#ffd93d"/>
+      <circle cx="100" cy="150" r="5" fill="#4d96ff"/>
+      <ellipse cx="100" cy="82" rx="44" ry="48" fill="#6bcb77"/>
+      <ellipse cx="82" cy="72" rx="16" ry="19" fill="white"/>
+      <ellipse cx="118" cy="72" rx="16" ry="19" fill="white"/>
+      <circle cx="85" cy="73" r="9" fill="#222"/>
+      <circle cx="121" cy="73" r="9" fill="#222"/>
+      <circle cx="88" cy="69" r="3" fill="white"/><circle cx="124" cy="69" r="3" fill="white"/>
+      <path d="M84 96 Q100 108 116 96" stroke="#2d8a3e" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <line x1="82" y1="36" x2="70" y2="10" stroke="#6bcb77" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="70" cy="8" r="8" fill="#ffd93d"/>
+      <line x1="118" y1="36" x2="130" y2="10" stroke="#6bcb77" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="130" cy="8" r="8" fill="#ff6b6b"/>
+      <path d="M58 126 Q30 116 20 140" stroke="#6bcb77" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <circle cx="18" cy="142" r="10" fill="#6bcb77"/>
+      <path d="M142 126 Q170 116 180 140" stroke="#6bcb77" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <circle cx="182" cy="142" r="10" fill="#6bcb77"/>
+    </svg>`
+  },
+  {
+    sub: "Rawr! The secret dragon is FREE! 🐲",
+    svg: `<svg viewBox="0 0 200 200" class="cartoon-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M130 160 Q175 170 185 150 Q195 130 175 125" stroke="#ff6b6b" stroke-width="17" fill="none" stroke-linecap="round"/>
+      <path d="M70 100 Q20 60 30 30 Q50 55 80 85Z" fill="#ff9f7f" opacity="0.85"/>
+      <path d="M130 100 Q180 60 170 30 Q150 55 120 85Z" fill="#ff9f7f" opacity="0.85"/>
+      <ellipse cx="100" cy="148" rx="46" ry="44" fill="#ff6b6b"/>
+      <ellipse cx="100" cy="155" rx="28" ry="28" fill="#ffd0b0"/>
+      <ellipse cx="100" cy="88" rx="44" ry="42" fill="#ff6b6b"/>
+      <polygon points="70,56 65,30 78,52" fill="#ffd93d"/>
+      <polygon points="90,50 88,22 100,48" fill="#ffd93d"/>
+      <polygon points="110,50 112,22 100,48" fill="#ffd93d"/>
+      <polygon points="130,56 135,30 122,52" fill="#ffd93d"/>
+      <ellipse cx="84" cy="82" rx="13" ry="14" fill="#ffd93d"/>
+      <ellipse cx="116" cy="82" rx="13" ry="14" fill="#ffd93d"/>
+      <circle cx="84" cy="83" r="8" fill="#222"/>
+      <circle cx="116" cy="83" r="8" fill="#222"/>
+      <circle cx="87" cy="80" r="2.5" fill="white"/><circle cx="119" cy="80" r="2.5" fill="white"/>
+      <ellipse cx="92" cy="100" rx="5" ry="3" fill="#cc3333" transform="rotate(-15,92,100)"/>
+      <ellipse cx="108" cy="100" rx="5" ry="3" fill="#cc3333" transform="rotate(15,108,100)"/>
+      <path d="M82 108 Q100 122 118 108" fill="#cc3333"/>
+      <rect x="89" y="108" width="8" height="7" rx="2" fill="white"/>
+      <rect x="100" y="108" width="8" height="7" rx="2" fill="white"/>
+      <path d="M95 128 Q92 145 100 155 Q108 145 105 128Z" fill="#ff4500" opacity="0.8"/>
+      <path d="M98 128 Q96 140 100 148 Q104 140 102 128Z" fill="#ffd93d"/>
+      <ellipse cx="76" cy="188" rx="20" ry="9" fill="#ff6b6b"/>
+      <ellipse cx="124" cy="188" rx="20" ry="9" fill="#ff6b6b"/>
+      <path d="M58 130 Q35 130 28 155" stroke="#ff6b6b" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <path d="M142 130 Q165 130 172 155" stroke="#ff6b6b" stroke-width="13" fill="none" stroke-linecap="round"/>
+    </svg>`
+  }
+];
+
+const MAX_ATTEMPTS = 5;
+let pinWord = '', cartoon = null, typed = [], attempts = 0, keys = [], locked = false;
+
+function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function shuffle(a){ return [...a].sort(()=>Math.random()-.5); }
+
+function buildKeys(word){
+  const needed = [...new Set(word.split(''))];
+  const extras  = shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(l=>!needed.includes(l)));
+  return shuffle([...needed, ...extras.slice(0, 9 - needed.length)]);
+}
+
+function initGame(){
+  pinWord  = rand(PINS);
+  cartoon  = rand(CARTOONS);
+  typed    = [];
+  attempts = 0;
+  locked   = false;
+  keys     = buildKeys(pinWord);
+  document.getElementById('pinChip').textContent = pinWord;
+  renderKeypad();
+  renderEntry();
+  renderDots();
+  setStatus('');
+}
+
+function renderKeypad(){
+  const kp = document.getElementById('keypad');
+  const pinSet = new Set(pinWord.split(''));
+  kp.innerHTML = '';
+
+  // 8 letter keys + 1 delete key (bottom-right), like a phone numpad
+  keys.forEach((letter, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'key' + (pinSet.has(letter) ? ' pin-key' : '');
+    btn.textContent = letter;
+    btn.addEventListener('pointerdown', e => { e.preventDefault(); pressKey(letter, btn); });
+    kp.appendChild(btn);
+  });
+
+  // Delete key — bottom right (9th cell)
+  const del = document.createElement('button');
+  del.className = 'key del-key';
+  del.innerHTML = '⌫';
+  del.addEventListener('pointerdown', e => { e.preventDefault(); deleteLetter(); });
+  kp.appendChild(del);
+}
+
+function pressKey(letter, btn){
+  if (locked || typed.length >= pinWord.length) return;
+  btn.classList.add('pressed');
+  setTimeout(()=>btn.classList.remove('pressed'), 160);
+  typed.push(letter);
+  renderEntry();
+  setStatus('');
+  // Auto-submit when word length reached
+  if (typed.length === pinWord.length) {
+    setTimeout(checkPin, 280);
+  }
+}
+
+function deleteLetter(){
+  if (locked || typed.length === 0) return;
+  typed.pop();
+  renderEntry();
+  setStatus('');
+}
+
+function renderEntry(){
+  const row = document.getElementById('entryRow');
+  row.innerHTML = '';
+  for (let i = 0; i < pinWord.length; i++){
+    const slot = document.createElement('div');
+    if (i < typed.length){
+      slot.className = 'slot filled';
+      slot.textContent = typed[i];
+    } else if (i === typed.length){
+      slot.className = 'slot active';
+      const cur = document.createElement('div');
+      cur.className = 'cursor';
+      slot.appendChild(cur);
+    } else {
+      slot.className = 'slot';
+    }
+    row.appendChild(slot);
+  }
+}
+
+function checkPin(){
+  locked = true;
+  const slots = document.querySelectorAll('.slot');
+  if (typed.join('') === pinWord){
+    slots.forEach(s => s.classList.add('correct'));
+    setTimeout(showUnlock, 400);
+  } else {
+    slots.forEach(s => s.classList.add('wrong'));
+    attempts++;
+    renderDots();
+    if (attempts >= MAX_ATTEMPTS){
+      setStatus('Too many tries — resetting…');
+      setTimeout(initGame, 1600);
+    } else {
+      setStatus(`Wrong! ${MAX_ATTEMPTS - attempts} attempt${MAX_ATTEMPTS-attempts===1?'':'s'} left.`);
+      setTimeout(()=>{ typed=[]; locked=false; renderEntry(); setStatus(''); }, 800);
+    }
+  }
+}
+
+function renderDots(){
+  document.getElementById('dotRow').innerHTML =
+    Array.from({length:MAX_ATTEMPTS},(_,i)=>
+      `<div class="dot${i<attempts?' used':''}"></div>`).join('');
+}
+
+function setStatus(msg, cls=''){
+  const el = document.getElementById('statusBar');
+  el.textContent = msg;
+  el.className = 'status-bar' + (cls ? ' '+cls : '');
+}
+
+function showUnlock(){
+  document.getElementById('cartoonWrap').innerHTML = cartoon.svg;
+  document.getElementById('unlockSub').textContent = cartoon.sub;
+  launchConfetti();
+  document.getElementById('unlockScreen').classList.add('show');
+  // Auto return to a fresh locked word after celebrating
+  setTimeout(resetGame, 3200);
+}
+
+function resetGame(){
+  document.getElementById('unlockScreen').classList.remove('show');
+  document.getElementById('confettiLayer').innerHTML = '';
+  initGame();
+}
+
+function launchConfetti(){
+  const layer = document.getElementById('confettiLayer');
+  layer.innerHTML = '';
+  const colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff9f7f','#c77dff','#111'];
+  for (let i=0;i<100;i++){
+    const p=document.createElement('div'); p.className='cf';
+    const sz=5+Math.random()*10;
+    p.style.cssText=`left:${Math.random()*100}%;top:-12px;
+      background:${colors[i%colors.length]};width:${sz}px;height:${sz}px;
+      border-radius:${Math.random()>.5?'50%':'3px'};
+      --d:${1.3+Math.random()*2}s;--dl:${Math.random()*.8}s;
+      transform:rotate(${Math.random()*360}deg);`;
+    layer.appendChild(p);
+  }
+}
+
+initGame();
+</script>
+</body>
+</html>

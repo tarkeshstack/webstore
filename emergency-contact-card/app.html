@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOS Emergency Card – Seegehalli, Bengaluru 560067</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --red:    #D72B2B;
+  --red-dk: #A81E1E;
+  --gold:   #F5A623;
+  --dark:   #1A1A1A;
+  --mid:    #2E2E2E;
+  --light:  #F7F5F0;
+  --rule:   #E2DDD6;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #b0b0b0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* ══ TOOLBAR ══ */
+#toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 12px rgba(0,0,0,.5);
+}
+#toolbar .tb-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.tb-btn {
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 6px;
+  padding: 7px 16px;
+  transition: all .15s;
+  letter-spacing: .3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tb-btn.edit   { background: var(--gold); color: #1a1a1a; }
+.tb-btn.edit:hover { background: #e09510; }
+.tb-btn.done   { background: #27ae60; color: #fff; }
+.tb-btn.done:hover { background: #1e8449; }
+.tb-btn.print  { background: var(--red); color: #fff; }
+.tb-btn.print:hover { background: var(--red-dk); }
+.tb-sep { width: 1px; height: 28px; background: rgba(255,255,255,.15); margin: 0 4px; }
+.tb-note {
+  font-size: 11px;
+  color: rgba(255,255,255,.45);
+  margin-left: auto;
+}
+#edit-hint {
+  width: 100%;
+  font-size: 11px;
+  color: var(--gold);
+  background: rgba(245,166,35,.08);
+  border: 1px solid rgba(245,166,35,.3);
+  border-radius: 4px;
+  padding: 5px 10px;
+  display: none;
+}
+
+/* ══ PAGE ══ */
+.page-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  background: var(--light);
+  box-shadow: 0 8px 40px rgba(0,0,0,.4);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══ HEADER ══ */
+.header {
+  background: var(--red);
+  color: #fff;
+  padding: 22px 26px 18px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 6px solid var(--red-dk);
+}
+.sos-badge {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 72px;
+  letter-spacing: 4px;
+  line-height: 1;
+  color: #fff;
+  background: var(--red-dk);
+  border: 3px solid rgba(255,255,255,.35);
+  padding: 4px 18px 2px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.header-text { flex: 1; }
+.header-text h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: #fff;
+  line-height: 1.1;
+}
+.header-text .h-area {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255,255,255,.95);
+  margin-top: 6px;
+  letter-spacing: .5px;
+}
+.header-text .h-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,.65);
+  margin-top: 4px;
+}
+.header-icon {
+  font-size: 52px;
+  opacity: .7;
+  flex-shrink: 0;
+}
+
+/* ══ STRIP ══ */
+.strip {
+  background: var(--dark);
+  color: var(--gold);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 4px;
+  text-align: center;
+  padding: 6px 0;
+}
+
+/* ══ GRID ══ */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--rule);
+  flex: 1;
+}
+
+.card {
+  background: var(--light);
+  padding: 14px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+.card.priority { background: #fff8f8; }
+.card.priority::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--red);
+}
+
+.card-icon { font-size: 24px; margin-bottom: 3px; }
+
+.card-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: var(--mid);
+  margin-bottom: 2px;
+  line-height: 1.1;
+}
+
+.card-number {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  color: var(--red);
+  letter-spacing: 4px;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.card-number.long { font-size: 34px; letter-spacing: 2px; }
+
+.card-desc {
+  font-size: 9px;
+  color: #888;
+  margin-bottom: 8px;
+  line-height: 1.45;
+  max-width: 130px;
+}
+
+.qr-wrap {
+  background: #fff;
+  border: 2px solid var(--rule);
+  border-radius: 6px;
+  padding: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.qr-wrap canvas, .qr-wrap img { display: block; }
+
+.scan-hint {
+  font-size: 7.5px;
+  color: #bbb;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+
+/* ══ 112 FULL ROW ══ */
+.full-row {
+  grid-column: 1 / -1;
+  background: var(--dark);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 20px 30px;
+  border-top: 4px solid var(--red);
+}
+.full-qr-wrap {
+  background: #fff;
+  border: 3px solid var(--gold);
+  border-radius: 8px;
+  padding: 8px;
+  flex-shrink: 0;
+}
+.full-text { color: #fff; flex: 1; }
+.full-text .card-label { color: var(--gold); font-size: 13px; letter-spacing: 2px; margin-bottom: 0; }
+.full-text .card-number { color: var(--gold); font-size: 76px; letter-spacing: 8px; margin-bottom: 4px; }
+.full-text .card-desc   { color: rgba(255,255,255,.6); font-size: 11px; max-width: 100%; margin: 0; }
+
+/* ══ FOOTER ══ */
+.footer {
+  background: var(--dark);
+  color: rgba(255,255,255,.4);
+  font-size: 8px;
+  text-align: center;
+  padding: 8px 16px;
+  letter-spacing: .4px;
+  line-height: 1.7;
+}
+.footer strong { color: rgba(255,255,255,.65); }
+
+/* ══ EDIT MODE ══ */
+body.editing .editable {
+  outline: 2px dashed rgba(245,166,35,.65);
+  outline-offset: 2px;
+  border-radius: 3px;
+  cursor: text;
+  min-width: 20px;
+  min-height: 1em;
+  display: inline-block;
+}
+body.editing .editable:hover  { outline-color: var(--gold); }
+body.editing .editable:focus  {
+  outline: 2px solid var(--gold);
+  background: rgba(245,166,35,.08);
+}
+body.editing .edit-actions { display: flex !important; }
+
+/* per-card edit overlay */
+.edit-actions {
+  display: none;
+  position: absolute;
+  top: 4px; right: 4px;
+  gap: 4px;
+  z-index: 10;
+}
+.edit-actions button {
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 9px;
+  padding: 2px 7px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+}
+.edit-actions button:hover { background: var(--red); }
+
+/* number input shown in edit mode */
+.num-edit-wrap {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 5px;
+}
+body.editing .num-edit-wrap { display: flex; }
+body.editing .card-number    { display: none; }
+
+.num-input {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 34px;
+  color: var(--red);
+  text-align: center;
+  border: 2px solid var(--gold);
+  border-radius: 6px;
+  background: #fff;
+  width: 88%;
+  letter-spacing: 3px;
+  outline: none;
+  padding: 2px 6px;
+}
+.num-input:focus { border-color: var(--red); }
+
+.full-row .num-edit-wrap { margin-bottom: 0; }
+.full-row .num-input {
+  font-size: 56px;
+  color: #1a1a1a;
+  width: 220px;
+  letter-spacing: 6px;
+}
+
+/* print */
+@media print {
+  #toolbar          { display: none !important; }
+  .edit-actions     { display: none !important; }
+  .num-edit-wrap    { display: none !important; }
+  .card-number      { display: block !important; }
+  body.editing .editable { outline: none !important; background: transparent !important; }
+  .page-wrap        { padding: 0; }
+  body              { background: #fff; }
+  .page             { box-shadow: none; width: 100%; }
+  @page             { margin: 0; size: A4; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOOLBAR ══ -->
+<div id="toolbar">
+  <span class="tb-title">✦ SOS CARD</span>
+  <div class="tb-sep"></div>
+  <button class="tb-btn edit" id="btn-edit" onclick="startEdit()">✏️ Edit Details</button>
+  <button class="tb-btn done" id="btn-done" onclick="doneEdit()" style="display:none">✅ Done Editing</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn print" onclick="window.print()">🖨️ Print Card</button>
+  <span class="tb-note">Edit any text or number · QR updates automatically · Then print</span>
+  <div id="edit-hint">
+    ✏️ <strong>Edit mode ON</strong> — Click any <u>dashed-outlined</u> text to change it. Change a phone number and QR regenerates in real time. Use <strong>★ Priority</strong> to toggle the red accent stripe. Click ✅ Done Editing when finished.
+  </div>
+</div>
+
+<!-- ══ PAGE ══ -->
+<div class="page-wrap">
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="sos-badge">SOS</div>
+    <div class="header-text">
+      <h1><span class="editable" id="h-title" contenteditable="false">Emergency Point of Contact</span></h1>
+      <div class="h-area"><span class="editable" id="h-area" contenteditable="false">Seegehalli, Bengaluru – Karnataka &nbsp;|&nbsp; PIN 560067</span></div>
+      <div class="h-sub"><span class="editable" id="h-sub" contenteditable="false">Scan QR to call instantly — no need to type any number</span></div>
+    </div>
+    <div class="header-icon">🚨</div>
+  </div>
+
+  <div class="strip">SCAN · TAP · CALL &nbsp;—&nbsp; EVERY SECOND COUNTS</div>
+
+  <!-- GRID -->
+  <div class="grid">
+
+    <!-- 112 full row -->
+    <div class="full-row" id="card-112">
+      <div class="full-qr-wrap" id="qr-112"></div>
+      <div class="full-text">
+        <div class="card-label editable" contenteditable="false">⚡ NATIONAL SINGLE EMERGENCY NUMBER</div>
+        <div class="card-number" id="num-display-112">112</div>
+        <div class="num-edit-wrap">
+          <input class="num-input" id="num-input-112" value="112" oninput="onNumInput('112')" placeholder="Number">
+        </div>
+        <div class="card-desc editable" contenteditable="false">Police • Ambulance • Fire — all in one call. Works even without SIM balance or signal. Covers entire India. Use this FIRST in any emergency.</div>
+      </div>
+    </div>
+
+    <!-- Police -->
+    <div class="card priority" id="card-100">
+      <div class="edit-actions"><button onclick="togglePriority('card-100')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">🚔</div>
+      <div class="card-label editable" contenteditable="false">Police</div>
+      <div class="card-number" id="num-display-100">100</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-100" value="100" oninput="onNumInput('100')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Bengaluru City Police. Nearest: Kadugodi PS (serves 560067 area)</div>
+      <div class="qr-wrap" id="qr-100"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Ambulance -->
+    <div class="card priority" id="card-108">
+      <div class="edit-actions"><button onclick="togglePriority('card-108')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">🚑</div>
+      <div class="card-label editable" contenteditable="false">Ambulance</div>
+      <div class="card-number" id="num-display-108">108</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-108" value="108" oninput="onNumInput('108')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">GVK EMRI Free Govt Ambulance. Basic + Advanced Life Support. Available 24 × 7.</div>
+      <div class="qr-wrap" id="qr-108"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Fire -->
+    <div class="card priority" id="card-101">
+      <div class="edit-actions"><button onclick="togglePriority('card-101')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">🔥</div>
+      <div class="card-label editable" contenteditable="false">Fire Brigade</div>
+      <div class="card-number" id="num-display-101">101</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-101" value="101" oninput="onNumInput('101')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Karnataka Fire &amp; Emergency. Also handles gas leaks &amp; rescue operations.</div>
+      <div class="qr-wrap" id="qr-101"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Women Helpline -->
+    <div class="card" id="card-1091">
+      <div class="edit-actions"><button onclick="togglePriority('card-1091')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">👩‍💼</div>
+      <div class="card-label editable" contenteditable="false">Women Helpline</div>
+      <div class="card-number long" id="num-display-1091">1091</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-1091" value="1091" oninput="onNumInput('1091')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Women in distress. 24 × 7 dedicated helpline. Karnataka Police.</div>
+      <div class="qr-wrap" id="qr-1091"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Child Helpline -->
+    <div class="card" id="card-1098">
+      <div class="edit-actions"><button onclick="togglePriority('card-1098')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">👶</div>
+      <div class="card-label editable" contenteditable="false">Child Helpline</div>
+      <div class="card-number long" id="num-display-1098">1098</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-1098" value="1098" oninput="onNumInput('1098')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Children in danger, abuse, or runaway. Free &amp; 24 × 7.</div>
+      <div class="qr-wrap" id="qr-1098"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Disaster -->
+    <div class="card" id="card-1077">
+      <div class="edit-actions"><button onclick="togglePriority('card-1077')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">🌊</div>
+      <div class="card-label editable" contenteditable="false">Disaster Mgmt</div>
+      <div class="card-number long" id="num-display-1077">1077</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-1077" value="1077" oninput="onNumInput('1077')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Floods, earthquakes, landslides. Karnataka State Disaster Helpline.</div>
+      <div class="qr-wrap" id="qr-1077"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Gas Leakage -->
+    <div class="card" id="card-1906">
+      <div class="edit-actions"><button onclick="togglePriority('card-1906')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">⚠️</div>
+      <div class="card-label editable" contenteditable="false">Gas Leakage</div>
+      <div class="card-number long" id="num-display-1906">1906</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-1906" value="1906" oninput="onNumInput('1906')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">LPG / Gas cylinder leakage emergency. Leave premises before calling.</div>
+      <div class="qr-wrap" id="qr-1906"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Poison Control -->
+    <div class="card" id="card-1066">
+      <div class="edit-actions"><button onclick="togglePriority('card-1066')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">☠️</div>
+      <div class="card-label editable" contenteditable="false">Poison Control</div>
+      <div class="card-number long" id="num-display-1066">1066</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-1066" value="1066" oninput="onNumInput('1066')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Anti-poison &amp; overdose emergency. Keep medicine packet ready.</div>
+      <div class="qr-wrap" id="qr-1066"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Traffic Police -->
+    <div class="card" id="card-103">
+      <div class="edit-actions"><button onclick="togglePriority('card-103')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">🚦</div>
+      <div class="card-label editable" contenteditable="false">Traffic Police</div>
+      <div class="card-number" id="num-display-103">103</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-103" value="103" oninput="onNumInput('103')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Road accidents, traffic jams, hit &amp; run. Bengaluru Traffic Control.</div>
+      <div class="qr-wrap" id="qr-103"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- BESCOM -->
+    <div class="card" id="card-1912">
+      <div class="edit-actions"><button onclick="togglePriority('card-1912')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">⚡</div>
+      <div class="card-label editable" contenteditable="false">Electricity (BESCOM)</div>
+      <div class="card-number long" id="num-display-1912">1912</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-1912" value="1912" oninput="onNumInput('1912')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Power failure, fallen wires, electrical hazard. 24 × 7 BESCOM helpline.</div>
+      <div class="qr-wrap" id="qr-1912"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- BWSSB -->
+    <div class="card" id="card-1916">
+      <div class="edit-actions"><button onclick="togglePriority('card-1916')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">💧</div>
+      <div class="card-label editable" contenteditable="false">Water (BWSSB)</div>
+      <div class="card-number long" id="num-display-1916">1916</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-1916" value="1916" oninput="onNumInput('1916')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">Water supply emergency, pipe burst, sewage overflow. BWSSB Bengaluru.</div>
+      <div class="qr-wrap" id="qr-1916"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+    <!-- Highway -->
+    <div class="card" id="card-1033">
+      <div class="edit-actions"><button onclick="togglePriority('card-1033')">★ Priority</button></div>
+      <div class="card-icon editable" contenteditable="false">🛣️</div>
+      <div class="card-label editable" contenteditable="false">Highway Helpline</div>
+      <div class="card-number long" id="num-display-1033">1033</div>
+      <div class="num-edit-wrap">
+        <input class="num-input" id="num-input-1033" value="1033" oninput="onNumInput('1033')" placeholder="Number">
+      </div>
+      <div class="card-desc editable" contenteditable="false">NH / highway accident emergency relief centre. National Highways.</div>
+      <div class="qr-wrap" id="qr-1033"></div>
+      <div class="scan-hint">Scan to call</div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <strong><span class="editable" contenteditable="false">Seegehalli · Bengaluru · Karnataka · 560067</span></strong> &nbsp;|&nbsp;
+    <span class="editable" contenteditable="false">Nearest PS: Kadugodi Police Station (approx 2 km)</span> &nbsp;|&nbsp;
+    QR codes use <em>tel:</em> protocol — point camera and tap the link to dial &nbsp;|&nbsp;
+    Print and laminate for home, car, school &amp; office notice boards
+  </div>
+
+</div><!-- /page -->
+</div><!-- /page-wrap -->
+
+<script>
+// ── QR registry ──────────────────────────────────────────
+const SLOTS = ['112','100','108','101','1091','1098','1077','1906','1066','103','1912','1916','1033'];
+const QR_BIG  = 140;
+const QR_CARD = 105;
+
+function makeQR(containerId, number, size) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  const num = String(number).trim().replace(/\D/g, '');
+  if (!num) return;
+  new QRCode(el, {
+    text: 'tel:' + num,
+    width: size, height: size,
+    colorDark: '#1A1A1A',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+// Initial render
+SLOTS.forEach(id => makeQR('qr-' + id, id, id === '112' ? QR_BIG : QR_CARD));
+
+// ── Number input → live QR ───────────────────────────────
+const debounceTimers = {};
+function onNumInput(id) {
+  const inp  = document.getElementById('num-input-' + id);
+  const disp = document.getElementById('num-display-' + id);
+  const val  = inp.value.trim();
+  if (disp) disp.textContent = val || id;
+  clearTimeout(debounceTimers[id]);
+  debounceTimers[id] = setTimeout(() => {
+    if (val) makeQR('qr-' + id, val, id === '112' ? QR_BIG : QR_CARD);
+  }, 500);
+}
+
+// ── Edit mode ────────────────────────────────────────────
+function startEdit() {
+  document.body.classList.add('editing');
+  document.getElementById('btn-edit').style.display = 'none';
+  document.getElementById('btn-done').style.display = '';
+  document.getElementById('edit-hint').style.display = 'block';
+  document.querySelectorAll('.editable').forEach(el => el.setAttribute('contenteditable','true'));
+  // Sync inputs from current displayed numbers
+  SLOTS.forEach(id => {
+    const inp  = document.getElementById('num-input-' + id);
+    const disp = document.getElementById('num-display-' + id);
+    if (inp && disp) inp.value = disp.textContent.trim();
+  });
+}
+
+function doneEdit() {
+  document.body.classList.remove('editing');
+  document.getElementById('btn-edit').style.display = '';
+  document.getElementById('btn-done').style.display = 'none';
+  document.getElementById('edit-hint').style.display = 'none';
+  document.querySelectorAll('.editable').forEach(el => {
+    el.setAttribute('contenteditable','false');
+    el.blur();
+  });
+  // Final QR sync
+  SLOTS.forEach(id => {
+    const inp  = document.getElementById('num-input-' + id);
+    const disp = document.getElementById('num-display-' + id);
+    if (inp && disp) {
+      const val = inp.value.trim() || id;
+      disp.textContent = val;
+      makeQR('qr-' + id, val, id === '112' ? QR_BIG : QR_CARD);
+    }
+  });
+}
+
+// ── Toggle priority stripe ───────────────────────────────
+function togglePriority(cardId) {
+  document.getElementById(cardId)?.classList.toggle('priority');
+}
+</script>
+</body>
+</html>

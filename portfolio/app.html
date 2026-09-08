@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarkesh — Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f2ed;
+  --bg2:#eceae3;
+  --card:#ffffff;
+  --card2:#f8f6f2;
+  --gold:#9c6f28;
+  --gold-lt:#c89840;
+  --blue:#1e3a6e;
+  --teal:#0e6b6b;
+  --green:#1c7a3c;
+  --red:#b83232;
+  --purple:#5a3a8a;
+  --orange:#b85a18;
+  --text:#18160f;
+  --text2:#38352c;
+  --muted:#8c897e;
+  --b1:rgba(156,111,40,.16);
+  --b2:rgba(24,22,15,.07);
+  --shad:0 8px 40px rgba(24,22,15,.09),0 2px 8px rgba(24,22,15,.05)
+}
+html,body{width:100%;height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+body::before{content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 10% 15%,rgba(156,111,40,.06) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 85%,rgba(30,58,110,.05) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 60% at 85% 10%,rgba(14,107,107,.04) 0%,transparent 70%);
+  pointer-events:none;z-index:0}
+
+/* HEADER */
+header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;
+  align-items:center;padding:1rem 2rem;z-index:300;
+  border-bottom:1px solid var(--b2);
+  background:rgba(244,242,237,.93);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.logo{font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold);
+  letter-spacing:.04em;font-weight:700}
+.logo span{color:var(--text);font-weight:400;font-size:.85rem;font-family:'DM Mono',monospace}
+.counter{font-size:.58rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;
+  background:var(--bg2);padding:.28rem .65rem;border-radius:100px;border:1px solid var(--b2)}
+
+/* STAGE */
+.stage{position:relative;width:min(480px,96vw);
+  height:calc(100vh - 72px);max-height:750px;z-index:10}
+
+/* CARDS */
+.card{position:absolute;inset:0;background:var(--card);border-radius:28px;
+  border:1px solid rgba(24,22,15,.07);overflow:hidden;cursor:grab;
+  user-select:none;will-change:transform;display:flex;flex-direction:column;
+  box-shadow:var(--shad)}
+.card:active{cursor:grabbing}
+.card.s2{transform:translateY(16px) scale(.955);z-index:1;filter:brightness(.97);pointer-events:none}
+.card.s3{transform:translateY(30px) scale(.91);z-index:0;filter:brightness(.93);pointer-events:none}
+.card.top{z-index:10}
+.card.fl{animation:fl .4s cubic-bezier(.55,.06,.68,.19) forwards}
+.card.fr{animation:fr .4s cubic-bezier(.55,.06,.68,.19) forwards}
+@keyframes fl{to{transform:translateX(-150%) rotate(-30deg);opacity:0}}
+@keyframes fr{to{transform:translateX(150%) rotate(30deg);opacity:0}}
+@keyframes binAnim{
+  0%{transform:translateX(80px) rotate(12deg) scale(.85);opacity:0}
+  60%{transform:translateX(-8px) rotate(-2deg) scale(1.02);opacity:1}
+  100%{transform:none;opacity:1}}
+.card.bin{animation:binAnim .45s cubic-bezier(.175,.885,.32,1.275) forwards}
+
+/* INDICATORS */
+.ind{position:absolute;top:1.5rem;font-family:'Playfair Display',serif;
+  font-size:1rem;font-style:italic;border:2.5px solid;padding:.22rem .7rem;
+  border-radius:8px;opacity:0;transition:opacity .1s;pointer-events:none;z-index:30;font-weight:700}
+.ind.ok{right:1.5rem;color:var(--green);border-color:var(--green);transform:rotate(12deg)}
+.ind.no{left:1.5rem;color:var(--red);border-color:var(--red);transform:rotate(-12deg)}
+
+/* SCROLL */
+.cscroll{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;
+  scrollbar-color:var(--b2) transparent;-webkit-overflow-scrolling:touch}
+.cscroll::-webkit-scrollbar{width:4px}
+.cscroll::-webkit-scrollbar-thumb{background:var(--b2);border-radius:100px}
+.cp{padding:1.9rem 1.9rem 1.6rem}
+
+/* TYPOGRAPHY */
+.tag{font-size:.54rem;text-transform:uppercase;letter-spacing:.24em;color:var(--gold);
+  margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem}
+.tag::before{content:'';width:16px;height:1.5px;background:currentColor;display:inline-block;border-radius:2px}
+h2.ttl{font-family:'Playfair Display',serif;font-size:clamp(1.4rem,3.5vw,1.9rem);
+  line-height:1.12;margin-bottom:.3rem;color:var(--text);font-weight:700}
+.sub{font-family:'Cormorant Garamond',serif;font-size:1rem;font-style:italic;
+  color:var(--blue);font-weight:300;margin-bottom:1.3rem;letter-spacing:.01em}
+.hr{width:40px;height:2px;background:var(--b1);margin-bottom:1.2rem;border-radius:2px}
+p.body{font-size:.72rem;line-height:1.9;color:var(--text2);letter-spacing:.01em;margin-bottom:.85rem}
+p.body strong{color:var(--text);font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:.32rem;margin-top:.75rem}
+.pill{padding:.26rem .62rem;border:1.5px solid var(--b1);border-radius:100px;
+  font-size:.56rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;background:var(--bg2)}
+
+/* STRIPE */
+.stripe{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:28px 0 0 28px;z-index:5}
+
+/* HERO */
+.hero{width:100%;height:195px;position:relative;overflow:hidden;flex-shrink:0}
+.hero img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.hero-ov{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 18%,rgba(255,255,255,.97))}
+
+/* AVATAR */
+.av{border-radius:50%;border:3px solid var(--gold);overflow:hidden;flex-shrink:0;
+  background:linear-gradient(135deg,var(--blue),var(--gold));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;color:#fff;font-weight:700}
+.av img{width:100%;height:100%;object-fit:cover;object-position:center top}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.85rem}
+.sbox{background:var(--bg2);border:1.5px solid var(--b1);border-radius:14px;
+  padding:.85rem 1rem;transition:transform .2s,box-shadow .2s}
+.sbox:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(156,111,40,.1)}
+.snum{font-family:'Playfair Display',serif;font-size:1.55rem;color:var(--gold);line-height:1;font-weight:700}
+.slbl{font-size:.53rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:.22rem}
+
+/* SKILL BARS */
+.sklist{display:flex;flex-direction:column;gap:.85rem}
+.skrow{display:flex;flex-direction:column;gap:.32rem}
+.sklr{display:flex;justify-content:space-between;align-items:center}
+.sknm{font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;color:var(--text);
+  display:flex;align-items:center;gap:.4rem}
+.skpct{font-size:.57rem;color:var(--gold);font-weight:400}
+.sktrk{height:6px;background:var(--bg2);border-radius:100px;overflow:hidden;border:1px solid var(--b2)}
+.skfil{height:100%;border-radius:100px;width:0%;transition:width 1.1s cubic-bezier(.4,0,.2,1)}
+
+/* BAR CHART */
+.bwrap{margin-bottom:.9rem}
+.bttl{font-size:.56rem;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:.8rem}
+.bchart{display:flex;align-items:flex-end;gap:.4rem;height:90px}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:.28rem}
+.bbar{width:100%;border-radius:5px 5px 0 0;min-height:4px;
+  transition:height 1.1s cubic-bezier(.4,0,.2,1)}
+.bval{font-size:.46rem;color:var(--gold);font-weight:400}
+.blbl{font-size:.44rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+
+/* TIMELINE */
+.tl{display:flex;flex-direction:column;position:relative}
+.tl::before{content:'';position:absolute;left:19px;top:8px;bottom:8px;width:1.5px;
+  background:linear-gradient(to bottom,var(--gold),var(--blue),var(--teal),transparent)}
+.tli{display:flex;gap:.9rem;padding-bottom:1.1rem;position:relative}
+.tldot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:4px;
+  position:relative;z-index:2;border:2.5px solid var(--card);box-shadow:0 0 0 1px var(--b1)}
+.tlc{flex:1}
+.tlyr{font-size:.51rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.1rem}
+.tlro{font-size:.69rem;color:var(--text);margin-bottom:.06rem;font-weight:400}
+.tlco{font-size:.82rem;color:var(--gold);font-style:italic;font-family:'Cormorant Garamond',serif}
+.tldesc{font-size:.6rem;color:var(--muted);line-height:1.5;margin-top:.18rem}
+
+/* RADAR */
+.rwrap{display:flex;justify-content:center;margin:.3rem 0 .85rem}
+
+/* CERT CARD */
+.certrow{display:flex;flex-direction:column;gap:.55rem;margin-bottom:.85rem}
+.cert{display:flex;align-items:center;gap:.8rem;padding:.65rem .9rem;
+  border-radius:13px;border:1.5px solid var(--b1);background:var(--bg2)}
+.certbadge{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:1.1rem;flex-shrink:0}
+.certinfo{flex:1}
+.certnm{font-size:.64rem;color:var(--text);margin-bottom:.06rem}
+.certby{font-size:.55rem;color:var(--muted)}
+
+/* TOOLS GRID */
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem;margin-bottom:.85rem}
+.tool{background:var(--bg2);border:1.5px solid var(--b1);border-radius:12px;
+  padding:.65rem .5rem;text-align:center;transition:all .2s}
+.tool:hover{transform:translateY(-2px);background:#fff;box-shadow:0 4px 12px rgba(156,111,40,.1)}
+.tool-icon{font-size:1.3rem;margin-bottom:.3rem}
+.tool-name{font-size:.52rem;color:var(--text2);letter-spacing:.05em;text-transform:uppercase}
+
+/* SOCIAL */
+.slinks{display:flex;flex-direction:column;gap:.5rem}
+.slink{display:flex;align-items:center;gap:.8rem;padding:.7rem .9rem;
+  border-radius:14px;border:1.5px solid var(--b2);background:var(--bg2);
+  cursor:pointer;transition:all .22s;text-decoration:none}
+.slink:hover{border-color:var(--gold);background:#fff;
+  box-shadow:0 4px 16px rgba(156,111,40,.1);transform:translateX(5px)}
+.sico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sinf{flex:1}
+.snm{font-size:.64rem;color:var(--text);margin-bottom:.07rem}
+.shd{font-size:.54rem;color:var(--muted)}
+.sarr{font-size:.7rem;color:var(--muted)}
+
+/* CONTROLS */
+
+
+
+/* DONE */
+.done{display:none;flex-direction:column;align-items:center;text-align:center;gap:.9rem;padding:2rem}
+.done.vis{display:flex}
+.done h2{font-family:'Playfair Display',serif;font-size:2.1rem;color:var(--text);font-weight:700}
+.done h2 span{color:var(--gold)}
+.done p{color:var(--muted);font-size:.69rem;line-height:1.7;max-width:270px}
+.done button{margin-top:.4rem;padding:.6rem 1.9rem;border:2px solid var(--gold);background:transparent;
+  color:var(--gold);font-family:'DM Mono',monospace;font-size:.63rem;letter-spacing:.1em;
+  text-transform:uppercase;border-radius:100px;cursor:pointer;transition:all .22s}
+.done button:hover{background:var(--gold);color:#fff}
+
+/* WATERMARK */
+.wm{position:absolute;bottom:1rem;right:1.4rem;font-family:'Playfair Display',serif;
+  font-size:3.5rem;color:rgba(24,22,15,.03);line-height:1;font-weight:700;pointer-events:none}
+
+.badge-sm{display:inline-block;padding:.16rem .48rem;border-radius:100px;
+  font-size:.49rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid}
+
+/* ── SHARE FAB ── */
+.share-fab{position:fixed;bottom:5.8rem;right:1.3rem;
+  width:46px;height:46px;border-radius:50%;
+  background:var(--gold);color:#fff;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+  box-shadow:0 4px 18px rgba(156,111,40,.4);z-index:400;transition:all .22s;outline:none}
+.share-fab:hover{transform:scale(1.12);background:#7a5218}
+.share-fab .tip{position:absolute;right:54px;background:var(--text);color:#fff;
+  font-size:.54rem;letter-spacing:.08em;white-space:nowrap;padding:.28rem .6rem;
+  border-radius:6px;opacity:0;pointer-events:none;transition:opacity .2s;text-transform:uppercase}
+.share-fab:hover .tip{opacity:1}
+
+/* ── SHARE OVERLAY ── */
+.sov{position:fixed;inset:0;background:rgba(24,22,15,.42);backdrop-filter:blur(6px);
+  z-index:500;display:none;align-items:flex-end;justify-content:center}
+.sov.open{display:flex;animation:sfade .22s ease}
+@keyframes sfade{from{opacity:0}to{opacity:1}}
+.spanel{background:var(--card);border-radius:28px 28px 0 0;width:100%;max-width:500px;
+  padding-bottom:1.8rem;box-shadow:0 -8px 40px rgba(24,22,15,.15);
+  animation:sslide .3s cubic-bezier(.175,.885,.32,1.1)}
+@keyframes sslide{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.shandle{width:40px;height:4px;background:var(--b2);border-radius:100px;margin:1rem auto .75rem}
+.stitle{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;
+  color:var(--text);text-align:center;margin-bottom:.2rem}
+.ssub{font-size:.56rem;color:var(--muted);text-align:center;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:1.3rem}
+.sgrd{display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem;padding:0 1.4rem;margin-bottom:1.2rem}
+.sbtn{display:flex;flex-direction:column;align-items:center;gap:.4rem;cursor:pointer;transition:transform .18s}
+.sbtn:hover{transform:translateY(-3px)}
+.sbtn:hover .sico2{box-shadow:0 6px 20px rgba(0,0,0,.14)}
+.sico2{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;
+  justify-content:center;font-size:1.4rem;box-shadow:0 2px 10px rgba(0,0,0,.07);transition:box-shadow .18s}
+.slbl2{font-size:.52rem;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;
+  text-align:center;line-height:1.3}
+.sdiv{display:flex;align-items:center;gap:.6rem;padding:0 1.4rem;margin-bottom:1.1rem}
+.sdiv::before,.sdiv::after{content:'';flex:1;height:1px;background:var(--b2)}
+.sdiv span{font-size:.52rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.pdfrow{padding:0 1.4rem}
+.pdfcard{background:var(--bg2);border:1.5px solid var(--b1);border-radius:15px;
+  padding:.9rem 1rem;cursor:pointer;transition:all .22s}
+.pdfcard:hover{background:#fff;box-shadow:0 4px 16px rgba(156,111,40,.12)}
+.pdfhead{display:flex;align-items:center;gap:.85rem;margin-bottom:.8rem}
+.pdficon{width:42px;height:42px;border-radius:11px;
+  background:linear-gradient(135deg,#c0392b,#e74c3c);
+  display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}
+.pdftitle{font-size:.68rem;color:var(--text);margin-bottom:.07rem}
+.pdfsub{font-size:.55rem;color:var(--muted)}
+.pdfbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.45rem}
+.pdfbtn{display:flex;align-items:center;justify-content:center;gap:.35rem;
+  padding:.5rem .4rem;border-radius:9px;border:1.5px solid var(--b1);
+  font-size:.57rem;color:var(--text2);cursor:pointer;transition:all .2s;
+  background:var(--card);text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace}
+.pdfbtn:hover{border-color:var(--gold);background:rgba(156,111,40,.06);color:var(--gold)}
+.sclose{display:block;margin:1.1rem auto 0;background:transparent;
+  border:1.5px solid var(--b2);color:var(--muted);font-family:'DM Mono',monospace;
+  font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;
+  padding:.48rem 1.6rem;border-radius:100px;cursor:pointer;transition:all .2s}
+.sclose:hover{border-color:var(--red);color:var(--red)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--text);color:#fff;font-size:.6rem;letter-spacing:.08em;
+  padding:.55rem 1.1rem;border-radius:100px;z-index:700;
+  opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Tarkesh <span>· Portfolio</span></div>
+  <div class="counter" id="ctr">01 / 10</div>
+</header>
+
+<div class="stage" id="stage"></div>
+
+<div class="done" id="done">
+  <div style="font-size:3rem;margin-bottom:.3rem">🏆</div>
+  <h2>18 Years of <span>Excellence</span></h2>
+  <p>From Data Engineer to Test Manager — a journey of leadership, quality & analytics. Let's connect!</p>
+  <button onclick="resetAll()">↩ Explore Again</button>
+</div>
+
+
+
+
+<script>
+/* ── RADAR MATH ── */
+function poly(cx,cy,r,n=6){
+  return Array.from({length:n},(_,i)=>{
+    const a=(i*(360/n)-90)*Math.PI/180;
+    return (cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1);
+  }).join(' ');
+}
+function radarPath(cx,cy,r,vals){
+  return vals.map((v,i)=>{
+    const n=vals.length,a=(i*(360/n)-90)*Math.PI/180,rv=r*v/100;
+    return (cx+rv*Math.cos(a)).toFixed(1)+','+(cy+rv*Math.sin(a)).toFixed(1);
+  }).join(' ');
+}
+function axisLines(cx,cy,r,n=6){
+  return Array.from({length:n},(_,i)=>{
+    const a=(i*(360/n)-90)*Math.PI/180;
+    return [cx+r*Math.cos(a),cy+r*Math.sin(a)];
+  });
+}
+
+const CARDS=[
+
+/* ─── 1: PROFILE ─── */
+{stripe:'#1e3a6e', render:()=>`
+<div class="hero">
+  <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=900&q=85" alt="Tarkesh - Professional"/>
+  <div class="hero-ov"></div>
+  <div style="position:absolute;bottom:.85rem;right:1rem;z-index:2">
+    <span class="badge-sm" style="background:rgba(28,122,60,.1);color:#1c7a3c;border-color:rgba(28,122,60,.3)">● Open to Opportunities</span>
+  </div>
+</div>
+<div class="cscroll"><div class="cp">
+  <div style="display:flex;align-items:center;gap:1rem;margin-top:-2.1rem;position:relative;z-index:2;margin-bottom:1.2rem">
+    <div class="av" style="width:66px;height:66px;font-size:1.5rem">
+      <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=85" alt="Tarkesh" onerror="this.style.display='none'"/>
+    </div>
+    <div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.45rem;font-weight:700;color:var(--text)">Tarkesh</div>
+      <div style="font-size:.56rem;color:var(--muted);letter-spacing:.07em;margin-top:.15rem">Test Manager · Data Analytics · Quality SDM</div>
+      <div style="font-size:.52rem;color:var(--muted);margin-top:.1rem">📍 India &nbsp;·&nbsp; 18+ Years Experience</div>
+    </div>
+  </div>
+  <div class="tag">Profile Summary</div>
+  <p class="body">A seasoned <strong>Test Manager & Quality SDM</strong> with 18+ years spanning data engineering, analytics, module leadership, and enterprise quality management. Passionate about building <strong>robust data pipelines</strong>, driving <strong>zero-defect delivery</strong>, and leading high-performance testing teams.</p>
+  <div class="pills">
+    <span class="pill">🎯 Test Manager</span>
+    <span class="pill">📊 Data Analytics</span>
+    <span class="pill">🏆 Quality SDM</span>
+    <span class="pill">👥 Team Leader</span>
+  </div>
+  <div class="sgrid" style="margin-top:1.1rem">
+    <div class="sbox"><div class="snum">18+</div><div class="slbl">Years Exp</div></div>
+    <div class="sbox"><div class="snum">50+</div><div class="slbl">Projects Delivered</div></div>
+    <div class="sbox"><div class="snum">200+</div><div class="slbl">Team Members Led</div></div>
+    <div class="sbox"><div class="snum">99.2%</div><div class="slbl">Delivery Quality</div></div>
+  </div>
+</div></div>`},
+
+/* ─── 2: CAREER TIMELINE ─── */
+{stripe:'#9c6f28', render:()=>`
+<div class="cscroll"><div class="cp" style="padding-top:2.2rem">
+  <div class="tag">Career Journey</div>
+  <h2 class="ttl">18 Years of Growth</h2>
+  <div class="sub">From Data Engineer to Test Manager</div>
+  <div class="hr"></div>
+  <div class="tl">
+    <div class="tli">
+      <div class="tldot" style="background:#0e6b6b"></div>
+      <div class="tlc">
+        <div class="tlyr">2007 – 2010</div>
+        <div class="tlro">Data Engineer</div>
+        <div class="tlco">Foundation Years</div>
+        <div class="tldesc">Built ETL pipelines, data warehouses & analytics reporting systems. SQL, Oracle, UNIX scripting.</div>
+      </div>
+    </div>
+    <div class="tli">
+      <div class="tldot" style="background:#1e3a6e"></div>
+      <div class="tlc">
+        <div class="tlyr">2010 – 2013</div>
+        <div class="tlro">Module Lead</div>
+        <div class="tlco">Technical Leadership</div>
+        <div class="tldesc">Led data modules for BI platforms. Mentored junior engineers, designed test strategies for data quality.</div>
+      </div>
+    </div>
+    <div class="tli">
+      <div class="tldot" style="background:#9c6f28"></div>
+      <div class="tlc">
+        <div class="tlyr">2013 – 2017</div>
+        <div class="tlro">Project Lead</div>
+        <div class="tlco">Delivery Excellence</div>
+        <div class="tldesc">Managed cross-functional analytics projects. Introduced automation testing frameworks across data pipelines.</div>
+      </div>
+    </div>
+    <div class="tli">
+      <div class="tldot" style="background:#5a3a8a"></div>
+      <div class="tlc">
+        <div class="tlyr">2017 – 2021</div>
+        <div class="tlro">Project Manager</div>
+        <div class="tlco">Enterprise Scale</div>
+        <div class="tldesc">Governed large-scale analytics programs. P&amp;L ownership, stakeholder management, agile delivery governance.</div>
+      </div>
+    </div>
+    <div class="tli">
+      <div class="tldot" style="background:#b83232"></div>
+      <div class="tlc">
+        <div class="tlyr">2021 – 2024</div>
+        <div class="tlro">Quality SDM</div>
+        <div class="tlco">Quality at Scale</div>
+        <div class="tldesc">Built QA CoE, drove shift-left testing, automated 70% of regression suites across data analytics platforms.</div>
+      </div>
+    </div>
+    <div class="tli">
+      <div class="tldot" style="background:#9c6f28;box-shadow:0 0 0 3px rgba(156,111,40,.25)"></div>
+      <div class="tlc">
+        <div class="tlyr">2025 – Present</div>
+        <div class="tlro">Test Manager</div>
+        <div class="tlco">Current Role ✦</div>
+        <div class="tldesc">Strategic test leadership, AI-augmented testing, analytics platform QA governance for enterprise clients.</div>
+      </div>
+    </div>
+  </div>
+</div></div>`},
+
+/* ─── 3: SKILLS ─── */
+{stripe:'#0e6b6b', render:()=>`
+<div class="cscroll"><div class="cp" style="padding-top:2.2rem">
+  <div class="tag" style="color:var(--teal)">Technical Skills</div>
+  <h2 class="ttl">Core Competencies</h2>
+  <div class="sub">Data Analytics · Testing · Quality Engineering</div>
+  <div class="hr"></div>
+  <div class="sklist">
+    ${[
+      ['Data Analytics & BI','#1e3a6e',93,'linear-gradient(90deg,#1e3a6e,#3a6eb8)'],
+      ['Test Strategy & Planning','#9c6f28',97,'linear-gradient(90deg,#9c6f28,#c89840)'],
+      ['ETL & Data Pipeline Testing','#0e6b6b',90,'linear-gradient(90deg,#0e6b6b,#1aabad)'],
+      ['Test Automation Frameworks','#5a3a8a',85,'linear-gradient(90deg,#5a3a8a,#8a6ab8)'],
+      ['Quality Governance & CoE','#b83232',88,'linear-gradient(90deg,#b83232,#e05555)'],
+      ['Agile / SAFe Delivery','#b85a18',82,'linear-gradient(90deg,#b85a18,#e08030)'],
+    ].map(([nm,cl,pct,grad])=>`
+    <div class="skrow">
+      <div class="sklr">
+        <div class="sknm" style="color:var(--text)">${nm}</div>
+        <div class="skpct" style="color:${cl}">${pct}%</div>
+      </div>
+      <div class="sktrk"><div class="skfil" data-p="${pct}" style="background:${grad}"></div></div>
+    </div>`).join('')}
+  </div>
+  <div class="pills" style="margin-top:1rem">
+    <span class="pill">SQL Expert</span><span class="pill">Python</span>
+    <span class="pill">Selenium</span><span class="pill">Informatica</span>
+    <span class="pill">JIRA</span><span class="pill">Tableau</span>
+  </div>
+</div></div>`},
+
+/* ─── 4: DATA ANALYTICS WORK ─── */
+{stripe:'#1e3a6e', render:()=>`
+<div class="hero">
+  <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&q=80" alt="Data Analytics Dashboard"/>
+  <div class="hero-ov"></div>
+  <div style="position:absolute;top:.8rem;right:.9rem;z-index:2">
+    <span class="badge-sm" style="background:rgba(30,58,110,.1);color:#1e3a6e;border-color:rgba(30,58,110,.3)">Data Analytics</span>
+  </div>
+</div>
+<div class="cscroll"><div class="cp">
+  <div class="tag" style="color:var(--blue)">Featured Domain</div>
+  <h2 class="ttl">Data Analytics & BI</h2>
+  <div class="sub">Testing intelligence across the data stack</div>
+  <div class="hr"></div>
+  <p class="body">Designed and executed comprehensive <strong>data quality testing frameworks</strong> for enterprise BI platforms. Validated ETL pipelines, data marts, and real-time streaming analytics serving <strong>Fortune 500 clients</strong>.</p>
+  <div class="sgrid">
+    <div class="sbox"><div class="snum">15+</div><div class="slbl">BI Projects</div></div>
+    <div class="sbox"><div class="snum">5TB+</div><div class="slbl">Data Validated</div></div>
+    <div class="sbox"><div class="snum">99.8%</div><div class="slbl">Data Accuracy</div></div>
+    <div class="sbox"><div class="snum">40%</div><div class="slbl">Defect Reduction</div></div>
+  </div>
+  <div class="pills">
+    <span class="pill">Tableau Testing</span><span class="pill">Power BI</span>
+    <span class="pill">Informatica</span><span class="pill">SSIS</span>
+    <span class="pill">Snowflake</span><span class="pill">Oracle DW</span>
+  </div>
+</div></div>`},
+
+/* ─── 5: TOOLS ECOSYSTEM ─── */
+{stripe:'#5a3a8a', render:()=>`
+<div class="cscroll"><div class="cp" style="padding-top:2.2rem">
+  <div class="tag" style="color:var(--purple)">Tools & Technologies</div>
+  <h2 class="ttl">Testing Ecosystem</h2>
+  <div class="sub">Tools mastered across 18 years</div>
+  <div class="hr"></div>
+  <div class="tools">
+    ${[
+      ['🗄️','SQL / Oracle','Database'],
+      ['🐍','Python','Scripting'],
+      ['🔬','Selenium','Automation'],
+      ['📊','Tableau','Analytics'],
+      ['🔄','Informatica','ETL'],
+      ['📋','JIRA / Zephyr','Management'],
+      ['☁️','Snowflake','Cloud DW'],
+      ['⚡','Apache Spark','Big Data'],
+      ['🏗️','Jenkins / CI','DevOps'],
+      ['📈','Power BI','Reporting'],
+      ['🤖','UFT / QTP','Legacy Auto'],
+      ['🔗','REST APIs','Integration'],
+    ].map(([ic,nm,cat])=>`
+    <div class="tool">
+      <div class="tool-icon">${ic}</div>
+      <div class="tool-name">${nm}</div>
+      <div style="font-size:.44rem;color:var(--muted);margin-top:.18rem;text-transform:uppercase;letter-spacing:.05em">${cat}</div>
+    </div>`).join('')}
+  </div>
+  <p class="body">Proficient in both <strong>legacy enterprise tools</strong> and modern cloud-native testing frameworks for big data and streaming analytics.</p>
+</div></div>`},
+
+/* ─── 6: QUALITY SDM / TESTING LEADERSHIP BAR CHART ─── */
+{stripe:'#b83232', render:()=>`
+<div class="cscroll"><div class="cp" style="padding-top:2.2rem">
+  <div class="tag" style="color:var(--red)">Quality Metrics</div>
+  <h2 class="ttl">Testing Impact</h2>
+  <div class="sub">Key metrics across leadership roles</div>
+  <div class="hr"></div>
+  <div class="bwrap">
+    <div class="bttl">Defect Detection Rate (%) by Year Band</div>
+    <div class="bchart">
+      ${[['2007',72,72],['2010',80,80],['2013',87,87],['2017',91,91],['2021',96,96],['2025',99,99]].map(([l,v,p])=>`
+      <div class="bcol">
+        <div class="bval">${v}%</div>
+        <div class="bbar" data-p="${p}" style="background:linear-gradient(to top,#b83232,rgba(184,50,50,.3))"></div>
+        <div class="blbl">${l}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+  <div class="sgrid">
+    <div class="sbox"><div class="snum">70%</div><div class="slbl">Automation Coverage</div></div>
+    <div class="sbox"><div class="snum">3×</div><div class="slbl">Faster Release Cycles</div></div>
+    <div class="sbox"><div class="snum">₹2Cr+</div><div class="slbl">Cost Saved via QA</div></div>
+    <div class="sbox"><div class="snum">0</div><div class="slbl">P1 Prod Escapes (2024)</div></div>
+  </div>
+  <div class="pills">
+    <span class="pill">🏆 QA CoE Builder</span>
+    <span class="pill">🔄 Shift-Left Champion</span>
+  </div>
+</div></div>`},
+
+/* ─── 7: RADAR — LEADERSHIP ─── */
+{stripe:'#1c7a3c', render:()=>`
+<div class="cscroll"><div class="cp" style="padding-top:2.2rem">
+  <div class="tag" style="color:var(--green)">Leadership Profile</div>
+  <h2 class="ttl">Leadership Strengths</h2>
+  <div class="sub">Attributes built over 18 years of leading teams</div>
+  <div class="hr"></div>
+  <div class="rwrap">
+    <svg viewBox="0 0 220 200" width="220" height="200">
+      ${[20,40,60,80,100].map(r=>`<polygon points="${poly(110,100,r)}" fill="none" stroke="rgba(24,22,15,.07)" stroke-width="1.2"/>`).join('')}
+      ${axisLines(110,100,100).map(([x,y])=>`<line x1="110" y1="100" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(24,22,15,.06)" stroke-width="1"/>`).join('')}
+      <polygon points="${radarPath(110,100,100,[96,92,94,88,90,95])}" fill="rgba(28,122,60,.1)" stroke="#1c7a3c" stroke-width="2"/>
+      ${radarPath(110,100,100,[96,92,94,88,90,95]).split(' ').map(p=>`<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="3.5" fill="#1c7a3c"/>`).join('')}
+      ${[[110,5,'Test Strategy'],[205,57,'Stakeholder Mgmt'],[190,170,'Team Building'],[30,170,'Risk Management'],[15,57,'Quality Governance'],[48,5,'Agile Delivery']].map(([x,y,l])=>`<text x="${x}" y="${y}" text-anchor="middle" fill="#8c897e" font-size="7.8" font-family="DM Mono,monospace">${l}</text>`).join('')}
+    </svg>
+  </div>
+  <p class="body">Consistently recognized for <strong>strategic test leadership</strong>, ability to build quality culture, and delivering measurable business outcomes through structured QA governance.</p>
+  <div class="pills">
+    <span class="pill">👥 200+ People Led</span>
+    <span class="pill">🎯 OKR Driver</span>
+    <span class="pill">📣 Executive Presenter</span>
+  </div>
+</div></div>`},
+
+/* ─── 8: CERTIFICATIONS ─── */
+{stripe:'#b85a18', render:()=>`
+<div class="cscroll"><div class="cp" style="padding-top:2.2rem">
+  <div class="tag" style="color:var(--orange)">Certifications & Education</div>
+  <h2 class="ttl">Credentials</h2>
+  <div class="sub">Continuous learning across two decades</div>
+  <div class="hr"></div>
+  <div class="certrow">
+    ${[
+      ['🏅','ISTQB Certified Tester — Advanced Level (Test Manager)','ISTQB · 2019'],
+      ['📊','Certified Analytics Professional (CAP)','INFORMS · 2016'],
+      ['☁️','AWS Certified Cloud Practitioner','Amazon Web Services · 2022'],
+      ['🤖','Certified SAFe 5 Agilist','Scaled Agile Inc. · 2021'],
+      ['🔬','Selenium WebDriver Automation Expert','Udemy / Industry · 2015'],
+      ['🎓','B.E. Computer Science','Respected University · 2007'],
+    ].map(([ic,nm,by])=>`
+    <div class="cert">
+      <div class="certbadge" style="background:var(--bg)">${ic}</div>
+      <div class="certinfo">
+        <div class="certnm">${nm}</div>
+        <div class="certby">${by}</div>
+      </div>
+    </div>`).join('')}
+  </div>
+</div></div>`},
+
+/* ─── 9: CURRENT ROLE ─── */
+{stripe:'#9c6f28', render:()=>`
+<div class="hero">
+  <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&q=80" alt="Leadership meeting"/>
+  <div class="hero-ov"></div>
+  <div style="position:absolute;top:.8rem;right:.9rem;z-index:2">
+    <span class="badge-sm" style="background:rgba(156,111,40,.12);color:#9c6f28;border-color:rgba(156,111,40,.35)">2025 · Current</span>
+  </div>
+</div>
+<div class="cscroll"><div class="cp">
+  <div class="tag">Current Role</div>
+  <h2 class="ttl">Test Manager</h2>
+  <div class="sub">Enterprise Quality & Analytics Testing Leadership · 2025</div>
+  <div class="hr"></div>
+  <p class="body">Leading strategic QA for <strong>large-scale data analytics platforms</strong> across multiple enterprise clients. Driving AI-augmented testing adoption, test observability dashboards, and quality engineering culture across distributed teams.</p>
+  <div class="sgrid">
+    <div class="sbox"><div class="snum">12</div><div class="slbl">Direct Reports</div></div>
+    <div class="sbox"><div class="snum">5</div><div class="slbl">Client Portfolios</div></div>
+    <div class="sbox"><div class="snum">100%</div><div class="slbl">On-time Delivery</div></div>
+    <div class="sbox"><div class="snum">AI+</div><div class="slbl">Testing Adoption</div></div>
+  </div>
+  <div class="pills">
+    <span class="pill">🤖 AI-Augmented QA</span>
+    <span class="pill">📊 Test Observability</span>
+    <span class="pill">🏗️ QA CoE</span>
+    <span class="pill">🔄 DevTestOps</span>
+  </div>
+</div></div>`},
+
+/* ─── 10: CONTACT ─── */
+{stripe:'#1e3a6e', render:()=>`
+<div class="cscroll"><div class="cp" style="padding-top:2.2rem">
+  <div class="tag">Let's Connect</div>
+  <h2 class="ttl">Find Tarkesh Online</h2>
+  <div class="sub">Open to leadership & consulting opportunities</div>
+  <div class="hr"></div>
+  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.3rem;padding:1rem;background:var(--bg2);border-radius:14px;border:1.5px solid var(--b1)">
+    <div class="av" style="width:54px;height:54px;font-size:1.2rem;flex-shrink:0">
+      <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=85" alt="Tarkesh" onerror="this.style.display='none'"/>
+    </div>
+    <div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--text)">Tarkesh</div>
+      <div style="font-size:.57rem;color:var(--muted);margin-top:.12rem">Test Manager · Quality SDM · 18+ Yrs</div>
+      <div style="font-size:.54rem;color:var(--teal);margin-top:.1rem">● Open to Senior Leadership Roles</div>
+    </div>
+  </div>
+  <div class="slinks">
+    ${[
+      ['📧','Email','tarkesh@example.com','mailto:tarkesh@example.com','rgba(156,111,40,.1)'],
+      ['💼','LinkedIn','linkedin.com/in/tarkesh','https://linkedin.com','rgba(0,119,181,.1)'],
+      ['🐙','GitHub','github.com/tarkesh-qa','https://github.com','rgba(36,41,46,.07)'],
+      ['📊','Portfolio','tarkesh-analytics.dev','https://example.com','rgba(14,107,107,.08)'],
+      ['📞','Phone','+91 98xxx xxxxx','tel:+91','rgba(28,122,60,.08)'],
+      ['📄','Resume','Download Full CV','https://example.com','rgba(90,58,138,.08)'],
+    ].map(([ic,nm,hd,url,bg])=>`
+    <div class="slink" onclick="window.open('${url}','_blank')">
+      <div class="sico" style="background:${bg};font-size:1rem">${ic}</div>
+      <div class="sinf">
+        <div class="snm">${nm}</div>
+        <div class="shd">${hd}</div>
+      </div>
+      <div class="sarr">↗</div>
+    </div>`).join('')}
+  </div>
+</div></div>`},
+
+];/* end CARDS */
+
+/* ── STATE ── */
+let cur=0,hist=[],dragging=false,swiping=false,sx=0,sy=0,dx=0;
+
+function buildCard(data,cls){
+  const el=document.createElement('div');
+  el.className='card '+cls;
+  if(data.stripe){
+    const s=document.createElement('div');
+    s.className='stripe';s.style.background=data.stripe;el.appendChild(s);
+  }
+  el.insertAdjacentHTML('beforeend','<div class="ind ok">Next ✓</div><div class="ind no">← Skip</div>');
+  el.insertAdjacentHTML('beforeend',data.render());
+  const n=CARDS.indexOf(data)+1;
+  el.insertAdjacentHTML('beforeend',`<div class="wm">${String(n).padStart(2,'0')}</div>`);
+  return el;
+}
+
+function render(bounce=false){
+  const stage=document.getElementById('stage');
+  stage.innerHTML='';
+  const rem=CARDS.slice(cur);
+  if(!rem.length){showDone();return;}
+  const show=rem.slice(0,3).reverse();
+  show.forEach((d,i)=>{
+    const ri=show.length-1-i;
+    let cls=ri===0?('top'+(bounce?' bin':'')):ri===1?'s2':'s3';
+    stage.appendChild(buildCard(d,cls));
+  });
+  updateUI();
+  setTimeout(animateActive,140);
+  if(!bounce)setupDrag(stage.querySelector('.card.top'));
+  else setTimeout(()=>setupDrag(stage.querySelector('.card.top')),460);
+}
+
+function animateActive(){
+  document.querySelectorAll('.skfil').forEach(el=>{el.style.width=el.dataset.p+'%'});
+  document.querySelectorAll('.bbar').forEach(el=>{el.style.height=(84*el.dataset.p/100)+'px'});
+}
+
+function updateUI(){
+  document.getElementById('ctr').textContent=String(cur+1).padStart(2,'0')+' / '+String(CARDS.length).padStart(2,'0');
+}
+
+function swipe(dir){
+  if(swiping)return;
+  const top=document.querySelector('.card.top');
+  if(!top)return;
+  swiping=true;hist.push(cur);
+  top.classList.add(dir==='r'?'fr':'fl');
+  setTimeout(()=>{cur++;swiping=false;render();},400);
+}
+
+function goBack(){
+  if(swiping||!hist.length)return;
+  swiping=true;
+  const done=document.getElementById('done');
+  if(done.classList.contains('vis')){
+    done.classList.remove('vis');
+    document.getElementById('stage').style.display='block';
+  }
+  cur=hist.pop();render(true);
+  setTimeout(()=>{swiping=false;},470);
+}
+
+function showDone(){
+  document.getElementById('done').classList.add('vis');
+  document.getElementById('stage').style.display='none';
+}
+
+function resetAll(){
+  cur=0;hist=[];swiping=false;
+  document.getElementById('done').classList.remove('vis');
+  document.getElementById('stage').style.display='block';
+  render();
+}
+
+function setupDrag(card){
+  if(!card)return;
+  const ok=card.querySelector('.ind.ok'),no=card.querySelector('.ind.no');
+  function onStart(e){
+    if(swiping)return;
+    dragging=true;
+    sx=e.touches?e.touches[0].clientX:e.clientX;
+    sy=e.touches?e.touches[0].clientY:e.clientY;
+    dx=0;card.style.transition='none';
+  }
+  function onMove(e){
+    if(!dragging)return;
+    const cx=e.touches?e.touches[0].clientX:e.clientX;
+    const cy=e.touches?e.touches[0].clientY:e.clientY;
+    dx=cx-sx;const dy=cy-sy;
+    if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dx)<12)return;
+    card.style.transform=`translate(${dx}px,${(dy*.25).toFixed(1)}px) rotate(${(dx*.07).toFixed(2)}deg)`;
+    const r=Math.min(Math.abs(dx)/85,1);
+    if(dx>12){ok.style.opacity=r;no.style.opacity=0;}
+    else if(dx<-12){no.style.opacity=r;ok.style.opacity=0;}
+    else{ok.style.opacity=0;no.style.opacity=0;}
+  }
+  function onEnd(){
+    if(!dragging)return;
+    dragging=false;ok.style.opacity=0;no.style.opacity=0;
+    if(Math.abs(dx)>85&&!swiping){swipe(dx>0?'r':'l');}
+    else{card.style.transition='transform .45s cubic-bezier(.175,.885,.32,1.275)';card.style.transform='';}
+    dx=0;
+  }
+  card.addEventListener('mousedown',onStart);
+  card.addEventListener('touchstart',onStart,{passive:true});
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('touchmove',onMove,{passive:true});
+  document.addEventListener('mouseup',onEnd);
+  document.addEventListener('touchend',onEnd);
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight')swipe('r');
+  if(e.key==='ArrowLeft'||e.key==='Backspace')goBack();
+});
+
+render();
+</script>
+
+<!-- SHARE FAB -->
+<button class="share-fab" onclick="openShare()" title="Share Portfolio">
+  <span class="tip">Share</span>
+  🔗
+</button>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SHARE OVERLAY -->
+<div class="sov" id="sov" onclick="handleOverlayClick(event)">
+  <div class="spanel" id="spanel">
+    <div class="shandle"></div>
+    <div class="stitle">Share Tarkesh's Portfolio</div>
+    <div class="ssub">Choose how to share</div>
+
+    <div class="sgrd">
+      <!-- WhatsApp -->
+      <div class="sbtn" onclick="shareWhatsApp()">
+        <div class="sico2" style="background:linear-gradient(135deg,#25d366,#128c3e)">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="white">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.559 4.122 1.533 5.854L.057 23.857a.5.5 0 00.614.612l6.094-1.597A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.88 9.88 0 01-5.032-1.376l-.36-.214-3.733.979.995-3.64-.235-.374A9.86 9.86 0 012.1 12C2.1 6.534 6.534 2.1 12 2.1S21.9 6.534 21.9 12 17.466 21.9 12 21.9z"/>
+          </svg>
+        </div>
+        <div class="slbl2">WhatsApp</div>
+      </div>
+
+      <!-- Email -->
+      <div class="sbtn" onclick="shareEmail()">
+        <div class="sico2" style="background:linear-gradient(135deg,#ea4335,#c0392b)">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="1.8">
+            <rect x="2" y="4" width="20" height="16" rx="3"/>
+            <polyline points="2,4 12,14 22,4"/>
+          </svg>
+        </div>
+        <div class="slbl2">Email</div>
+      </div>
+
+      <!-- Copy Link -->
+      <div class="sbtn" onclick="copyLink()">
+        <div class="sico2" style="background:linear-gradient(135deg,#3a4db8,#1e3a6e)">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="1.8">
+            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+          </svg>
+        </div>
+        <div class="slbl2">Copy Link</div>
+      </div>
+
+      <!-- Download HTML -->
+      <div class="sbtn" onclick="downloadHTML()">
+        <div class="sico2" style="background:linear-gradient(135deg,#9c6f28,#c89840)">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="1.8">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7,10 12,15 17,10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <div class="slbl2">HTML File</div>
+      </div>
+    </div>
+
+    <div class="sdiv"><span>PDF Portfolio</span></div>
+
+    <div class="pdfrow">
+      <div class="pdfcard">
+        <div class="pdfhead">
+          <div class="pdficon">📄</div>
+          <div>
+            <div class="pdftitle">Download as PDF</div>
+            <div class="pdfsub">Print-ready · All 10 portfolio cards · A4 format</div>
+          </div>
+        </div>
+        <div class="pdfbtns">
+          <div class="pdfbtn" onclick="downloadPDF()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Save PDF
+          </div>
+          <div class="pdfbtn" onclick="pdfThenWhatsApp()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.559 4.122 1.533 5.854L.057 23.857a.5.5 0 00.614.612l6.094-1.597A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.88 9.88 0 01-5.032-1.376l-.36-.214-3.733.979.995-3.64-.235-.374A9.86 9.86 0 012.1 12C2.1 6.534 6.534 2.1 12 2.1S21.9 6.534 21.9 12 17.466 21.9 12 21.9z"/></svg>
+            PDF + WA
+          </div>
+          <div class="pdfbtn" onclick="pdfThenEmail()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#ea4335" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="3"/><polyline points="2,4 12,14 22,4"/></svg>
+            PDF + Mail
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="sclose" onclick="closeShare()">✕ Close</button>
+  </div>
+</div>
+
+<!-- PRINT STYLES for PDF -->
+<style>
+@media print{
+  .share-fab,.hint,header,.sov,.toast{display:none!important}
+  html,body{overflow:visible!important;height:auto!important;background:#fff!important}
+  .stage{position:relative!important;height:auto!important;max-height:none!important;
+    width:100%!important;display:block!important;page-break-after:always}
+  .card{position:relative!important;height:auto!important;page-break-after:always;
+    box-shadow:none!important;border:1px solid #ddd!important;
+    break-inside:avoid;display:flex!important}
+  .card.s2,.card.s3{display:none!important}
+  .cscroll{overflow:visible!important;height:auto!important}
+  #done{display:none!important}
+  body::before{display:none!important}
+}
+</style>
+
+<script>
+/* ── SHARE FUNCTIONS ── */
+const PORTFOLIO_URL = window.location.href;
+const SHARE_TEXT = "Check out Tarkesh's impressive 18-year journey in Data Analytics & Testing — from Data Engineer to Test Manager! 🏆📊";
+const WHATSAPP_MSG = encodeURIComponent(SHARE_TEXT + "\n\n" + PORTFOLIO_URL);
+const EMAIL_SUBJECT = encodeURIComponent("Tarkesh's Portfolio — Data Analytics & Test Leadership");
+const EMAIL_BODY = encodeURIComponent(SHARE_TEXT + "\n\nView Portfolio: " + PORTFOLIO_URL + "\n\nHighlights:\n• 18+ Years in Data Analytics & Testing\n• Test Manager | Quality SDM | Project Manager\n• ISTQB Advanced Certified\n• Led 200+ professionals across enterprise projects");
+
+function openShare(){ document.getElementById('sov').classList.add('open'); }
+function closeShare(){ document.getElementById('sov').classList.remove('open'); }
+function handleOverlayClick(e){
+  if(e.target===document.getElementById('sov')) closeShare();
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function shareWhatsApp(){
+  window.open('https://wa.me/?text='+WHATSAPP_MSG,'_blank');
+  showToast('Opening WhatsApp... 💬');
+  closeShare();
+}
+
+function shareEmail(){
+  window.location.href='mailto:?subject='+EMAIL_SUBJECT+'&body='+EMAIL_BODY;
+  showToast('Opening Email Client... 📧');
+  closeShare();
+}
+
+function copyLink(){
+  const txt = PORTFOLIO_URL !== 'about:blank' && !PORTFOLIO_URL.startsWith('blob')
+    ? PORTFOLIO_URL
+    : 'https://tarkesh-portfolio.dev (Host this file to get a shareable link)';
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=>{
+      showToast('Link copied to clipboard! 🔗');
+    }).catch(()=>fallbackCopy(txt));
+  } else { fallbackCopy(txt); }
+  closeShare();
+}
+function fallbackCopy(txt){
+  const ta=document.createElement('textarea');
+  ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); showToast('Link copied! 🔗'); }
+  catch(e){ showToast('Copy the URL from your browser bar'); }
+  document.body.removeChild(ta);
+}
+
+function downloadHTML(){
+  const blob=new Blob([document.documentElement.outerHTML],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Tarkesh_Portfolio.html';
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('HTML file downloaded! 📁');
+  closeShare();
+}
+
+function downloadPDF(){
+  showToast('Opening print dialog — select Save as PDF 🖨️');
+  closeShare();
+  setTimeout(()=>{ window.print(); }, 600);
+}
+
+function pdfThenWhatsApp(){
+  showToast('1) Save PDF → 2) Opening WhatsApp to share 💬');
+  closeShare();
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      window.open('https://wa.me/?text='+encodeURIComponent(SHARE_TEXT + "\n\nPlease find Tarkesh's Portfolio PDF attached. View online: " + PORTFOLIO_URL),'_blank');
+    }, 1200);
+  }, 500);
+}
+
+function pdfThenEmail(){
+  showToast('1) Save PDF → 2) Opening Email to share 📧');
+  closeShare();
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      const body = encodeURIComponent("Hi,\n\nPlease find attached Tarkesh's Portfolio PDF.\n\n" + SHARE_TEXT + "\n\nView online: " + PORTFOLIO_URL + "\n\nBest regards");
+      window.location.href='mailto:?subject='+EMAIL_SUBJECT+'&body='+body;
+    }, 1200);
+  }, 500);
+}
+</script>
+
+</body>
+</html>

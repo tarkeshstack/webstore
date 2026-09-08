@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+  :root{
+    --paper: #F7F4ED;
+    --paper-dim: #EFEADC;
+    --ink: #1F3A5F;
+    --ink-soft: #45607F;
+    --stamp: #B23A2E;
+    --graphite: #55524C;
+    --gold: #C9A227;
+    --line: #DDD6C7;
+    --radius: 2px;
+  }
+
+  * { box-sizing: border-box; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before{
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.012) 0px, rgba(0,0,0,0.012) 1px, transparent 1px, transparent 3px);
+    opacity: 0.6;
+    z-index: 0;
+  }
+
+  a { color: inherit; }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 32px 0 0;
+  }
+
+  .wordmark {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+  .wordmark em { font-style: italic; color: var(--stamp); }
+
+  .top-note {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--graphite);
+    letter-spacing: 0.02em;
+    text-align: right;
+  }
+
+  .hero {
+    padding: 56px 0 36px;
+  }
+
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(34px, 6vw, 50px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 18px;
+  }
+  .hero h1 i { font-style: italic; color: var(--stamp); }
+
+  .hero p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--graphite);
+    max-width: 46ch;
+    margin: 0;
+  }
+
+  /* ---- Dropzone / paper sheet ---- */
+  .sheet {
+    position: relative;
+    margin-top: 40px;
+    background: #FFFEFB;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    padding: 40px 32px 34px;
+    box-shadow: 0 1px 2px rgba(31,58,95,0.04), 0 12px 28px -18px rgba(31,58,95,0.18);
+  }
+
+  .torn {
+    height: 14px;
+    margin-top: -1px;
+    background:
+      linear-gradient(135deg, #FFFEFB 50%, transparent 50%) 0 0 / 16px 16px,
+      linear-gradient(-135deg, #FFFEFB 50%, transparent 50%) 0 0 / 16px 16px;
+    background-color: transparent;
+    filter: drop-shadow(0 1px 1px rgba(31,58,95,0.05));
+  }
+
+  .drop {
+    border: 1.5px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .drop:hover, .drop.drag { border-color: var(--ink-soft); background: rgba(31,58,95,0.02); }
+  .drop:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+  .drop svg { display:block; margin: 0 auto 14px; }
+
+  .drop .cta {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .drop .sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--graphite);
+    margin-top: 6px;
+  }
+
+  input[type="file"] { display: none; }
+
+  /* ---- File state ---- */
+  .file-row {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-top: 18px;
+  }
+  .file-row.show { display: flex; }
+
+  .file-icon {
+    width: 34px; height: 34px;
+    flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--ink);
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+
+  .file-meta { flex: 1; min-width: 0; }
+  .file-name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--graphite); margin-top: 2px; }
+
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 2px;
+    padding: 11px 20px;
+    cursor: pointer;
+    background: var(--ink);
+    color: var(--paper);
+    transition: transform 0.1s ease, background 0.15s ease;
+  }
+  .btn:hover { background: #16304E; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+
+  .btn.stamp-btn { background: var(--stamp); }
+  .btn.stamp-btn:hover { background: #96322A; }
+
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+  }
+  .btn.ghost:hover { background: rgba(31,58,95,0.05); }
+
+  /* ---- Progress ---- */
+  .progress-wrap {
+    display: none;
+    margin-top: 22px;
+  }
+  .progress-wrap.show { display: block; }
+
+  .progress-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .progress-track {
+    height: 3px;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--ink);
+    transition: width 0.25s ease;
+  }
+
+  /* ---- Result ---- */
+  .result {
+    display: none;
+    margin-top: 26px;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .result.show { display: flex; }
+
+  .stamp-mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    color: var(--stamp);
+    border: 2px solid var(--stamp);
+    padding: 7px 12px;
+    border-radius: 3px;
+    transform: rotate(-6deg) scale(1);
+    display: inline-block;
+    animation: stampdown 0.35s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes stampdown {
+    0% { transform: rotate(-6deg) scale(2.2); opacity: 0; }
+    60% { opacity: 1; }
+    100% { transform: rotate(-6deg) scale(1); opacity: 1; }
+  }
+
+  .result-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .stats {
+    width: 100%;
+    display: flex;
+    gap: 28px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--graphite);
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+    margin-top: 4px;
+  }
+  .stats b { color: var(--ink); font-weight: 500; }
+
+  .notice {
+    display: none;
+    margin-top: 18px;
+    font-size: 13.5px;
+    color: var(--stamp);
+    border-left: 2px solid var(--stamp);
+    padding: 8px 14px;
+    background: rgba(178,58,46,0.05);
+  }
+  .notice.show { display: block; }
+
+  footer {
+    margin-top: 32px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--graphite);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .footfall {
+    margin-top: 80px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--graphite);
+    text-align: center;
+    letter-spacing: 0.03em;
+  }
+  .footfall b { color: var(--ink); font-weight: 600; }
+
+  /* ---- Preview ---- */
+  .preview-wrap { width: 100%; margin-top: 4px; }
+  .preview-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .preview-box {
+    width: 100%;
+    max-height: 380px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 28px 30px;
+    font-size: 10.5pt;
+    color: #111;
+  }
+
+  /* ---- Feedback / donate ---- */
+  .feedback-block {
+    width: 100%;
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px dashed var(--line);
+    text-align: center;
+  }
+  .feedback-block h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 19px;
+    line-height: 1.4;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .feedback-block .praise {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 19px;
+    color: var(--stamp);
+    margin: 0 0 18px;
+  }
+
+  .donate-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .donate-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--graphite);
+    margin-right: 4px;
+  }
+  .donate-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1.5px solid var(--gold);
+    background: rgba(201,162,39,0.08);
+    color: #8a6d16;
+    border-radius: 3px;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .donate-btn:hover { background: rgba(201,162,39,0.2); }
+  .donate-btn:active { transform: scale(0.97); }
+  .donate-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .feedback-alt {
+    font-size: 13.5px;
+    color: var(--graphite);
+  }
+  .feedback-alt button {
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    background: none;
+    border: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .download-section {
+    width: 100%;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px dashed var(--line);
+    text-align: center;
+  }
+
+  .thanks-banner {
+    display: none;
+    font-size: 13.5px;
+    color: #6b5410;
+    background: rgba(201,162,39,0.12);
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+  }
+  .thanks-banner.show { display: block; animation: thanksfade 0.3s ease; }
+  @keyframes thanksfade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---- Suggestion modal ---- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(31,58,95,0.35);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal-box {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    max-width: 440px;
+    width: 100%;
+    padding: 28px;
+    box-shadow: 0 20px 50px -20px rgba(31,58,95,0.4);
+  }
+  .modal-box h4 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 19px;
+    margin: 0 0 6px;
+  }
+  .modal-box p.hint {
+    font-size: 13px;
+    color: var(--graphite);
+    margin: 0 0 16px;
+  }
+  .modal-box textarea {
+    width: 100%;
+    min-height: 110px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 2px;
+    resize: vertical;
+    background: #fff;
+    color: var(--ink);
+  }
+  .modal-box textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+  .modal-thanks {
+    display: none;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 6px 0 0;
+  }
+  .modal-thanks.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="wordmark">Word<em>y</em> by Tarkesh</div>
+    <div class="top-note">runs entirely in<br>your browser</div>
+  </header>
+
+  <section class="hero">
+    <h1>Turn a PDF back<br>into <i>words you can edit.</i></h1>
+    <p>No uploads, No waiting, Format Intact</p>
+  </section>
+
+  <div class="sheet">
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a PDF file to convert">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <path d="M9 3H22L29 10V33H9V3Z" stroke="#1F3A5F" stroke-width="1.4" fill="none"/>
+        <path d="M22 3V10H29" stroke="#1F3A5F" stroke-width="1.4" fill="none"/>
+        <line x1="13" y1="18" x2="25" y2="18" stroke="#B23A2E" stroke-width="1.2"/>
+        <line x1="13" y1="22" x2="25" y2="22" stroke="#DDD6C7" stroke-width="1.2"/>
+        <line x1="13" y1="26" x2="21" y2="26" stroke="#DDD6C7" stroke-width="1.2"/>
+      </svg>
+      <div class="cta">Click to choose or drag your pdf</div>
+      <div class="sub">.PDF · TEXT-BASED PAGES ONLY</div>
+      <input type="file" id="fileInput" accept="application/pdf">
+    </div>
+
+    <div class="file-row" id="fileRow">
+      <div class="file-icon">PDF</div>
+      <div class="file-meta">
+        <div class="file-name" id="fileName">—</div>
+        <div class="file-sub" id="fileSub">—</div>
+      </div>
+      <button class="btn" id="convertBtn">Convert</button>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressStage">Reading pages…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="notice" id="notice"></div>
+
+    <div class="result" id="result">
+      <span class="stamp-mark" id="stampMark">CONVERTED</span>
+      <div class="stats" id="stats"></div>
+
+      <div class="preview-wrap">
+        <div class="preview-label">Preview</div>
+        <div class="preview-box" id="previewBox"></div>
+      </div>
+
+      <div class="feedback-block">
+        <h3>If happy with the preview,</h3>
+        <p class="praise">appreciate the developer to continue doing more work like this. Good job.</p>
+        <div class="donate-row">
+          <span class="donate-label">Donate</span>
+          <button class="donate-btn" data-amt="1">₹1</button>
+          <button class="donate-btn" data-amt="5">₹5</button>
+          <button class="donate-btn" data-amt="10">₹10</button>
+        </div>
+        <div class="feedback-alt">
+          Not quite right? <button id="suggestOpenBtn">Send a suggestion</button>
+        </div>
+      </div>
+
+      <div class="download-section" id="downloadSection">
+        <div class="thanks-banner" id="thanksBanner">Payment received — thank you for supporting Wordy! 🙏</div>
+        <div class="result-actions">
+          <button class="btn stamp-btn" id="downloadBtn">Download .docx</button>
+          <button class="btn ghost" id="resetBtn">Convert another</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="torn"></div>
+
+  <footer>
+    <span>Nothing you convert leaves your device.</span>
+    <span> </span>
+  </footer>
+
+  <div class="footfall" id="footfall">Footfall — <b id="footfallCount">…</b> visits</div>
+
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <h4>Send a suggestion</h4>
+    <p class="hint">What didn't look right, or what would make Wordy better?</p>
+    <textarea id="suggestText" placeholder="e.g. the table on page 2 lost a column…"></textarea>
+    <div class="modal-actions">
+      <button class="btn ghost" id="suggestCancelBtn">Cancel</button>
+      <button class="btn" id="suggestSendBtn">Send</button>
+    </div>
+    <div class="modal-thanks" id="suggestThanks">Thanks — noted. 🙏</div>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js".replace('pdf.min.js','pdf.worker.min.js');
+
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+const fileRow = document.getElementById('fileRow');
+const fileName = document.getElementById('fileName');
+const fileSub = document.getElementById('fileSub');
+const convertBtn = document.getElementById('convertBtn');
+const progressWrap = document.getElementById('progressWrap');
+const progressStage = document.getElementById('progressStage');
+const progressPct = document.getElementById('progressPct');
+const progressFill = document.getElementById('progressFill');
+const result = document.getElementById('result');
+const stats = document.getElementById('stats');
+const downloadBtn = document.getElementById('downloadBtn');
+const resetBtn = document.getElementById('resetBtn');
+const notice = document.getElementById('notice');
+const previewBox = document.getElementById('previewBox');
+const modalOverlay = document.getElementById('modalOverlay');
+const suggestOpenBtn = document.getElementById('suggestOpenBtn');
+const suggestCancelBtn = document.getElementById('suggestCancelBtn');
+const suggestSendBtn = document.getElementById('suggestSendBtn');
+const suggestText = document.getElementById('suggestText');
+const suggestThanks = document.getElementById('suggestThanks');
+
+// ====== RAZORPAY CONFIG (not active right now — see UPI config below) ======
+// Get your Key ID from https://dashboard.razorpay.com/app/keys
+// This is the PUBLIC key only (starts with rzp_test_ or rzp_live_) — safe to expose in front-end code.
+// Never put your Key SECRET here or anywhere in client-side code.
+const RAZORPAY_KEY_ID = 'YOUR_RAZORPAY_KEY_ID'; // e.g. 'rzp_test_XXXXXXXXXXXX'
+const RAZORPAY_PAYEE_NAME = 'Wordy';
+// URL of the verification server in the accompanying /wordy-server folder —
+// e.g. 'http://localhost:3001' while testing, your deployed https:// URL in production.
+const BACKEND_URL = 'YOUR_BACKEND_URL';
+// ===============================================================
+
+// ====== UPI CONFIG — this is what the donate buttons use right now ======
+// Change UPI_ID to your real VPA (the "yourname@bank" style ID), e.g. '9876543210@ybl'.
+// Note: upi:// links only work on a phone with a UPI app installed — a desktop
+// browser has nothing registered to handle that link, so nothing will open there.
+const UPI_ID = 'tarkeshwarkr1@ybl';
+const UPI_PAYEE_NAME = 'Wordy';
+// ===========================================================================
+
+let currentFile = null;
+let docBlob = null;
+let docFilename = 'converted.doc';
+
+function showNotice(msg){
+  notice.textContent = msg;
+  notice.classList.add('show');
+}
+function clearNotice(){
+  notice.classList.remove('show');
+  notice.textContent = '';
+}
+
+function humanSize(bytes){
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function selectFile(file){
+  clearNotice();
+  result.classList.remove('show');
+  progressWrap.classList.remove('show');
+  if (!file) return;
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){
+    showNotice('That file isn\'t a PDF. Choose a .pdf file to continue.');
+    return;
+  }
+  currentFile = file;
+  fileName.textContent = file.name;
+  fileSub.textContent = humanSize(file.size) + ' · ready to convert';
+  fileRow.classList.add('show');
+}
+
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }});
+fileInput.addEventListener('change', (e) => selectFile(e.target.files[0]));
+
+['dragenter','dragover'].forEach(evt => drop.addEventListener(evt, (e) => {
+  e.preventDefault(); e.stopPropagation(); drop.classList.add('drag');
+}));
+['dragleave','drop'].forEach(evt => drop.addEventListener(evt, (e) => {
+  e.preventDefault(); e.stopPropagation(); drop.classList.remove('drag');
+}));
+drop.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files[0];
+  selectFile(file);
+});
+
+resetBtn.addEventListener('click', () => {
+  currentFile = null; docBlob = null;
+  fileRow.classList.remove('show');
+  result.classList.remove('show');
+  progressWrap.classList.remove('show');
+  clearNotice();
+  fileInput.value = '';
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!docBlob) return;
+  const url = URL.createObjectURL(docBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = docFilename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+function escapeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function escapeXml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+
+function runPropsXml(run){
+  const f = run || { fontFamily: 'Calibri', fontSize: 11, bold: false, italic: false };
+  const sz = Math.max(2, Math.round(f.fontSize * 2)); // half-points
+  const font = escapeXml(f.fontFamily || 'Calibri');
+  return `<w:rPr><w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/>${f.bold ? '<w:b/>' : ''}${f.italic ? '<w:i/>' : ''}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`;
+}
+
+// One PDF line -> one <w:p>, with measured indent, vertical spacing and inter-word gaps
+// preserved as literal spaces (xml:space="preserve" keeps Word from collapsing them).
+function renderLineDocx(line, prevY, pageMarginLeft){
+  const items = line.items;
+  let runsXml = '';
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    let prefix = '';
+    if (i > 0) {
+      const prev = items[i - 1];
+      const gap = it.x - (prev.x + prev.width);
+      const spaceUnit = Math.max(prev.fontSize * 0.28, 2);
+      if (gap > spaceUnit * 1.3) {
+        prefix = ' '.repeat(Math.min(Math.max(Math.round(gap / spaceUnit), 1), 24));
+      } else if (gap > 0.5) {
+        prefix = ' ';
+      }
+    }
+    runsXml += `<w:r>${runPropsXml(it)}<w:t xml:space="preserve">${escapeXml(prefix + it.text)}</w:t></w:r>`;
+  }
+  const indentTwips = Math.round(Math.max(0, items[0].x - pageMarginLeft) * 20);
+  const gapTwips = prevY === null ? 0 : Math.round(Math.min(Math.max(prevY - line.y, 0), 60) * 20);
+  const ind = indentTwips > 0 ? `<w:ind w:left="${indentTwips}"/>` : '';
+  const pPr = `<w:pPr><w:spacing w:before="${gapTwips}" w:after="0" w:line="240" w:lineRule="auto"/>${ind}</w:pPr>`;
+  return `<w:p>${pPr}${runsXml}</w:p>`;
+}
+
+function renderTableDocx(lines, block){
+  const colCount = block.cols.length || 1;
+  const cellPct = Math.floor(5000 / colCount);
+  const gridCols = block.cols.map(() => '<w:gridCol/>').join('');
+  let rowsXml = '';
+  lines.slice(block.start, block.end).forEach(line => {
+    let cellsXml = '';
+    block.cols.forEach(colBin => {
+      const cellItems = line.items.filter(it => block.bin(it.x) === colBin);
+      const text = cellItems.map(it => it.text).join(' ').trim();
+      cellsXml += `<w:tc><w:tcPr><w:tcW w:w="${cellPct}" w:type="pct"/></w:tcPr><w:p><w:r>${runPropsXml(cellItems[0])}<w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r></w:p></w:tc>`;
+    });
+    rowsXml += `<w:tr>${cellsXml}</w:tr>`;
+  });
+  const borders = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']
+    .map(side => `<w:${side} w:val="single" w:sz="4" w:space="0" w:color="999999"/>`).join('');
+  return `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>${borders}</w:tblBorders></w:tblPr><w:tblGrid>${gridCols}</w:tblGrid>${rowsXml}</w:tbl>`;
+}
+
+function renderPageDocx(lines, pageMarginLeft){
+  const blocks = detectTableBlocks(lines);
+  let xml = '';
+  let idx = 0, bi = 0, prevY = null;
+  while (idx < lines.length) {
+    if (bi < blocks.length && idx === blocks[bi].start) {
+      xml += renderTableDocx(lines, blocks[bi]);
+      idx = blocks[bi].end;
+      prevY = lines[idx - 1].y;
+      bi++;
+    } else {
+      const line = lines[idx];
+      xml += renderLineDocx(line, prevY, pageMarginLeft);
+      prevY = line.y;
+      idx++;
+    }
+  }
+  return xml;
+}
+
+// Assemble a minimal-but-valid .docx (OOXML zip) from the accumulated body XML
+async function buildDocx(bodyXml, sectPrXml, title){
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`;
+
+  const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:docDefaults><w:rPrDefault><w:rPr><w:sz w:val="22"/></w:rPr></w:rPrDefault></w:docDefaults>
+<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+</w:styles>`;
+
+  const core = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<dc:title>${escapeXml(title)}</dc:title>
+<dc:creator>Wordy</dc:creator>
+</cp:coreProperties>`;
+
+  const app = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+<Application>Wordy</Application>
+</Properties>`;
+
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:body>${bodyXml}<w:sectPr>${sectPrXml}</w:sectPr></w:body>
+</w:document>`;
+
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml', contentTypes);
+  zip.folder('_rels').file('.rels', rootRels);
+  zip.folder('word').file('document.xml', documentXml);
+  zip.folder('word').folder('_rels').file('document.xml.rels', docRels);
+  zip.folder('word').file('styles.xml', styles);
+  zip.folder('docProps').file('core.xml', core);
+  zip.folder('docProps').file('app.xml', app);
+
+  return zip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  });
+}
+
+// Pull each text run with its position AND its real font: family, size, bold, italic
+async function getPageRuns(page){
+  await page.getOperatorList(); // forces fonts to resolve into page.commonObjs
+  const content = await page.getTextContent();
+  return content.items
+    .filter(item => item.str !== undefined)
+    .map(item => {
+      const fontSize = Math.hypot(item.transform[0], item.transform[1]) || 10;
+      let fontFamily = 'Calibri', bold = false, italic = false;
+      try {
+        const fontObj = page.commonObjs.get(item.fontName);
+        if (fontObj && fontObj.name) {
+          const raw = fontObj.name.replace(/^[A-Z]{6}\+/, ''); // strip subset prefix e.g. "ABCDEF+"
+          fontFamily = raw.split(/[-,]/)[0] || 'Calibri';
+          if (/bold/i.test(raw)) bold = true;
+          if (/italic|oblique/i.test(raw)) italic = true;
+        }
+      } catch (e) { /* font not resolved, fall back to defaults */ }
+      return {
+        text: item.str,
+        x: item.transform[4],
+        y: Math.round(item.transform[5]),
+        width: item.width || (item.str.length * fontSize * 0.5),
+        fontSize, fontFamily, bold, italic
+      };
+    });
+}
+
+// Group runs into visual lines (same y-band), left to right
+function groupLines(runs){
+  const sorted = [...runs].sort((a, b) => b.y - a.y || a.x - b.x);
+  const lines = [];
+  let cur = null;
+  sorted.forEach(r => {
+    if (cur === null || Math.abs(cur.y - r.y) > 3) {
+      cur = { y: r.y, items: [r] };
+      lines.push(cur);
+    } else {
+      cur.items.push(r);
+    }
+  });
+  lines.forEach(l => l.items.sort((a, b) => a.x - b.x));
+  return lines.filter(l => l.items.some(it => it.text.trim().length));
+}
+
+// Find runs of lines whose text lines up into repeating columns — treat those as tables
+function detectTableBlocks(lines){
+  const BIN = 8;
+  const bin = x => Math.round(x / BIN) * BIN;
+  const binLineCount = {};
+  lines.forEach(line => {
+    new Set(line.items.map(it => bin(it.x))).forEach(b => { binLineCount[b] = (binLineCount[b] || 0) + 1; });
+  });
+  const activeBins = new Set(Object.keys(binLineCount).filter(b => binLineCount[b] >= 3).map(Number));
+
+  const flags = lines.map(line => {
+    const matched = new Set();
+    line.items.forEach(it => { const b = bin(it.x); if (activeBins.has(b)) matched.add(b); });
+    return matched.size >= 2 ? [...matched].sort((a, b) => a - b) : null;
+  });
+
+  const blocks = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (flags[i]) {
+      let j = i;
+      const cols = new Set();
+      while (j < lines.length && flags[j]) { flags[j].forEach(c => cols.add(c)); j++; }
+      if (j - i >= 3) blocks.push({ start: i, end: j, cols: [...cols].sort((a, b) => a - b), bin });
+      i = j;
+    } else i++;
+  }
+  return blocks;
+}
+
+function fontStyle(run){
+  const f = run || { fontFamily: 'Calibri', fontSize: 11, bold: false, italic: false };
+  return `font-family:${escapeHtml(f.fontFamily)},sans-serif;font-size:${f.fontSize.toFixed(1)}pt;${f.bold ? 'font-weight:bold;' : ''}${f.italic ? 'font-style:italic;' : ''}`;
+}
+
+function renderTable(lines, block){
+  let html = '<table style="border-collapse:collapse;width:100%;margin:0 0 10pt 0;" border="1" cellpadding="4">';
+  lines.slice(block.start, block.end).forEach(line => {
+    html += '<tr>';
+    block.cols.forEach(colBin => {
+      const cellItems = line.items.filter(it => block.bin(it.x) === colBin);
+      const text = cellItems.map(it => it.text).join(' ').trim();
+      html += `<td style="border:1px solid #999;padding:4pt;vertical-align:top;"><span style="${fontStyle(cellItems[0])}">${escapeHtml(text)}</span></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</table>';
+  return html;
+}
+
+// Render one PDF line as one visual line: indentation, inter-word gaps and vertical
+// spacing are all measured from the original coordinates instead of being reflowed.
+function renderLine(line, prevY, pageMarginLeft){
+  const items = line.items;
+  let inner = '';
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (i > 0) {
+      const prev = items[i - 1];
+      const gap = it.x - (prev.x + prev.width);
+      const spaceUnit = Math.max(prev.fontSize * 0.28, 2);
+      if (gap > spaceUnit * 1.3) {
+        const count = Math.min(Math.max(Math.round(gap / spaceUnit), 1), 24);
+        inner += '&nbsp;'.repeat(count); // reproduces tabs / wide gaps instead of collapsing them
+      } else if (gap > 0.5) {
+        inner += ' ';
+      }
+    }
+    inner += `<span style="${fontStyle(it)}">${escapeHtml(it.text)}</span>`;
+  }
+  const indentPt = Math.max(0, items[0].x - pageMarginLeft).toFixed(1);
+  const gapPt = prevY === null ? 0 : Math.min(Math.max(prevY - line.y, 0), 60).toFixed(1);
+  return `<p style="margin:0;margin-left:${indentPt}pt;margin-top:${gapPt}pt;line-height:1.15;">${inner || '&nbsp;'}</p>`;
+}
+
+function renderPage(lines, pageMarginLeft){
+  const blocks = detectTableBlocks(lines);
+  let html = '';
+  let idx = 0, bi = 0;
+  let prevY = null;
+  while (idx < lines.length) {
+    if (bi < blocks.length && idx === blocks[bi].start) {
+      html += renderTable(lines, blocks[bi]);
+      idx = blocks[bi].end;
+      prevY = lines[idx - 1].y;
+      bi++;
+    } else {
+      const line = lines[idx];
+      html += renderLine(line, prevY, pageMarginLeft);
+      prevY = line.y;
+      idx++;
+    }
+  }
+  return html;
+}
+
+async function convert(){
+  if (!currentFile) return;
+  convertBtn.disabled = true;
+  progressWrap.classList.add('show');
+  result.classList.remove('show');
+  clearNotice();
+  progressStage.textContent = 'Opening file…';
+  progressFill.style.width = '4%';
+  progressPct.textContent = '4%';
+
+  try {
+    const arrayBuffer = await currentFile.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+    const numPages = pdf.numPages;
+
+    let bodyHtml = '';
+    let bodyXml = '';
+    let totalWords = 0;
+    let pagesWithText = 0;
+    let tableCount = 0;
+    let pageSizeRule = '';
+    let sectPrXml = '';
+
+    for (let i = 1; i <= numPages; i++) {
+      progressStage.textContent = `Reading page ${i} of ${numPages}…`;
+      const pct = Math.round((i / numPages) * 85);
+      progressFill.style.width = pct + '%';
+      progressPct.textContent = pct + '%';
+
+      const page = await pdf.getPage(i);
+      const runs = await getPageRuns(page);
+      const lines = groupLines(runs);
+      if (lines.length) pagesWithText++;
+      tableCount += detectTableBlocks(lines).length;
+
+      totalWords += lines.reduce((sum, l) => sum + l.items.reduce((s, it) => s + it.text.split(/\s+/).filter(Boolean).length, 0), 0);
+
+      if (i === 1) {
+        const viewport = page.getViewport({ scale: 1 });
+        const pageWidthIn = (viewport.width / 72).toFixed(2);
+        const pageHeightIn = (viewport.height / 72).toFixed(2);
+        const allX = lines.flatMap(l => l.items.map(it => it.x));
+        const allY = lines.flatMap(l => l.items.map(it => it.y));
+        const marginLeftIn = allX.length ? Math.min(1.25, Math.max(0.4, Math.min(...allX) / 72)) : 1.0;
+        const marginTopIn = allY.length ? Math.min(1.25, Math.max(0.4, (viewport.height - Math.max(...allY)) / 72)) : 1.0;
+
+        pageSizeRule = `@page Section1 { size:${pageWidthIn}in ${pageHeightIn}in; margin:${marginTopIn.toFixed(2)}in ${marginLeftIn.toFixed(2)}in ${marginTopIn.toFixed(2)}in ${marginLeftIn.toFixed(2)}in; }\ndiv.Section1 { page:Section1; }`;
+
+        const pgW = Math.round(viewport.width * 20);   // points -> twips
+        const pgH = Math.round(viewport.height * 20);
+        const mLeft = Math.round(marginLeftIn * 1440);  // inches -> twips
+        const mTop = Math.round(marginTopIn * 1440);
+        sectPrXml = `<w:pgSz w:w="${pgW}" w:h="${pgH}"/><w:pgMar w:top="${mTop}" w:right="${mLeft}" w:bottom="${mTop}" w:left="${mLeft}" w:header="720" w:footer="720" w:gutter="0"/>`;
+      }
+
+      const pageMarginLeft = lines.length ? Math.min(...lines.flatMap(l => l.items.map(it => it.x))) : 0;
+
+      const pageBreakHtml = i > 1 ? "<br style='mso-special-character:line-break;page-break-before:always'>" : '';
+      const pageBreakXml = i > 1 ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' : '';
+      bodyHtml += pageBreakHtml;
+      bodyXml += pageBreakXml;
+
+      if (lines.length === 0) {
+        bodyHtml += `<p style="font-family:Calibri,sans-serif;font-size:11pt;color:#888;"><i>(page ${i} had no extractable text — it may be a scanned image)</i></p>`;
+        bodyXml += `<w:p><w:r><w:rPr><w:i/><w:color w:val="888888"/></w:rPr><w:t>(page ${i} had no extractable text — it may be a scanned image)</w:t></w:r></w:p>`;
+      } else {
+        bodyHtml += renderPage(lines, pageMarginLeft);
+        bodyXml += renderPageDocx(lines, pageMarginLeft);
+      }
+    }
+
+    progressStage.textContent = 'Packaging .docx…';
+    progressFill.style.width = '92%';
+    progressPct.textContent = '92%';
+
+    docBlob = await buildDocx(bodyXml, sectPrXml, currentFile.name.replace(/\.pdf$/i, ''));
+    docFilename = currentFile.name.replace(/\.pdf$/i, '') + '.docx';
+
+    progressFill.style.width = '100%';
+    progressPct.textContent = '100%';
+
+    if (pagesWithText === 0) {
+      showNotice('No selectable text was found in this PDF — it looks like scanned pages, which need OCR before Wordy can convert them.');
+    }
+
+    stats.innerHTML = `<span><b>${numPages}</b> page${numPages !== 1 ? 's' : ''}</span><span><b>${totalWords.toLocaleString()}</b> words</span><span><b>${tableCount}</b> table${tableCount !== 1 ? 's' : ''} found</span><span><b>${humanSize(docBlob.size)}</b> output</span>`;
+    previewBox.innerHTML = bodyHtml;
+    result.classList.add('show');
+    setTimeout(() => progressWrap.classList.remove('show'), 400);
+
+  } catch (err) {
+    console.error(err);
+    showNotice('Something went wrong reading that PDF. Make sure it isn\'t password-protected, then try again.');
+    progressWrap.classList.remove('show');
+  } finally {
+    convertBtn.disabled = false;
+  }
+}
+
+convertBtn.addEventListener('click', convert);
+
+// ---- Donate: opens Razorpay Checkout, backed by a real order + signature verification ----
+async function openRazorpayCheckout(amountRupees){
+  if (RAZORPAY_KEY_ID === 'YOUR_RAZORPAY_KEY_ID' || BACKEND_URL === 'YOUR_BACKEND_URL') {
+    showNotice('Payments aren\'t configured yet — set RAZORPAY_KEY_ID and BACKEND_URL in the code to enable donations.');
+    return;
+  }
+  if (!window.Razorpay) {
+    showNotice('Payment system failed to load. Check your connection and try again.');
+    return;
+  }
+
+  let order;
+  try {
+    const orderRes = await fetch(`${BACKEND_URL}/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: amountRupees })
+    });
+    if (!orderRes.ok) throw new Error('order creation failed');
+    order = await orderRes.json();
+  } catch (err) {
+    console.error(err);
+    showNotice('Could not start the payment — the server might be unreachable. Try again in a moment.');
+    return;
+  }
+
+  const options = {
+    key: RAZORPAY_KEY_ID,
+    amount: order.amount,
+    currency: order.currency,
+    order_id: order.orderId,
+    name: RAZORPAY_PAYEE_NAME,
+    description: `Support ${RAZORPAY_PAYEE_NAME} — ₹${amountRupees}`,
+    theme: { color: '#B23A2E' },
+    handler: async function(response){
+      // Send the razorpay_* fields to the backend, which recomputes the
+      // signature with the Key Secret — this is what actually proves the
+      // payment is genuine, rather than just trusting the browser.
+      try {
+        const verifyRes = await fetch(`${BACKEND_URL}/verify-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(response)
+        });
+        const result = await verifyRes.json();
+        if (result.verified) {
+          showThanksBanner();
+        } else {
+          showNotice('Payment could not be verified — if money left your account, please reach out.');
+        }
+      } catch (err) {
+        console.error(err);
+        showNotice('Payment went through, but verification failed to reach the server.');
+      }
+    },
+    modal: {
+      ondismiss: function(){ /* user closed the checkout without completing payment */ }
+    }
+  };
+
+  const rzp = new Razorpay(options);
+  rzp.on('payment.failed', function(){
+    showNotice('That payment didn\'t go through. Feel free to try again.');
+  });
+  rzp.open();
+}
+
+// ---- Donate: opens PhonePe / any UPI app directly, pre-filled with UPI_ID above ----
+let donationPending = false;
+
+function openUpiPayment(amountRupees){
+  const link = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(UPI_PAYEE_NAME)}&am=${amountRupees}&cu=INR&tn=${encodeURIComponent('Support ' + UPI_PAYEE_NAME)}`;
+  donationPending = true;
+  window.location.href = link;
+}
+
+document.querySelectorAll('.donate-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const amt = parseInt(btn.getAttribute('data-amt'), 10);
+    openUpiPayment(amt);
+  });
+});
+
+// PhonePe opens as a separate app, not inside this page, so the closest thing to a
+// "return" signal is noticing when you switch back to this browser tab.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && donationPending) {
+    donationPending = false;
+    showThanksBanner();
+  }
+});
+window.addEventListener('focus', () => {
+  if (donationPending) {
+    donationPending = false;
+    showThanksBanner();
+  }
+});
+
+function showThanksBanner(){
+  const banner = document.getElementById('thanksBanner');
+  banner.classList.add('show');
+  document.getElementById('downloadSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => banner.classList.remove('show'), 6000);
+}
+
+// ---- Suggestion modal ----
+function openModal(){
+  modalOverlay.classList.add('show');
+  suggestThanks.classList.remove('show');
+  suggestText.value = '';
+  suggestText.style.display = 'block';
+  document.querySelector('.modal-actions').style.display = 'flex';
+  suggestText.focus();
+}
+function closeModal(){ modalOverlay.classList.remove('show'); }
+
+suggestOpenBtn.addEventListener('click', openModal);
+suggestCancelBtn.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+suggestSendBtn.addEventListener('click', async () => {
+  const text = suggestText.value.trim();
+  if (!text) { suggestText.focus(); return; }
+  suggestSendBtn.disabled = true;
+  try {
+    let list = [];
+    try {
+      const existing = await window.storage.get('wordy:suggestions', true);
+      list = existing && existing.value ? JSON.parse(existing.value) : [];
+    } catch (e) { list = []; }
+    list.push({ text, ts: new Date().toISOString() });
+    await window.storage.set('wordy:suggestions', JSON.stringify(list), true);
+  } catch (e) {
+    console.error('Could not save suggestion', e);
+  } finally {
+    suggestSendBtn.disabled = false;
+    suggestText.style.display = 'none';
+    document.querySelector('.modal-actions').style.display = 'none';
+    suggestThanks.classList.add('show');
+    setTimeout(closeModal, 1400);
+  }
+});
+
+// ---- Footfall counter (shared across everyone who opens this page) ----
+(async function bumpFootfall(){
+  const el = document.getElementById('footfallCount');
+  try {
+    let current = 0;
+    try {
+      const existing = await window.storage.get('wordy:footfall', true);
+      current = existing && existing.value ? (parseInt(existing.value, 10) || 0) : 0;
+    } catch (e) { current = 0; }
+    current += 1;
+    await window.storage.set('wordy:footfall', String(current), true);
+    el.textContent = current.toLocaleString();
+  } catch (e) {
+    el.textContent = '—';
+  }
+})();
+</script>
+
+</body>
+</html>
