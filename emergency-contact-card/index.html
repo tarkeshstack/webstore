@@ -34,12 +34,27 @@
 <style>
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Roboto','Google Sans',sans-serif;background:#fff;color:#202124;}
-  .topbar{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid rgba(32,33,36,0.1);}
-  .topbar a.back{display:flex;align-items:center;gap:8px;text-decoration:none;color:#202124;font-weight:700;font-family:'Google Sans',sans-serif;}
-  .topbar .mark svg{display:block;}
+  .topbar{
+    display:flex; align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid rgba(32,33,36,0.1);
+    position:sticky; top:0; background:#fff; z-index:10;
+  }
+  .topbar a.back{
+    display:flex; align-items:center; gap:8px;
+    text-decoration:none; color:#202124;
+    font-family:'Google Sans',sans-serif; font-weight:600; font-size:0.92rem;
+    padding:8px 14px 8px 8px;
+    border-radius:999px;
+    transition:background .15s ease;
+  }
+  .topbar a.back:hover{ background:rgba(32,33,36,0.06); }
+  .topbar a.back .arrow{
+    font-size:1.5rem; line-height:1; color:#01875f; flex:none;
+  }
   main{max-width:760px;margin:0 auto;padding:28px 20px 12px;}
   h1{font-family:'Google Sans',sans-serif;font-size:1.6rem;margin:0 0 10px;}
-  p.lead{color:#5f6368;font-size:1rem;line-height:1.55;margin:0 0 18px;}
+  p.lead{color:#5f6368;font-size:1rem;line-height:1.55;margin:0 0 22px;}
   .cat-badge{display:inline-block;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#01875f;background:rgba(1,135,95,0.1);padding:5px 12px;border-radius:999px;margin-bottom:14px;}
   .store-banner{
     display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -61,8 +76,8 @@
 <body>
   <div class="topbar">
     <a class="back" href="https://webstore.solutions/">
-      <span class="mark"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 3.5v17a1 1 0 0 0 1.5.87l14-8.5a1 1 0 0 0 0-1.74l-14-8.5A1 1 0 0 0 4 3.5z" fill="#01875f"/></svg></span>
-      Web Store
+      <span class="arrow">&#8592;</span>
+      Back to Web Store
     </a>
   </div>
   <main>
@@ -70,15 +85,15 @@
     <h1>SOS Emergency Card</h1>
     <p class="lead">A digital emergency contact card you can share or print for urgent situations.</p>
     <a class="store-banner" href="https://webstore.solutions/">
-      <span class="sb-text"><strong>This is 1 of 20 free tools on Web Store</strong>See the full collection — no installs, no accounts.</span>
-      <span class="sb-arrow">→</span>
+      <span class="sb-text"><strong>This is 1 of 20 free tools on Web Store</strong>See the full collection &mdash; no installs, no accounts.</span>
+      <span class="sb-arrow">&#8594;</span>
     </a>
     <div class="app-frame-wrap">
       <iframe src="app.html" title="SOS Emergency Card" loading="lazy"></iframe>
     </div>
   </main>
   <footer>
-    Part of <a href="https://webstore.solutions/">Web Store</a> — small, free, browser-based tools by Tarkesh. No installs, no accounts.
+    Part of <a href="https://webstore.solutions/">Web Store</a> &mdash; small, free, browser-based tools by Tarkesh. No installs, no accounts.
   </footer>
 </body>
 </html>
