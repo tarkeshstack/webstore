@@ -807,25 +807,6 @@
     </div>
   </section>
 
-  <section class="custom-request" id="customRequestSection">
-    <div class="wrap">
-      <div class="cr-card">
-        <div class="cr-text">
-          <div class="cr-eyebrow">Something specific in mind?</div>
-          <h2>Want an app built just for you?</h2>
-          <p>If none of these quite fit, tell me what you need — a small tool, built for you alone, private and not shared with anyone else.</p>
-        </div>
-        <button class="cr-btn" id="customRequestBtn" type="button">Request your own app</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="custom-request-link" id="customRequestLink">
-    <div class="wrap">
-      <button class="cr-link-btn" id="customRequestLinkBtn" type="button">Request your app →</button>
-    </div>
-  </section>
-
   <footer>
     <div class="wrap">
       <div class="foot-grid">
@@ -836,30 +817,6 @@
   </footer>
 
   <div class="toast" id="shareToast"></div>
-
-  <div class="request-overlay" id="requestOverlay" role="dialog" aria-modal="true" aria-labelledby="requestTitle">
-    <div class="request-card">
-      <button class="request-close" id="requestClose" aria-label="Close">✕</button>
-      <div id="requestFormWrap">
-        <h3 id="requestTitle">Request your own app</h3>
-        <div class="req-field" id="fieldEmail">
-          <label for="reqEmail">Your email</label>
-          <input type="email" id="reqEmail" placeholder="you@example.com">
-          <div class="err">Enter your email so the developer can reply</div>
-        </div>
-        <div class="req-field" id="fieldDesc">
-          <label for="reqDesc">What do you want built?</label>
-          <textarea id="reqDesc"></textarea>
-          <div class="err">Tell me a bit about what you need</div>
-        </div>
-        <button class="request-submit" id="requestSubmit" type="button">Send</button>
-      </div>
-      <div class="request-thanks" id="requestThanks">
-        <div class="big">Request sent 🙌</div>
-        <p>Thanks — the developer will contact you soon.</p>
-      </div>
-    </div>
-  </div>
 
   <div class="welcome-overlay" id="welcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
     <div class="welcome-card">
@@ -1308,13 +1265,6 @@
       searchHint.textContent = '\u00A0';
     }
     allAppsHead.querySelector('h2').textContent = query ? 'Search results' : (activeCategory || 'All apps');
-    var crSection = document.getElementById('customRequestSection');
-    var crLink = document.getElementById('customRequestLink');
-    if (crSection && crLink) {
-      var onCategory = !!activeCategory;
-      crSection.style.display = onCategory ? 'none' : '';
-      crLink.classList.toggle('show', onCategory);
-    }
   }
   searchInput.addEventListener('input', () => applySearch(searchInput.value));
 
@@ -1499,114 +1449,6 @@
     if (!alreadySeen) {
       setTimeout(function(){ welcomeOverlay.classList.add('open'); }, 500);
     }
-  })();
-  </script>
-
-  <script>
-  (function(){
-    // ====== CONFIG — edit these two values ======
-    // Web3Forms is optional (free, no backend needed): sign up at https://web3forms.com,
-    // get your Access Key, paste it below. Leave as-is to skip straight to the email fallback.
-    var WEB3FORMS_ACCESS_KEY = 'YOUR_WEB3FORMS_ACCESS_KEY';
-    // Always set this — used as the fallback whenever Web3Forms isn't configured or fails.
-    var DEVELOPER_EMAIL = 'star007.tarkesh@gmail.com';
-    // ==============================================
-
-    var DEFAULT_MESSAGE = 'I am looking for a web app for ';
-
-    var overlay = document.getElementById('requestOverlay');
-    var openBtn = document.getElementById('customRequestBtn');
-    var openLinkBtn = document.getElementById('customRequestLinkBtn');
-    var closeBtn = document.getElementById('requestClose');
-    var formWrap = document.getElementById('requestFormWrap');
-    var thanksWrap = document.getElementById('requestThanks');
-    var submitBtn = document.getElementById('requestSubmit');
-    var emailField = document.getElementById('reqEmail');
-    var descField = document.getElementById('reqDesc');
-    if (!overlay || !openBtn) return;
-
-    function openRequest(){
-      overlay.classList.add('open');
-      formWrap.style.display = 'block';
-      thanksWrap.classList.remove('show');
-      emailField.value = '';
-      descField.value = DEFAULT_MESSAGE;
-      setInvalid('fieldEmail', false);
-      setInvalid('fieldDesc', false);
-      emailField.focus();
-    }
-    function closeRequest(){ overlay.classList.remove('open'); }
-
-    openBtn.addEventListener('click', openRequest);
-    if (openLinkBtn) openLinkBtn.addEventListener('click', openRequest);
-    closeBtn.addEventListener('click', closeRequest);
-    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeRequest(); });
-    document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape' && overlay.classList.contains('open')) closeRequest();
-    });
-
-    function setInvalid(id, invalid){
-      var el = document.getElementById(id);
-      if (invalid) el.classList.add('invalid'); else el.classList.remove('invalid');
-    }
-
-    function validate(){
-      var ok = true;
-      var emailVal = emailField.value.trim();
-      if (!emailVal || emailVal.indexOf('@') === -1) { setInvalid('fieldEmail', true); ok = false; } else setInvalid('fieldEmail', false);
-      if (!descField.value.trim() || descField.value.trim() === DEFAULT_MESSAGE.trim()) { setInvalid('fieldDesc', true); ok = false; } else setInvalid('fieldDesc', false);
-      return ok;
-    }
-
-    function showThanks(){
-      formWrap.style.display = 'none';
-      thanksWrap.classList.add('show');
-    }
-
-    function mailtoFallback(email, desc){
-      var subject = 'Web app request from ' + email;
-      var body = 'From: ' + email + '\n\n' + desc;
-      var link = 'mailto:' + encodeURIComponent(DEVELOPER_EMAIL) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-      window.location.href = link;
-      showThanks();
-    }
-
-    submitBtn.addEventListener('click', function(){
-      if (!validate()) return;
-      var email = emailField.value.trim();
-      var desc = descField.value.trim();
-
-      if (WEB3FORMS_ACCESS_KEY === 'YOUR_WEB3FORMS_ACCESS_KEY') {
-        mailtoFallback(email, desc);
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending…';
-      fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          access_key: WEB3FORMS_ACCESS_KEY,
-          subject: 'Web app request from ' + email,
-          email: email,
-          message: desc,
-          to: DEVELOPER_EMAIL
-        })
-      }).then(function(res){ return res.json(); }).then(function(data){
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Send';
-        if (data.success) {
-          showThanks();
-        } else {
-          mailtoFallback(email, desc);
-        }
-      }).catch(function(){
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Send';
-        mailtoFallback(email, desc);
-      });
-    });
   })();
   </script>
 
